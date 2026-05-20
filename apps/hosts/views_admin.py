@@ -23,7 +23,7 @@ from django.views import View
 from django.views.generic import DetailView, TemplateView
 
 from apps.accounts.provider_decorators import admin_required
-from utils.provider import get_provider_hosts
+from utils.provider import get_provider_hosts, PROVIDER_GROUP_NAME
 
 from .forms_admin import AdminHostForm, AdminHostGroupForm
 from .forms_wizard import HostWizardForm, CONNECTION_DEFAULT_PORTS, CONNECTION_DEFAULT_SSL
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def _get_permission_context(form, host=None):
     provider_users = User.objects.filter(
-        groups__name='提供商',
+        groups__name=PROVIDER_GROUP_NAME,
         is_staff=True,
         is_superuser=False,
     ).order_by('username')
@@ -52,7 +52,7 @@ def _get_permission_context(form, host=None):
             'name': g.name,
             'member_ids': list(
                 g.user_set.filter(
-                    groups__name='提供商',
+                    groups__name=PROVIDER_GROUP_NAME,
                     is_staff=True,
                     is_superuser=False,
                 )

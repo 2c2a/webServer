@@ -8,6 +8,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
+from utils.provider import PROVIDER_GROUP_NAME
 from .models import Host, HostGroup
 
 User = get_user_model()
@@ -111,13 +112,12 @@ class AdminHostForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         provider_users = User.objects.filter(
-            groups__name='提供商',
+            groups__name=PROVIDER_GROUP_NAME,
             is_staff=True,
             is_superuser=False,
         ).order_by('username')
         self.fields['providers'].queryset = provider_users
 
-        # 编辑模式下密码提示
         if self.instance.pk:
             self.fields['password'].help_text = (
                 '留空则不修改密码。为安全起见，此处不显示原密码。'
@@ -196,7 +196,7 @@ class AdminHostGroupForm(forms.ModelForm):
 
         # providers: 所有提供商组用户
         provider_users = User.objects.filter(
-            groups__name='提供商',
+            groups__name=PROVIDER_GROUP_NAME,
             is_staff=True,
             is_superuser=False,
         ).order_by('username')

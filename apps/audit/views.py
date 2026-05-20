@@ -12,8 +12,34 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 import logging
+import re
 
 logger = logging.getLogger(__name__)
+
+MAX_PAGE_SIZE = 100
+MAX_SEARCH_LENGTH = 200
+DATE_FORMAT = '%Y-%m-%d'
+
+
+def _validate_int_param(value, default=1, min_val=1, max_val=None):
+    try:
+        result = int(value)
+        result = max(min_val, result)
+        if max_val:
+            result = min(max_val, result)
+        return result
+    except (ValueError, TypeError):
+        return default
+
+
+def _validate_date_param(value):
+    if not value:
+        return None
+    try:
+        datetime.strptime(value, DATE_FORMAT)
+        return value
+    except ValueError:
+        return None
 
 
 @require_http_methods(["GET"])
@@ -22,16 +48,15 @@ logger = logging.getLogger(__name__)
 def get_audit_logs(request):
     """获取审计日志列表"""
     try:
-        # 参数获取
-        page = int(request.GET.get('page', 1))
-        page_size = min(int(request.GET.get('page_size', 20)), 100)  # 最大100条每页
-        action = request.GET.get('action')
-        user_id = request.GET.get('user_id')
-        host_id = request.GET.get('host_id')
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
+        page = _validate_int_param(request.GET.get('page', 1), default=1, min_val=1, max_val=10000)
+        page_size = _validate_int_param(request.GET.get('page_size', 20), default=20, min_val=1, max_val=MAX_PAGE_SIZE)
+        action = request.GET.get('action', '')[:50] if request.GET.get('action') else None
+        user_id = _validate_int_param(request.GET.get('user_id'), default=None, min_val=1) if request.GET.get('user_id') else None
+        host_id = _validate_int_param(request.GET.get('host_id'), default=None, min_val=1) if request.GET.get('host_id') else None
+        start_date = _validate_date_param(request.GET.get('start_date'))
+        end_date = _validate_date_param(request.GET.get('end_date'))
         success = request.GET.get('success')
-        search = request.GET.get('search', '')  # 搜索关键词
+        search = request.GET.get('search', '')[:MAX_SEARCH_LENGTH]
         
         # 构建查询集
         queryset = AuditLog.objects.select_related('user', 'host').all()
@@ -118,16 +143,15 @@ def get_audit_logs(request):
 def get_sensitive_operations(request):
     """获取敏感操作记录"""
     try:
-        page = int(request.GET.get('page', 1))
-        page_size = min(int(request.GET.get('page_size', 20)), 100)
-        user_id = request.GET.get('user_id')
-        operation_type = request.GET.get('operation_type')
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
+        page = _validate_int_param(request.GET.get('page', 1), default=1, min_val=1, max_val=10000)
+        page_size = _validate_int_param(request.GET.get('page_size', 20), default=20, min_val=1, max_val=MAX_PAGE_SIZE)
+        user_id = _validate_int_param(request.GET.get('user_id'), default=None, min_val=1) if request.GET.get('user_id') else None
+        operation_type = request.GET.get('operation_type', '')[:50] if request.GET.get('operation_type') else None
+        start_date = _validate_date_param(request.GET.get('start_date'))
+        end_date = _validate_date_param(request.GET.get('end_date'))
         
         queryset = SensitiveOperation.objects.select_related('user', 'approved_by').all()
         
-        # 应用过滤器
         if user_id:
             queryset = queryset.filter(user_id=user_id)
         if operation_type:
@@ -194,14 +218,14 @@ def get_sensitive_operations(request):
 def get_security_events(request):
     """获取安全事件记录"""
     try:
-        page = int(request.GET.get('page', 1))
-        page_size = min(int(request.GET.get('page_size', 20)), 100)
-        event_type = request.GET.get('event_type')
-        severity = request.GET.get('severity')
+        page = _validate_int_param(request.GET.get('page', 1), default=1, min_val=1, max_val=10000)
+        page_size = _validate_int_param(request.GET.get('page_size', 20), default=20, min_val=1, max_val=MAX_PAGE_SIZE)
+        event_type = request.GET.get('event_type', '')[:50] if request.GET.get('event_type') else None
+        severity = request.GET.get('severity', '')[:20] if request.GET.get('severity') else None
         resolved = request.GET.get('resolved')
-        user_id = request.GET.get('user_id')
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
+        user_id = _validate_int_param(request.GET.get('user_id'), default=None, min_val=1) if request.GET.get('user_id') else None
+        start_date = _validate_date_param(request.GET.get('start_date'))
+        end_date = _validate_date_param(request.GET.get('end_date'))
         
         queryset = SecurityEvent.objects.select_related('user', 'resolved_by').all()
         
@@ -292,8 +316,8 @@ def mark_security_event_resolved(request):
         event.resolved = True
         event.resolved_by = request.user if request.user.is_authenticated else None
         event.resolved_at = timezone.now()
-        event.resolution_notes = resolution_notes
-        event.save()
+        event.resolution_notes = resolution_notes[:1000] if resolution_notes else ''
+        event.save(update_fields=['resolved', 'resolved_by', 'resolved_at', 'resolution_notes'])
         
         return JsonResponse({
             'success': True,
@@ -319,9 +343,9 @@ def mark_security_event_resolved(request):
 def get_user_session_activity(request):
     """获取用户会话活动记录"""
     try:
-        user_id = request.GET.get('user_id')
-        page = int(request.GET.get('page', 1))
-        page_size = min(int(request.GET.get('page_size', 20)), 100)
+        user_id = _validate_int_param(request.GET.get('user_id'), default=None, min_val=1) if request.GET.get('user_id') else None
+        page = _validate_int_param(request.GET.get('page', 1), default=1, min_val=1, max_val=10000)
+        page_size = _validate_int_param(request.GET.get('page_size', 20), default=20, min_val=1, max_val=MAX_PAGE_SIZE)
         
         queryset = SessionActivity.objects.select_related('user').all()
         
@@ -474,11 +498,11 @@ def export_audit_logs(request):
     """导出审计日志（CSV格式）"""
     try:
         # 获取查询参数
-        action = request.GET.get('action')
-        user_id = request.GET.get('user_id')
-        host_id = request.GET.get('host_id')
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
+        action = request.GET.get('action', '')[:50] if request.GET.get('action') else None
+        user_id = _validate_int_param(request.GET.get('user_id'), default=None, min_val=1) if request.GET.get('user_id') else None
+        host_id = _validate_int_param(request.GET.get('host_id'), default=None, min_val=1) if request.GET.get('host_id') else None
+        start_date = _validate_date_param(request.GET.get('start_date'))
+        end_date = _validate_date_param(request.GET.get('end_date'))
         
         # 构建查询集
         queryset = AuditLog.objects.select_related('user', 'host').all()

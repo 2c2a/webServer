@@ -732,7 +732,11 @@ class AccountOpeningRequest(models.Model):
 
         if ((old_status == 'pending' and self.status == 'approved') or 
             (is_new_instance and auto_approved and self.status == 'approved')):
-            self.auto_process_creation()
+            try:
+                from apps.operations.tasks import process_account_creation
+                process_account_creation.delay(self.pk)
+            except Exception as e:
+                logger.error(f"Failed to dispatch account creation task for request {self.pk}: {str(e)}")
 
     def auto_process_creation(self):
         """审批通过后自动创建用户"""
@@ -1026,7 +1030,7 @@ class CloudComputerUser(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        重写save方法，当状态改变时自动执行相应操作
+        重写save方法，当状态改变时通过Celery异步执行远程操作
         """
         old_status = None
         if self.pk:
@@ -1038,18 +1042,24 @@ class CloudComputerUser(models.Model):
         super().save(*args, **kwargs)
 
         if old_status is not None:
+            remote_action = None
             if old_status != 'disabled' and self.status == 'disabled':
-                self.disable_remote_user()
+                remote_action = 'disable'
             elif old_status == 'disabled' and self.status == 'active':
-                self.enable_remote_user()
+                remote_action = 'enable'
             elif old_status != 'deleted' and self.status == 'deleted':
-                self.delete_remote_user()
+                remote_action = 'delete'
+
+            if remote_action:
+                try:
+                    from apps.operations.tasks import execute_cloud_user_remote_action
+                    execute_cloud_user_remote_action.delay(self.pk, remote_action)
+                except Exception as e:
+                    logger.error(f"Failed to dispatch remote action '{remote_action}' for user {self.username}: {str(e)}")
 
     def disable_remote_user(self):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟禁用用户 {self.username} 在产品 {self.product.display_name}')
             return
         
@@ -1069,15 +1079,13 @@ class CloudComputerUser(models.Model):
             result = client.disabled_user(self.username)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to disable user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to disable user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error disabling user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error disabling user {self.username} on host {host.name}: {str(e)}")
 
     def enable_remote_user(self):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟启用用户 {self.username} 在产品 {self.product.display_name}')
             return
         
@@ -1097,15 +1105,13 @@ class CloudComputerUser(models.Model):
             result = client.enable_user(self.username)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to enable user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to enable user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error enabling user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error enabling user {self.username} on host {host.name}: {str(e)}")
 
     def delete_remote_user(self):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟删除用户 {self.username} 在产品 {self.product.display_name}')
             return
         
@@ -1125,9 +1131,9 @@ class CloudComputerUser(models.Model):
             result = client.delete_user(self.username)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to delete user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to delete user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error deleting user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error deleting user {self.username} on host {host.name}: {str(e)}")
 
     def get_and_burn_password(self):
         from django.utils import timezone
@@ -1148,8 +1154,6 @@ class CloudComputerUser(models.Model):
     def reset_windows_password(self, new_password):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟重置用户 {self.username} 的密码')
             return
         
@@ -1169,9 +1173,9 @@ class CloudComputerUser(models.Model):
             result = client.reset_password(self.username, new_password)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to reset password for user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to reset password for user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error resetting password for user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error resetting password for user {self.username} on host {host.name}: {str(e)}")
 
     @staticmethod
     def generate_complex_password(length=16):
@@ -1388,8 +1392,10 @@ class ProductInvitationToken(models.Model):
         return self.is_active and not self.is_expired() and not self.is_exhausted()
 
     def increment_usage(self):
-        self.used_count += 1
+        from django.db.models import F
+        self.used_count = F('used_count') + 1
         self.save(update_fields=['used_count', 'updated_at'])
+        self.refresh_from_db()
 
     def generate_token(self):
         import secrets

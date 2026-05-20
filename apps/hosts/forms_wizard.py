@@ -8,6 +8,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
+from utils.provider import PROVIDER_GROUP_NAME
 from .models import Host
 
 User = get_user_model()
@@ -148,7 +149,7 @@ class HostWizardForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         provider_users = User.objects.filter(
-            groups__name='提供商',
+            groups__name=PROVIDER_GROUP_NAME,
             is_staff=True,
             is_superuser=False,
         ).order_by('username')

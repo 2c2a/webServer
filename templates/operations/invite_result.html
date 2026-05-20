@@ -10,7 +10,22 @@
 {% block content %}
 <div class="max-w-[600px] mx-auto p-8 sm:p-4">
     <div class="bg-md-surface-container/70 backdrop-blur-xl border border-white/10 rounded-md-lg shadow-2xl text-center p-8 sm:p-6">
-        {% if success %}
+        {% if needs_confirm %}
+            <i class="material-icons text-[64px] text-md-primary mb-4">lock_open</i>
+            <h2 class="text-2xl font-bold text-md-on-surface mb-2">确认解锁</h2>
+            <p class="text-md-on-surface-variant mb-6">{{ message }}</p>
+            <form method="post" action="">
+                {% csrf_token %}
+                <div class="flex flex-wrap gap-3 justify-center mt-6">
+                    <button type="submit" class="bg-md-primary text-md-on-primary px-6 py-3 rounded-md-xl font-medium shadow-lg transition hover:shadow-xl">
+                        确认解锁
+                    </button>
+                    <a href="{% url 'dashboard:index' %}" class="bg-md-surface-variant text-md-on-surface-variant px-6 py-3 rounded-md-xl font-medium transition hover:bg-md-surface-container no-underline">
+                        取消
+                    </a>
+                </div>
+            </form>
+        {% elif success %}
             <i class="material-icons text-[64px] text-md-success mb-4">check_circle</i>
             <h2 class="text-2xl font-bold text-md-on-surface mb-2">邀请成功</h2>
             <p class="text-md-on-surface-variant mb-6">{{ message }}</p>
@@ -60,11 +75,13 @@
             {% endif %}
         {% endif %}
         
+        {% if not needs_confirm %}
         <div class="flex flex-wrap gap-3 justify-center mt-6">
             <a href="{% url 'dashboard:index' %}" class="bg-md-primary text-md-on-primary px-6 py-3 rounded-md-xl font-medium shadow-lg transition hover:shadow-xl no-underline">
                 返回首页
             </a>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

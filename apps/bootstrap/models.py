@@ -37,7 +37,7 @@ class InitialToken(models.Model):
         self.pairing_code = code
         self.pairing_code_expires_at = timezone.now() + timedelta(minutes=5)
         self.pairing_attempts = 0
-        self.save()
+        self.save(update_fields=['pairing_code', 'pairing_code_expires_at', 'pairing_attempts'])
         return code
 
     def verify_pairing_code(self, input_code):
@@ -48,23 +48,26 @@ class InitialToken(models.Model):
         if timezone.now() > self.pairing_code_expires_at:
             return False
 
+        from django.db.models import F
+        InitialToken.objects.filter(pk=self.pk).update(
+            pairing_attempts=F('pairing_attempts') + 1
+        )
+        self.refresh_from_db()
+
         if self.pairing_attempts >= self.MAX_PAIRING_ATTEMPTS:
             self.pairing_code = None
             self.pairing_code_expires_at = None
-            self.save()
+            self.save(update_fields=['pairing_code', 'pairing_code_expires_at'])
             return False
 
-        self.pairing_attempts += 1
-
         if self.pairing_code != input_code:
-            self.save(update_fields=['pairing_attempts'])
             return False
 
         self.status = 'PAIRED'
         self.pairing_code = None
         self.pairing_code_expires_at = None
         self.pairing_attempts = 0
-        self.save()
+        self.save(update_fields=['status', 'pairing_code', 'pairing_code_expires_at', 'pairing_attempts'])
         return True
 
 

@@ -11,6 +11,7 @@ from .models import PluginRecord
 from . import plugin_manager
 
 
+@login_required
 def plugin_list(request):
     """
     插件列表视图
@@ -22,6 +23,7 @@ def plugin_list(request):
     return render(request, 'plugins/list.html', context)
 
 
+@login_required
 def plugin_detail(request, plugin_id):
     """
     插件详情视图

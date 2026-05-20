@@ -225,18 +225,20 @@ class StatsAPIView(LoginRequiredMixin, View):
 
     def _get_host_stats(self):
         """获取主机统计"""
-        hosts = Host.objects.all()
-        return {
-            "total": hosts.count(),
-            "online": hosts.filter(status="online").count(),
-            "offline": hosts.filter(status="offline").count(),
-            "error": hosts.filter(status="error").count(),
-            "by_type": dict(
-                hosts.values("host_type")
-                .annotate(count=Count("id"))
-                .values_list("host_type", "count")
-            ),
-        }
+        from django.db.models import Count, Q
+        stats = Host.objects.aggregate(
+            total=Count('id'),
+            online=Count('id', filter=Q(status='online')),
+            offline=Count('id', filter=Q(status='offline')),
+            error=Count('id', filter=Q(status='error')),
+        )
+        by_type = dict(
+            Host.objects.values("connection_type")
+            .annotate(count=Count("id"))
+            .values_list("connection_type", "count")
+        )
+        stats["by_type"] = by_type
+        return stats
 
     def _get_operation_stats(self):
         """获取操作统计"""
@@ -251,29 +253,31 @@ class StatsAPIView(LoginRequiredMixin, View):
 
     def _get_user_stats(self):
         """获取用户统计"""
-        users = User.objects.all()
+        from django.db.models import Count, Q
         seven_days_ago = timezone.now() - timedelta(days=7)
 
-        return {
-            "total": users.count(),
-            "active": users.filter(is_active=True).count(),
-            "recent_7_days": users.filter(date_joined__gte=seven_days_ago).count(),
-        }
+        return User.objects.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(is_active=True)),
+            recent_7_days=Count('id', filter=Q(date_joined__gte=seven_days_ago)),
+        )
 
     def _get_account_opening_stats(self):
         """获取开户统计"""
-        requests = AccountOpeningRequest.objects.all()
-        cloud_users = CloudComputerUser.objects.all()
+        from django.db.models import Count, Q
 
-        return {
-            "requests_total": requests.count(),
-            "requests_pending": requests.filter(status="pending").count(),
-            "requests_approved": requests.filter(status="approved").count(),
-            "requests_completed": requests.filter(status="completed").count(),
-            "requests_failed": requests.filter(status="failed").count(),
-            "cloud_users_total": cloud_users.count(),
-            "cloud_users_active": cloud_users.filter(status="active").count(),
-        }
+        request_stats = AccountOpeningRequest.objects.aggregate(
+            requests_total=Count('id'),
+            requests_pending=Count('id', filter=Q(status='pending')),
+            requests_approved=Count('id', filter=Q(status='approved')),
+            requests_completed=Count('id', filter=Q(status='completed')),
+            requests_failed=Count('id', filter=Q(status='failed')),
+        )
+        cloud_user_stats = CloudComputerUser.objects.aggregate(
+            cloud_users_total=Count('id'),
+            cloud_users_active=Count('id', filter=Q(status='active')),
+        )
+        return {**request_stats, **cloud_user_stats}
 
 
 class SystemConfigView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
