@@ -177,6 +177,11 @@ class Host(models.Model):
         if (self.auth_method == 'certificate'
                 and (not self.cert_pem_path
                      or not os.path.exists(self.cert_pem_path))):
+            import logging
+            logging.getLogger("2c2a").warning(
+                f"证书文件不存在，跳过连接测试: {self.name} "
+                f"(pem={self.cert_pem_path})"
+            )
             Host.objects.filter(pk=self.pk).update(status='pending')
             return
         
