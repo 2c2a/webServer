@@ -318,62 +318,32 @@ class AdminHostCreateView(TemplateView):
             request.POST, request.FILES
         )
         if form.is_valid():
-            init_token_value = form.cleaned_data.get('init_token', '')
-            logger.info(f"Wizard save: init_token={'yes' if init_token_value else 'no'}, value={init_token_value[:8] if init_token_value else 'N/A'}")
-            existing_host = None
-            if init_token_value:
-                from apps.bootstrap.models import InitialToken
-                try:
-                    token_obj = InitialToken.objects.get(token=init_token_value)
-                    if token_obj.host:
-                        existing_host = token_obj.host
-                except InitialToken.DoesNotExist:
-                    pass
+            host = form.save(commit=False)
+            host.created_by = request.user
+            host.save()
+            form.save_m2m()
 
-            if existing_host:
-                for field in ['name', 'os_type', 'hostname', 'connection_type',
-                              'auth_method', 'port', 'rdp_port', 'use_ssl',
-                              'username', 'description']:
-                    if field in form.cleaned_data:
-                        setattr(existing_host, field, form.cleaned_data[field])
-                pwd = form.cleaned_data.get('password', '')
-                if pwd:
-                    existing_host.password = pwd
-                existing_host.save()
-                form.instance = existing_host
-                form.save_m2m()
-                host = existing_host
-            else:
-                host = form.save(commit=False)
-                host.created_by = request.user
-                host.save()
-                form.save_m2m()
-
-            if init_token_value and not existing_host:
-                from apps.bootstrap.models import InitialToken
-                InitialToken.objects.filter(
-                    token=init_token_value,
-                    host__isnull=True,
-                ).update(host=host)
-
-            if init_token_value:
-                from apps.bootstrap.models import InitialToken
-                from apps.bootstrap.views import _save_cert_to_host
-                try:
-                    token_obj = InitialToken.objects.get(token=init_token_value)
-                    if token_obj.cert_data:
-                        cd = token_obj.cert_data
-                        _save_cert_to_host(
-                            host,
-                            cd.get('pfx_b64', ''),
-                            cd.get('pfx_password', ''),
-                            cd.get('service_user', ''),
-                            cd.get('service_password', ''),
-                        )
-                        token_obj.cert_data = None
-                        token_obj.save(update_fields=['cert_data'])
-                except InitialToken.DoesNotExist:
-                    pass
+            from apps.bootstrap.models import InitialToken
+            from apps.bootstrap.views import _save_cert_to_host
+            pending_tokens = InitialToken.objects.filter(
+                host__isnull=True,
+                cert_data__isnull=False,
+            ).exclude(cert_data=None)
+            for token_obj in pending_tokens:
+                cd = token_obj.cert_data
+                if not cd:
+                    continue
+                token_obj.host = host
+                token_obj.cert_data = None
+                token_obj.save(update_fields=['host', 'cert_data'])
+                _save_cert_to_host(
+                    host,
+                    cd.get('pfx_b64', ''),
+                    cd.get('pfx_password', ''),
+                    cd.get('service_user', ''),
+                    cd.get('service_password', ''),
+                )
+                break
 
             # 测试连接
             try:
