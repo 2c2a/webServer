@@ -1053,6 +1053,7 @@ def sse_init_status(request):
                         token_obj.host_id
                         if token_obj.host_id else None
                     ),
+                    'cert_uploaded': bool(token_obj.cert_data),
                 }
                 if status == 'CONSUMED' and token_obj.host:
                     host_status = Host.objects.filter(
@@ -1062,6 +1063,9 @@ def sse_init_status(request):
                     if host_status == 'online':
                         yield f"data: {_json.dumps(data)}\n\n"
                         return
+                if status == 'CONSUMED' and token_obj.cert_data and not token_obj.host:
+                    yield f"data: {_json.dumps(data)}\n\n"
+                    return
                 yield f"data: {_json.dumps(data)}\n\n"
                 if status == 'CONSUMED':
                     for _ in range(24):

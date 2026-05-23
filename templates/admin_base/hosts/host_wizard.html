@@ -507,6 +507,14 @@
                             <span class="material-symbols-rounded text-lg animate-spin text-cyan-400">progress_activity</span>
                             <span class="text-sm">H 端已连接，正在上传证书并测试连接...</span>
                         </div>
+                        <div x-show="initStatus === 'cert_uploaded'" x-transition class="mt-1">
+                            <x-admin-alert type="success" dismissible="false">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-rounded text-lg">check_circle</span>
+                                    <span class="text-sm font-medium">证书上传成功！保存主机后将完成配置</span>
+                                </div>
+                            </x-admin-alert>
+                        </div>
                         <div x-show="initStatus === 'connected'" x-transition class="mt-1">
                             <x-admin-alert type="success" dismissible="false">
                                 <div class="flex items-center gap-2">
@@ -876,6 +884,10 @@ function hostWizard() {
                     const data = JSON.parse(event.data);
                     if (data.host_status === 'online') {
                         this.initStatus = 'connected';
+                        es.close();
+                        this.initEventSource = null;
+                    } else if (data.cert_uploaded) {
+                        this.initStatus = 'cert_uploaded';
                         es.close();
                         this.initEventSource = null;
                     } else if (data.status === 'CONSUMED') {
