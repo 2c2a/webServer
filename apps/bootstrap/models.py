@@ -25,6 +25,7 @@ class InitialToken(models.Model):
     pairing_code_expires_at = models.DateTimeField(verbose_name="配对码过期时间", blank=True, null=True)
     pairing_attempts = models.IntegerField(default=0, verbose_name="配对码验证尝试次数")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    cert_data = models.JSONField(verbose_name="暂存证书数据", blank=True, null=True, default=None)
 
     class Meta:
         verbose_name = "初始令牌"

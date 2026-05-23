@@ -51,6 +51,56 @@ def _bootstrap_rate_limit(key_prefix, rate='10/m'):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+def _save_cert_to_host(host, pfx_b64, pfx_password, service_user, service_password):
+    import base64
+    from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
+
+    try:
+        pfx_data = base64.b64decode(pfx_b64)
+        private_key, certificate, _ = pkcs12.load_key_and_certificates(
+            pfx_data, pfx_password.encode()
+        )
+    except Exception as e:
+        logger.error(f"PFX decode failed for host {host.pk}: {e}")
+        return False
+
+    if not private_key or not certificate:
+        return False
+
+    import os
+    from django.conf import settings
+    cert_dir = os.path.join(settings.MEDIA_ROOT, 'certs', 'hosts', str(host.pk))
+    os.makedirs(cert_dir, exist_ok=True)
+
+    pem_path = os.path.join(cert_dir, 'client.pem')
+    key_path = os.path.join(cert_dir, 'client.key')
+
+    with open(pem_path, 'wb') as f:
+        f.write(certificate.public_bytes(Encoding.PEM))
+    with open(key_path, 'wb') as f:
+        f.write(private_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
+
+    os.chmod(pem_path, 0o600)
+    os.chmod(key_path, 0o600)
+
+    update_fields = {'cert_pem_path': pem_path, 'cert_key_path': key_path}
+    if service_user and service_password:
+        update_fields['username'] = service_user
+        from utils.crypto import encrypt_value
+        update_fields['password'] = encrypt_value(service_password)
+
+    from apps.hosts.models import Host
+    Host.objects.filter(pk=host.pk).update(**update_fields)
+
+    try:
+        host.refresh_from_db()
+        host.test_connection()
+    except Exception as e:
+        logger.warning(f"Connection test after cert upload failed: {e}")
+
+    return True
+
+
 def upload_host_cert(request):
     try:
         data = json.loads(request.body)
@@ -68,71 +118,24 @@ def upload_host_cert(request):
         except InitialToken.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Invalid token'}, status=401)
 
-        if not token_obj.host:
-            from apps.hosts.models import Host
-            client_ip = get_client_ip(request)
-            host = Host.objects.create(
-                name=f"Host-{token_obj.pk[:8]}",
-                hostname=client_ip or '0.0.0.0',
-                os_type='windows',
-                connection_type='winrm',
-                auth_method='certificate',
-                port=5986,
-                use_ssl=True,
-                status='pending',
+        if token_obj.host:
+            ok = _save_cert_to_host(
+                token_obj.host, pfx_b64, pfx_password,
+                service_user, service_password,
             )
-            token_obj.host = host
-            token_obj.save(update_fields=['host'])
-            logger.info(f"Auto-created host {host.pk} for token {token_obj.pk[:8]}")
+            if not ok:
+                return JsonResponse({'success': False, 'error': 'Invalid PFX data'}, status=400)
+        else:
+            token_obj.cert_data = {
+                'pfx_b64': pfx_b64,
+                'pfx_password': pfx_password,
+                'service_user': service_user,
+                'service_password': service_password,
+            }
+            token_obj.save(update_fields=['cert_data'])
+            logger.info(f"Cert data stored on token {token_obj.pk[:8]}, waiting for host association")
 
-        host = token_obj.host
-
-        import base64
-        from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
-
-        try:
-            pfx_data = base64.b64decode(pfx_b64)
-            private_key, certificate, _ = pkcs12.load_key_and_certificates(
-                pfx_data, pfx_password.encode()
-            )
-        except Exception as e:
-            logger.error(f"PFX decode failed for host {host.pk}: {e}")
-            return JsonResponse({'success': False, 'error': 'Invalid PFX data'}, status=400)
-
-        if not private_key or not certificate:
-            return JsonResponse({'success': False, 'error': 'PFX missing key or cert'}, status=400)
-
-        import os
-        from django.conf import settings
-        cert_dir = os.path.join(settings.MEDIA_ROOT, 'certs', 'hosts', str(host.pk))
-        os.makedirs(cert_dir, exist_ok=True)
-
-        pem_path = os.path.join(cert_dir, 'client.pem')
-        key_path = os.path.join(cert_dir, 'client.key')
-
-        with open(pem_path, 'wb') as f:
-            f.write(certificate.public_bytes(Encoding.PEM))
-        with open(key_path, 'wb') as f:
-            f.write(private_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
-
-        os.chmod(pem_path, 0o600)
-        os.chmod(key_path, 0o600)
-
-        update_fields = {'cert_pem_path': pem_path, 'cert_key_path': key_path}
-        if service_user and service_password:
-            update_fields['username'] = service_user
-            from utils.crypto import encrypt_value
-            update_fields['password'] = encrypt_value(service_password)
-
-        Host.objects.filter(pk=host.pk).update(**update_fields)
-
-        try:
-            host.refresh_from_db()
-            host.test_connection()
-        except Exception as e:
-            logger.warning(f"Connection test after cert upload failed: {e}")
-
-        logger.info(f"Cert uploaded for host {host.pk} ({host.name})")
+        logger.info(f"Cert uploaded for token {token_obj.pk[:8]}")
         return JsonResponse({'success': True})
 
     except Exception as e:

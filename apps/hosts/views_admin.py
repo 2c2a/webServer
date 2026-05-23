@@ -355,6 +355,25 @@ class AdminHostCreateView(TemplateView):
                     host__isnull=True,
                 ).update(host=host)
 
+            if init_token_value:
+                from apps.bootstrap.models import InitialToken
+                from apps.bootstrap.views import _save_cert_to_host
+                try:
+                    token_obj = InitialToken.objects.get(token=init_token_value)
+                    if token_obj.cert_data:
+                        cd = token_obj.cert_data
+                        _save_cert_to_host(
+                            host,
+                            cd.get('pfx_b64', ''),
+                            cd.get('pfx_password', ''),
+                            cd.get('service_user', ''),
+                            cd.get('service_password', ''),
+                        )
+                        token_obj.cert_data = None
+                        token_obj.save(update_fields=['cert_data'])
+                except InitialToken.DoesNotExist:
+                    pass
+
             # 测试连接
             try:
                 host.test_connection()
@@ -901,6 +920,11 @@ def admin_host_wizard_generate_init_command(request):
     InitialToken.objects.filter(
         host=None,
         status='ISSUED',
+    ).delete()
+
+    InitialToken.objects.filter(
+        expires_at__lt=timezone.now(),
+        host=None,
     ).delete()
 
     token = secrets.token_urlsafe(32)
