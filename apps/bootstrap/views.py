@@ -1070,13 +1070,19 @@ def sse_init_status(request):
                 if status == 'CONSUMED':
                     for _ in range(24):
                         time.sleep(5)
-                        host_status = Host.objects.filter(
-                            pk=token_obj.host_id
-                        ).values_list('status', flat=True).first()
-                        if host_status == 'online':
-                            data['host_status'] = host_status
+                        token_obj.refresh_from_db()
+                        if token_obj.cert_data and not token_obj.host:
+                            data['cert_uploaded'] = True
                             yield f"data: {_json.dumps(data)}\n\n"
                             return
+                        if token_obj.host:
+                            host_status = Host.objects.filter(
+                                pk=token_obj.host_id
+                            ).values_list('status', flat=True).first()
+                            data['host_status'] = host_status
+                            if host_status == 'online':
+                                yield f"data: {_json.dumps(data)}\n\n"
+                                return
                     return
             except InitialToken.DoesNotExist:
                 yield f"data: {_json.dumps({'status': 'NOT_FOUND'})}\n\n"
