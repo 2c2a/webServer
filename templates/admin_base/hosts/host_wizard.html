@@ -411,8 +411,6 @@
                                 </div>
                             </template>
 
-                            <input type="hidden" name="init_token" :value="initData ? initData.token : ''">
-
                             <template x-if="initError">
                                 <div>
                                     <x-admin-alert type="error" dismissible="true">
@@ -1037,8 +1035,14 @@ function hostWizard() {
 
         onSubmit() {
             if (this.initData && this.initData.token) {
-                const el = document.querySelector('input[name="init_token"]');
-                if (el) el.value = this.initData.token;
+                let el = this.$el.querySelector('input[name="init_token"]');
+                if (!el) {
+                    el = document.createElement('input');
+                    el.type = 'hidden';
+                    el.name = 'init_token';
+                    this.$el.appendChild(el);
+                }
+                el.value = this.initData.token;
             }
             this.$el.submit();
         },
