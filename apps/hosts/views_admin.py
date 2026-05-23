@@ -319,6 +319,7 @@ class AdminHostCreateView(TemplateView):
         )
         if form.is_valid():
             init_token_value = form.cleaned_data.get('init_token', '')
+            logger.info(f"Wizard save: init_token={'yes' if init_token_value else 'no'}, value={init_token_value[:8] if init_token_value else 'N/A'}")
             existing_host = None
             if init_token_value:
                 from apps.bootstrap.models import InitialToken

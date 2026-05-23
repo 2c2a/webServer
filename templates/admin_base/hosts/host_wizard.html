@@ -1036,6 +1036,10 @@ function hostWizard() {
         },
 
         onSubmit() {
+            if (this.initData && this.initData.token) {
+                const el = document.querySelector('input[name="init_token"]');
+                if (el) el.value = this.initData.token;
+            }
             this.$el.submit();
         },
     };
