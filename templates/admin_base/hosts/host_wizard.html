@@ -408,10 +408,10 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    <input type="hidden" name="init_token" x-model="initData.token">
                                 </div>
                             </template>
+
+                            <input type="hidden" name="init_token" :value="initData ? initData.token : ''">
 
                             <template x-if="initError">
                                 <div>
