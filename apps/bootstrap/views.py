@@ -49,8 +49,6 @@ def _bootstrap_rate_limit(key_prefix, rate='10/m'):
     return decorator
 
 
-@csrf_exempt
-@require_http_methods(["POST"])
 def _save_cert_to_host(host, pfx_b64, pfx_password, service_user, service_password):
     import base64
     from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
@@ -101,6 +99,8 @@ def _save_cert_to_host(host, pfx_b64, pfx_password, service_user, service_passwo
     return True
 
 
+@csrf_exempt
+@require_http_methods(["POST"])
 def upload_host_cert(request):
     try:
         data = json.loads(request.body)
