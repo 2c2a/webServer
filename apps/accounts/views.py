@@ -35,6 +35,17 @@ def get_theme_context():
     }
 
 
+def get_captcha_context(scene):
+    from apps.dashboard.models import SystemConfig
+    sc = SystemConfig.get_config()
+    captcha_provider, captcha_id, captcha_key = sc.get_captcha_config(scene=scene)
+    return {
+        'GEETEST_ID': captcha_id,
+        'CAPTCHA_PROVIDER': captcha_provider,
+        'TURNSTILE_SITE_KEY': captcha_key if captcha_provider == 'turnstile' else None,
+    }
+
+
 @method_decorator(rate_limit.register_rate_limit, name='dispatch')
 class RegisterView(CreateView):
     """用户注册视图"""
@@ -46,22 +57,8 @@ class RegisterView(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from apps.dashboard.models import SystemConfig
-        sc = SystemConfig.get_config()
-        # 使用与后端验证相同的逻辑来确定captcha_id
-        captcha_id, _ = geetest_utils._get_runtime_keys()
-        context['GEETEST_ID'] = captcha_id
-        # 获取注册场景的配置
-        captcha_provider, _, captcha_key = sc.get_captcha_config(scene='register')
-        context['CAPTCHA_PROVIDER'] = captcha_provider
-        # 仅在turnstile模式下提供turnstile的site key
-        if captcha_provider == 'turnstile':
-            context['TURNSTILE_SITE_KEY'] = captcha_key
-        else:
-            context['TURNSTILE_SITE_KEY'] = None
-        
+        context.update(get_captcha_context('register'))
         context.update(get_theme_context())
-        
         return context
 
     def form_valid(self, form):
@@ -78,8 +75,11 @@ class RegisterView(CreateView):
         import hmac
         cache_key = f'register_email_code:{email}'
         expected = cache.get(cache_key)
-        if not hmac.compare_digest(str(expected or ''), str(email_code or '')):
-            form.add_error(None, '邮箱验证码错误或已过期')
+        if expected is None:
+            form.add_error(None, '邮箱验证码已过期或不存在')
+            return self.form_invalid(form)
+        if not hmac.compare_digest(str(expected), str(email_code)):
+            form.add_error(None, '邮箱验证码错误')
             return self.form_invalid(form)
 
         # Optionally clear the code to prevent reuse
@@ -111,22 +111,10 @@ class LoginView(TemplateView):
         """获取模板上下文数据"""
         context = super().get_context_data(**kwargs)
         context['form'] = UserLoginForm()
-        from apps.dashboard.models import SystemConfig
-        sc = SystemConfig.get_config()
-        # 使用场景化配置获取登录场景的验证码设置
-        captcha_provider, captcha_id, captcha_key = sc.get_captcha_config(scene='login')
-        context['GEETEST_ID'] = captcha_id
-        context['CAPTCHA_PROVIDER'] = captcha_provider
-        if captcha_provider == 'turnstile':
-            context['TURNSTILE_SITE_KEY'] = captcha_key
-        else:
-            context['TURNSTILE_SITE_KEY'] = None
-        
+        context.update(get_captcha_context('login'))
         context['is_demo_mode'] = getattr(self.request, 'is_demo_mode', False)
         context['next'] = self.request.POST.get('next') or self.request.GET.get('next', '')
-        
         context.update(get_theme_context())
-        
         return context
 
     def post(self, request, *args, **kwargs):
@@ -557,18 +545,7 @@ class RegisterByLinkView(CreateView):
         context = super().get_context_data(**kwargs)
         context['reglink'] = self.reglink
         context['target_group'] = self.reglink.group
-        from apps.dashboard.models import SystemConfig
-        sc = SystemConfig.get_config()
-        # 获取邮箱验证码场景的配置（获取验证码需要行为验证）
-        captcha_provider, captcha_id, captcha_key = sc.get_captcha_config(
-            scene='email'
-        )
-        context['GEETEST_ID'] = captcha_id
-        context['CAPTCHA_PROVIDER'] = captcha_provider
-        if captcha_provider == 'turnstile':
-            context['TURNSTILE_SITE_KEY'] = captcha_key
-        else:
-            context['TURNSTILE_SITE_KEY'] = None
+        context.update(get_captcha_context('email'))
         context.update(get_theme_context())
         return context
 
@@ -582,10 +559,11 @@ class RegisterByLinkView(CreateView):
 
         cache_key = f'register_email_code:{email}'
         expected = cache.get(cache_key)
-        if not hmac.compare_digest(
-            str(expected or ''), str(email_code or '')
-        ):
-            form.add_error(None, '邮箱验证码错误或已过期')
+        if expected is None:
+            form.add_error(None, '邮箱验证码已过期或不存在')
+            return self.form_invalid(form)
+        if not hmac.compare_digest(str(expected), str(email_code)):
+            form.add_error(None, '邮箱验证码错误')
             return self.form_invalid(form)
 
         cache.delete(cache_key)
@@ -709,22 +687,8 @@ class ForgotPasswordView(TemplateView):
     def get_context_data(self, **kwargs):
         """获取模板上下文数据"""
         context = super().get_context_data(**kwargs)
-        from apps.dashboard.models import SystemConfig
-        sc = SystemConfig.get_config()
-        # 使用与后端验证相同的逻辑来确定captcha_id
-        captcha_id, _ = geetest_utils._get_runtime_keys()
-        context['GEETEST_ID'] = captcha_id
-        # 获取邮箱场景的配置
-        captcha_provider, _, captcha_key = sc.get_captcha_config(scene='email')
-        context['CAPTCHA_PROVIDER'] = captcha_provider
-        # 仅在turnstile模式下提供turnstile的site key
-        if captcha_provider == 'turnstile':
-            context['TURNSTILE_SITE_KEY'] = captcha_key
-        else:
-            context['TURNSTILE_SITE_KEY'] = None
-        
+        context.update(get_captcha_context('email'))
         context.update(get_theme_context())
-        
         return context
 
     def post(self, request, *args, **kwargs):
@@ -739,6 +703,31 @@ class ForgotPasswordView(TemplateView):
             messages.error(request, '请填写所有必需字段')
             return self.render_to_response(self.get_context_data())
 
+        # 1. 行为验证码
+        from .captcha_service import validate_captcha
+        is_valid, error_msg = validate_captcha(request, scene='email')
+        if not is_valid:
+            messages.error(request, error_msg)
+            return self.render_to_response(self.get_context_data())
+
+        # 2. 邮箱验证码
+        import hmac
+        cache_key = f'forgot_password_email_code:{email}'
+        expected = cache.get(cache_key)
+        if expected is None:
+            messages.error(request, '邮箱验证码已过期或不存在')
+            return self.render_to_response(self.get_context_data())
+        if not hmac.compare_digest(str(expected), str(email_code)):
+            messages.error(request, '邮箱验证码错误')
+            return self.render_to_response(self.get_context_data())
+
+        # 3. 用户存在性检查
+        user_exists = User.objects.filter(email=email).exists()
+        if not user_exists:
+            messages.success(request, '如果该邮箱已注册，密码重置邮件已发送')
+            return redirect('accounts:login')
+
+        # 4. 密码重置
         if new_password1 != new_password2:
             messages.error(request, '两次输入的密码不一致')
             return self.render_to_response(self.get_context_data())
@@ -749,26 +738,6 @@ class ForgotPasswordView(TemplateView):
             validate_password(new_password1)
         except ValError as e:
             messages.error(request, e.messages[0])
-            return self.render_to_response(self.get_context_data())
-
-        from .captcha_service import validate_captcha
-        import hmac
-        cache_key = f'forgot_password_email_code:{email}'
-        expected = cache.get(cache_key)
-        if not hmac.compare_digest(str(expected or ''), str(email_code or '')):
-            messages.error(request, '验证码错误或已过期')
-            return self.render_to_response(self.get_context_data())
-        
-        user_exists = User.objects.filter(email=email).exists()
-        if not user_exists:
-            messages.success(request, '如果该邮箱已注册，密码重置邮件已发送')
-            return redirect('accounts:login')
-        
-        from .captcha_service import validate_captcha
-        is_valid, error_msg = validate_captcha(request, scene='email')
-
-        if not is_valid:
-            messages.error(request, error_msg)
             return self.render_to_response(self.get_context_data())
         
         user = User.objects.get(email=email)

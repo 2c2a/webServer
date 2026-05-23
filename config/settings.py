@@ -190,12 +190,12 @@ INSTALLED_APPS += _discover_plugin_apps()
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'config.maintenance_middleware.MaintenanceModeMiddleware',
-    'config.local_lock_middleware.LocalLockMiddleware',
-    'config.security_middleware.SecurityHeadersMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'config.maintenance_middleware.MaintenanceModeMiddleware',
+    'config.local_lock_middleware.LocalLockMiddleware',
+    'config.security_middleware.SecurityHeadersMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

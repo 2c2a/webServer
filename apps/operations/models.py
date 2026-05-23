@@ -7,19 +7,13 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.utils import timezone
 from django.dispatch import Signal
+from utils.crypto import encrypt_value, decrypt_value
 import logging
-import hashlib
-import base64
 
 User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
-
-def _get_fernet():
-    from cryptography.fernet import Fernet
-    key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
-    return Fernet(base64.urlsafe_b64encode(key))
 
 # 定义开户申请提交前的信号
 account_opening_request_pre_submit = Signal()
@@ -951,14 +945,14 @@ class CloudComputerUser(models.Model):
         if not self._initial_password:
             return ''
         try:
-            return _get_fernet().decrypt(self._initial_password.encode()).decode()
-        except Exception:
+            return decrypt_value(self._initial_password)
+        except ValueError:
             raise ValueError("密码解密失败，数据可能已损坏或密钥已变更")
 
     @initial_password.setter
     def initial_password(self, value):
         if value:
-            self._initial_password = _get_fernet().encrypt(value.encode()).decode()
+            self._initial_password = encrypt_value(value)
         else:
             self._initial_password = ''
     password_viewed = models.BooleanField(

@@ -1,4 +1,5 @@
 {% extends "admin_base/base.html" %}
+{% load plugin_extensions %}
 
 {% block title %}2c2a 超级管理员 - 添加主机向导{% endblock %}
 
@@ -11,7 +12,6 @@
 {% block content %}
 <div x-data="hostWizard()" class="max-w-3xl mx-auto">
 
-    <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-white">添加主机</h1>
@@ -23,7 +23,6 @@
         </a>
     </div>
 
-    <!-- Step Indicator -->
     <div class="flex items-center justify-center gap-2 mb-8">
         <template x-for="s in 3" :key="s">
             <div class="flex items-center gap-2">
@@ -41,27 +40,21 @@
         </template>
     </div>
 
-    <!-- Step Labels -->
     <div class="flex items-center justify-between mb-8 px-2">
         <div :class="step >= 1 ? 'text-cyan-400' : 'text-white/70'" class="text-xs font-medium text-center w-20 transition">
             <span class="material-symbols-rounded text-base">info</span><br>基本信息
         </div>
         <div :class="step >= 2 ? 'text-cyan-400' : 'text-white/70'" class="text-xs font-medium text-center w-24 transition">
-            <span class="material-symbols-rounded text-base" x-text="connectionType === 'tunnel' ? 'terminal' : 'settings_ethernet'"></span><br>
-            <span x-text="connectionType === 'tunnel' ? '执行命令' : '连接配置'"></span>
+            <span class="material-symbols-rounded text-base">settings_ethernet</span><br>连接配置
         </div>
         <div :class="step >= 3 ? 'text-cyan-400' : 'text-white/70'" class="text-xs font-medium text-center w-20 transition">
             <span class="material-symbols-rounded text-base">admin_panel_settings</span><br>分配提供商
         </div>
     </div>
 
-    <!-- Form -->
-    <form method="post" @submit.prevent="onSubmit">
+    <form method="post" enctype="multipart/form-data" @submit.prevent="onSubmit">
         {% csrf_token %}
 
-        <input type="hidden" name="tunnel_token" id="id_tunnel_token" x-model="tunnelToken">
-
-        <!-- Non-field errors -->
         {% if form.non_field_errors %}
         <div class="mb-6">
             <x-admin-alert type="error" title="表单错误" dismissible="true">
@@ -74,7 +67,6 @@
         <div x-show="step === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8">
             <x-admin-card title="基本信息" icon="info">
                 <div class="space-y-5">
-                    <!-- Host Name -->
                     <div>
                         <label for="id_name" class="block text-sm font-medium text-white mb-2">
                             主机名称 <span class="text-red-400 ml-1">*</span>
@@ -86,7 +78,7 @@
                             x-model="name"
                             placeholder="输入主机名称，如: 北京服务器-01"
                             required
-                            class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
+                            class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
                         >
                         {% if form.name.errors %}
                         <div class="mt-1">
@@ -97,8 +89,34 @@
                         {% endif %}
                     </div>
 
-                    <!-- Hostname (hidden in tunnel mode) -->
-                    <div x-show="connectionType !== 'tunnel'" x-transition>
+                    <div>
+                        <label for="id_os_type" class="block text-sm font-medium text-white mb-2">
+                            主机系统 <span class="text-red-400 ml-1">*</span>
+                        </label>
+                        <div class="relative">
+                            <select
+                                name="os_type"
+                                id="id_os_type"
+                                x-model="osType"
+                                required
+                                class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 appearance-none focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition cursor-pointer"
+                            >
+                                {% for value, label in os_type_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">expand_more</span>
+                        </div>
+                        {% if form.os_type.errors %}
+                        <div class="mt-1">
+                            {% for error in form.os_type.errors %}
+                            <p class="text-sm text-red-400">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
                         <label for="id_hostname" class="block text-sm font-medium text-white mb-2">
                             主机地址 <span class="text-red-400 ml-1">*</span>
                         </label>
@@ -108,8 +126,8 @@
                             id="id_hostname"
                             x-model="hostname"
                             placeholder="输入主机地址，如: 192.168.1.100"
-                            :required="connectionType !== 'tunnel'"
-                            class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
+                            required
+                            class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
                         >
                         {% if form.hostname.errors %}
                         <div class="mt-1">
@@ -120,26 +138,32 @@
                         {% endif %}
                     </div>
 
-                    <!-- Connection Type -->
                     <div>
-                        <label for="id_connection_type" class="block text-sm font-medium text-white mb-2">
+                        <label class="block text-sm font-medium text-white mb-3">
                             连接类型 <span class="text-red-400 ml-1">*</span>
                         </label>
-                        <div class="relative">
-                            <select
-                                name="connection_type"
-                                id="id_connection_type"
-                                x-model="connectionType"
-                                x-on:change="onConnectionTypeChange()"
-                                required
-                                class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 text-white appearance-none focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition cursor-pointer"
+                        <div class="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                @click="connectionType = 'winrm'; onConnectionTypeChange()"
+                                :class="connectionType === 'winrm' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
+                                class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
                             >
-                                {% for value, label in connection_type_choices %}
-                                <option value="{{ value }}">{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">expand_more</span>
+                                <span class="material-symbols-rounded text-lg">settings_ethernet</span>
+                                WinRM
+                            </button>
+                            <button
+                                type="button"
+                                x-show="isLocalWinServer"
+                                @click="connectionType = 'localwinserver'; onConnectionTypeChange()"
+                                :class="connectionType === 'localwinserver' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
+                                class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
+                            >
+                                <span class="material-symbols-rounded text-lg">dns</span>
+                                本地WinServer
+                            </button>
                         </div>
+                        <input type="hidden" name="connection_type" x-model="connectionType">
                         {% if form.connection_type.errors %}
                         <div class="mt-1">
                             {% for error in form.connection_type.errors %}
@@ -148,26 +172,18 @@
                         </div>
                         {% endif %}
                     </div>
-
-                    <!-- Tunnel Info Alert -->
-                    <div x-show="connectionType === 'tunnel'" x-transition>
-                        <x-admin-alert type="info" title="隧道模式说明" dismissible="false">
-                            隧道模式适用于无公网IP的主机。主机将通过隧道客户端主动连接到服务器，无需开放入站端口。创建后将自动生成隧道Token和一键执行命令。
-                        </x-admin-alert>
-                    </div>
                 </div>
             </x-admin-card>
         </div>
 
-        <!-- Step 2: Connection Config (non-tunnel) -->
-        <div x-show="step === 2 && connectionType !== 'tunnel'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8">
+        <!-- Step 2: Connection Config -->
+        <div x-show="step === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8">
             <x-admin-card title="连接配置" icon="settings_ethernet">
                 <div class="space-y-5">
-                    <!-- Port & RDP Port -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
                             <label for="id_port" class="block text-sm font-medium text-white mb-2">
-                                连接端口 <span class="text-red-400 ml-1">*</span>
+                                WinRM端口 <span class="text-red-400 ml-1">*</span>
                             </label>
                             <input
                                 type="number"
@@ -175,7 +191,7 @@
                                 id="id_port"
                                 x-model.number="port"
                                 required
-                                class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
+                                class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
                             >
                             <p class="mt-1 text-sm text-white/70" x-text="portHint"></p>
                             {% if form.port.errors %}
@@ -196,7 +212,7 @@
                                 name="rdp_port"
                                 id="id_rdp_port"
                                 x-model.number="rdpPort"
-                                class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
+                                class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
                             >
                             {% if form.rdp_port.errors %}
                             <div class="mt-1">
@@ -208,77 +224,258 @@
                         </div>
                     </div>
 
-                    <!-- Use SSL -->
                     <div class="flex items-center gap-3">
                         <input
                             type="checkbox"
                             name="use_ssl"
                             id="id_use_ssl"
                             x-model="useSsl"
-                            class="w-5 h-5 rounded border-slate-700/50 bg-slate-900/50 text-cyan-400 focus:ring-cyan-500 focus:ring-2 transition cursor-pointer accent-md-primary"
+                            class="w-5 h-5 rounded border-slate-700/50 bg-slate-900/50 text-cyan-400 focus:ring-cyan-500 focus:ring-2 transition cursor-pointer accent-cyan-500"
                         >
-                        <label for="id_use_ssl" class="text-sm text-white cursor-pointer">使用SSL加密连接</label>
+                        <label for="id_use_ssl" class="text-sm text-white cursor-pointer">使用SSL加密连接（如果你不知道这是什么，请不要开启！）</label>
                         <span x-show="port === 5986" class="text-xs text-cyan-400">(端口5986通常需要SSL)</span>
                     </div>
 
-                    <!-- Username -->
-                    <div>
-                        <label for="id_username" class="block text-sm font-medium text-white mb-2">
-                            用户名 <span class="text-red-400 ml-1">*</span>
+                    <div x-show="connectionType === 'winrm'" class="pt-4 border-t border-slate-700/50">
+                        <label class="block text-sm font-medium text-white mb-3">
+                            连接方式 <span class="text-red-400 ml-1">*</span>
                         </label>
-                        <input
-                            type="text"
-                            name="username"
-                            id="id_username"
-                            x-model="username"
-                            placeholder="输入连接用户名，如: Administrator"
-                            required
-                            class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
-                        >
-                        {% if form.username.errors %}
-                        <div class="mt-1">
-                            {% for error in form.username.errors %}
-                            <p class="text-sm text-red-400">{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Password -->
-                    <div>
-                        <label for="id_password" class="block text-sm font-medium text-white mb-2">
-                            密码
-                        </label>
-                        <div class="relative">
-                            <input
-                                type="password"
-                                name="password"
-                                id="id_password"
-                                x-model="password"
-                                placeholder="输入密码或留空自动生成"
-                                autocomplete="new-password"
-                                class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
-                            >
+                        <div class="grid grid-cols-2 gap-3">
                             <button
                                 type="button"
-                                @click="togglePasswordVisibility()"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition"
+                                @click="authMethod = 'ntlm'"
+                                :class="authMethod === 'ntlm' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
+                                class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
                             >
-                                <span class="material-symbols-rounded text-lg" x-text="showPassword ? 'visibility_off' : 'visibility'">visibility</span>
+                                <span class="material-symbols-rounded text-lg">password</span>
+                                管理员账户密码（更方便）
+                            </button>
+                            <button
+                                type="button"
+                                @click="authMethod = 'certificate'"
+                                :class="authMethod === 'certificate' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
+                                class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
+                            >
+                                <span class="material-symbols-rounded text-lg">license</span>
+                                证书（安全性更强）
                             </button>
                         </div>
-                        <p class="mt-1 text-sm text-white/70">留空将自动生成随机密码</p>
-                        {% if form.password.errors %}
-                        <div class="mt-1">
-                            {% for error in form.password.errors %}
-                            <p class="text-sm text-red-400">{{ error }}</p>
-                            {% endfor %}
+                    </div>
+
+                    <div x-show="connectionType === 'localwinserver'" class="pt-4 border-t border-slate-700/50">
+                    </div>
+
+                    <input type="hidden" name="auth_method" x-model="authMethod">
+
+                    <!-- NTLM Auth Section -->
+                    <div x-show="authMethod === 'ntlm' && (connectionType === 'winrm' || connectionType === 'localwinserver')" x-transition class="space-y-5">
+                        <div>
+                            <label for="id_username" class="block text-sm font-medium text-white mb-2">
+                                用户名 <span class="text-red-400 ml-1">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="username"
+                                id="id_username"
+                                x-model="username"
+                                placeholder="输入连接用户名，如: Administrator"
+                                class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
+                            >
+                            {% if form.username.errors %}
+                            <div class="mt-1">
+                                {% for error in form.username.errors %}
+                                <p class="text-sm text-red-400">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
+
+                        <div>
+                            <label for="id_password" class="block text-sm font-medium text-white mb-2">
+                                密码 <span class="text-red-400 ml-1">*</span>
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="password"
+                                    name="password"
+                                    id="id_password"
+                                    x-model="password"
+                                    placeholder="输入远程主机登录密码"
+                                    autocomplete="new-password"
+                                    class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 pr-12 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition"
+                                >
+                                <button
+                                    type="button"
+                                    @click="togglePasswordVisibility()"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition"
+                                >
+                                    <span class="material-symbols-rounded text-lg" x-text="showPassword ? 'visibility_off' : 'visibility'">visibility</span>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                            <div class="mt-1">
+                                {% for error in form.password.errors %}
+                                <p class="text-sm text-red-400">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Certificate Auth Section -->
+                    <div x-show="authMethod === 'certificate' && connectionType === 'winrm'" x-transition class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-medium text-white mb-3">
+                                配置方式 <span class="text-red-400 ml-1">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    @click="certConfigMethod = 'quick'"
+                                    :class="certConfigMethod === 'quick' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
+                                    class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
+                                >
+                                    <span class="material-symbols-rounded text-lg">bolt</span>
+                                    快速配置
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="certConfigMethod = 'manual'"
+                                    :class="certConfigMethod === 'manual' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
+                                    class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
+                                >
+                                    <span class="material-symbols-rounded text-lg">upload_file</span>
+                                    手动上传证书
+                                </button>
+                            </div>
+                            <input type="hidden" name="cert_config_method" x-model="certConfigMethod">
+                        </div>
+
+                        <!-- Quick Config -->
+                        <div x-show="certConfigMethod === 'quick'" x-transition class="space-y-4">
+                            <x-admin-alert type="info" title="快速配置" dismissible="false">
+                                <div class="text-sm">
+                                    <p>点击下方按钮生成初始化命令，在目标主机上以<b>管理员权限</b>运行即可。</p>
+                                </div>
+                            </x-admin-alert>
+
+                            <button
+                                type="button"
+                                @click="generateInitCommand()"
+                                :disabled="initLoading"
+                                class="inline-flex items-center gap-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-md px-4 py-2 backdrop-blur-xl transition font-medium border border-cyan-500/30 disabled:opacity-50"
+                            >
+                                <span class="material-symbols-rounded text-lg" :class="{ 'animate-spin': initLoading }" x-text="initLoading ? 'progress_activity' : 'bolt'"></span>
+                                <span x-text="initLoading ? '生成中...' : '生成初始化命令'"></span>
+                            </button>
+
+                            <template x-if="initData">
+                                <div class="space-y-4">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="text-sm font-medium text-white">一行命令（推荐）</label>
+                                            <button type="button" @click="copyText(initData.one_liner, 'initOneLiner')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
+                                                <span class="material-symbols-rounded text-sm" x-text="copiedInitOneLiner ? 'check' : 'content_copy'"></span>
+                                                <span x-text="copiedInitOneLiner ? '已复制' : '复制'"></span>
+                                            </button>
+                                        </div>
+                                        <div class="bg-slate-950/50 border border-slate-700/50 rounded-md overflow-hidden">
+                                            <div class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
+                                                <span class="material-symbols-rounded text-sm">terminal</span>
+                                                <span class="text-xs text-white/50 font-mono">PowerShell (管理员)</span>
+                                            </div>
+                                            <div class="p-4 overflow-x-auto">
+                                                <code class="text-sm text-green-400 font-mono whitespace-pre-wrap break-all" x-text="initData.one_liner"></code>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="text-sm font-medium text-white/70">备用命令</label>
+                                            <button type="button" @click="copyText(initData.fallback_command, 'initFallback')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
+                                                <span class="material-symbols-rounded text-sm" x-text="copiedInitFallback ? 'check' : 'content_copy'"></span>
+                                                <span x-text="copiedInitFallback ? '已复制' : '复制'"></span>
+                                            </button>
+                                        </div>
+                                        <div class="bg-slate-950/50 border border-slate-700/50 rounded-md overflow-hidden">
+                                            <div class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
+                                                <span class="material-symbols-rounded text-sm">terminal</span>
+                                                <span class="text-xs text-white/50 font-mono">PowerShell (管理员)</span>
+                                            </div>
+                                            <div class="p-4 overflow-x-auto">
+                                                <code class="text-sm text-yellow-400 font-mono whitespace-pre-wrap break-all" x-text="initData.fallback_command"></code>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <input type="hidden" name="init_token" x-model="initData.token">
+                                </div>
+                            </template>
+
+                            <template x-if="initError">
+                                <div>
+                                    <x-admin-alert type="error" dismissible="true">
+                                        <span x-text="initError"></span>
+                                    </x-admin-alert>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Manual Upload -->
+                        <div x-show="certConfigMethod === 'manual'" x-transition class="space-y-4">
+                            <x-admin-alert type="info" title="证书要求" dismissible="false">
+                                <div class="space-y-1 text-sm">
+                                    <p>请上传PEM格式的客户端证书和私钥文件</p>
+                                </div>
+                            </x-admin-alert>
+                            <div>
+                                <label for="id_cert_pem" class="block text-sm font-medium text-white mb-2">
+                                    客户端证书(公钥) <span class="text-red-400 ml-1">*</span>
+                                </label>
+                                <input
+                                    type="file"
+                                    name="cert_pem"
+                                    id="id_cert_pem"
+                                    accept=".pem,.cer,.crt,.cert"
+                                    @change="onCertPemChange($event)"
+                                    class="w-full text-sm text-slate-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-cyan-600/20 file:text-cyan-400 hover:file:bg-cyan-600/30 file:cursor-pointer cursor-pointer"
+                                >
+                                <p class="mt-1 text-xs text-white/50" x-show="certPemFileName" x-text="certPemFileName"></p>
+                                {% if form.cert_pem.errors %}
+                                <div class="mt-1">
+                                    {% for error in form.cert_pem.errors %}
+                                    <p class="text-sm text-red-400">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label for="id_cert_key" class="block text-sm font-medium text-white mb-2">
+                                    客户端私钥 <span class="text-red-400 ml-1">*</span>
+                                </label>
+                                <input
+                                    type="file"
+                                    name="cert_key"
+                                    id="id_cert_key"
+                                    accept=".pem,.key"
+                                    @change="onCertKeyChange($event)"
+                                    class="w-full text-sm text-slate-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-cyan-600/20 file:text-cyan-400 hover:file:bg-cyan-600/30 file:cursor-pointer cursor-pointer"
+                                >
+                                <p class="mt-1 text-xs text-white/50" x-show="certKeyFileName" x-text="certKeyFileName"></p>
+                                {% if form.cert_key.errors %}
+                                <div class="mt-1">
+                                    {% for error in form.cert_key.errors %}
+                                    <p class="text-sm text-red-400">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Test Connection -->
-                    <div class="pt-3 border-t border-slate-700/50">
+                    <div class="pt-3 border-t border-slate-700/50" x-show="authMethod === 'ntlm' && (connectionType === 'winrm' || connectionType === 'localwinserver')">
                         <button
                             type="button"
                             @click="testConnection()"
@@ -299,125 +496,34 @@
                             </x-admin-alert>
                         </div>
                     </div>
-                </div>
-            </x-admin-card>
-        </div>
 
-        <!-- Step 2: Execute Command (tunnel mode) -->
-        <div x-show="step === 2 && connectionType === 'tunnel'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8">
-            <x-admin-card title="执行命令" icon="terminal">
-                <div class="space-y-5">
-
-                    <!-- Loading state -->
-                    <div x-show="!tunnelToken" class="flex flex-col items-center py-8">
-                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-400 mb-4"></div>
-                        <p class="text-white/70 text-sm">正在生成隧道Token...</p>
-                    </div>
-
-                    <!-- Command content -->
-                    <div x-show="tunnelToken" x-transition>
-                        <!-- Instructions -->
-                        <div class="mb-5">
-                            <x-admin-alert type="info" title="使用说明" dismissible="false">
-                                <div class="space-y-1 text-sm">
-                                    <p>1. 在目标主机上以<b>管理员权限</b>打开 PowerShell 或命令提示符</p>
-                                    <p>2. 复制下方的一键执行命令并运行</p>
-                                    <p>3. 命令将自动下载Gateway客户端并使用Token建立隧道连接</p>
+                    <!-- Certificate Auth: Init Status -->
+                    <div class="pt-3 border-t border-slate-700/50" x-show="authMethod === 'certificate' && connectionType === 'winrm' && initData">
+                        <div x-show="initStatus === 'waiting'" class="flex items-center gap-3 text-white/70">
+                            <span class="material-symbols-rounded text-lg animate-spin text-cyan-400">progress_activity</span>
+                            <span class="text-sm">等待目标主机连接...</span>
+                        </div>
+                        <div x-show="initStatus === 'cert_uploading'" class="flex items-center gap-3 text-white/70">
+                            <span class="material-symbols-rounded text-lg animate-spin text-cyan-400">progress_activity</span>
+                            <span class="text-sm">H 端已连接，正在上传证书并测试连接...</span>
+                        </div>
+                        <div x-show="initStatus === 'connected'" x-transition class="mt-1">
+                            <x-admin-alert type="success" dismissible="false">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-rounded text-lg">check_circle</span>
+                                    <span class="text-sm font-medium">H 端初始化成功！目标主机已完成配置</span>
                                 </div>
                             </x-admin-alert>
                         </div>
-
-                        <!-- Shell Type Selection -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-white mb-3">选择命令行类型</label>
-                            <div class="flex gap-3">
-                                <button
-                                    type="button"
-                                    @click="shellType = 'powershell'"
-                                    :class="shellType === 'powershell' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
-                                    class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
-                                >
-                                    <span class="material-symbols-rounded text-lg">terminal</span>
-                                    PowerShell
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="shellType = 'cmd'"
-                                    :class="shellType === 'cmd' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
-                                    class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
-                                >
-                                    <span class="material-symbols-rounded text-lg">code</span>
-                                    Cmd
-                                </button>
-                            </div>
+                        <div x-show="initStatus === 'timeout'" x-transition class="mt-1">
+                            <x-admin-alert type="warning" dismissible="true">
+                                等待超时，目标主机未在有效时间内完成初始化。请确认命令已在目标主机上运行。
+                            </x-admin-alert>
                         </div>
-
-                        <!-- Architecture Selection -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-white mb-3">系统架构</label>
-                            <div class="flex gap-3">
-                                <button
-                                    type="button"
-                                    @click="arch = 'amd64'"
-                                    :class="arch === 'amd64' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
-                                    class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
-                                >
-                                    <span class="material-symbols-rounded text-lg">memory</span>
-                                    x64 (amd64)
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="arch = 'arm64'"
-                                    :class="arch === 'arm64' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
-                                    class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
-                                >
-                                    <span class="material-symbols-rounded text-lg">memory</span>
-                                    ARM64
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Command Display -->
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="text-sm font-medium text-white">一键执行命令</label>
-                                <button
-                                    type="button"
-                                    @click="copyCommand()"
-                                    class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium"
-                                >
-                                    <span class="material-symbols-rounded text-sm" x-text="commandCopied ? 'check' : 'content_copy'">content_copy</span>
-                                    <span x-text="commandCopied ? '已复制' : '复制命令'">复制命令</span>
-                                </button>
-                            </div>
-                            <div class="relative bg-slate-950/50 border border-slate-700/50 rounded-md overflow-hidden">
-                                <div class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
-                                    <span class="material-symbols-rounded text-sm" x-text="shellType === 'powershell' ? 'terminal' : 'code'">terminal</span>
-                                    <span class="text-xs text-white/50 font-mono" x-text="shellType === 'powershell' ? 'PowerShell' : 'Command Prompt'"></span>
-                                </div>
-                                <div class="p-4 overflow-x-auto">
-                                    <code class="text-sm text-green-400 font-mono whitespace-pre-wrap break-all" x-text="tunnelCommand"></code>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Token Display -->
-                        <div class="pt-3 border-t border-slate-700/50">
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="text-sm font-medium text-white">隧道Token</label>
-                                <button
-                                    type="button"
-                                    @click="copyToken()"
-                                    class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium"
-                                >
-                                    <span class="material-symbols-rounded text-sm" x-text="tokenCopied ? 'check' : 'content_copy'">content_copy</span>
-                                    <span x-text="tokenCopied ? '已复制' : '复制'">复制</span>
-                                </button>
-                            </div>
-                            <div class="bg-slate-950/50 border border-slate-700/50 rounded-md px-4 py-3">
-                                <code class="text-sm text-amber-400 font-mono break-all" x-text="tunnelToken"></code>
-                            </div>
-                            <p class="mt-2 text-xs text-white/50">请妥善保管此Token，它用于唯一标识和认证隧道连接</p>
+                        <div x-show="initStatus === 'error'" x-transition class="mt-1">
+                            <x-admin-alert type="error" dismissible="true">
+                                <span x-text="initStatusError"></span>
+                            </x-admin-alert>
                         </div>
                     </div>
                 </div>
@@ -428,7 +534,6 @@
         <div x-show="step === 3" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8">
             <x-admin-card title="分配提供商" icon="admin_panel_settings">
                 <div class="space-y-5">
-                    <!-- Provider Selection -->
                     <div>
                         <label class="block text-sm font-medium text-white mb-3">
                             选择管理提供商
@@ -448,7 +553,7 @@
                                         name="providers"
                                         value="{{ provider.id }}"
                                         x-model.number="selectedProviders"
-                                        class="w-5 h-5 rounded border-slate-700/50 bg-slate-900/50 text-cyan-400 focus:ring-cyan-500 focus:ring-2 transition accent-md-primary"
+                                        class="w-5 h-5 rounded border-slate-700/50 bg-slate-900/50 text-cyan-400 focus:ring-cyan-500 focus:ring-2 transition accent-cyan-500"
                                     >
                                     <span class="text-sm text-white font-medium">{{ provider.username }}</span>
                                 </div>
@@ -475,7 +580,6 @@
                         {% endif %}
                     </div>
 
-                    <!-- Description -->
                     <div class="pt-4 border-t border-slate-700/50">
                         <label for="id_description" class="block text-sm font-medium text-white mb-2">
                             描述
@@ -486,11 +590,10 @@
                             x-model="description"
                             rows="3"
                             placeholder="输入主机描述（可选）"
-                            class="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-md px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition resize-y"
+                            class="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition resize-y"
                         ></textarea>
                     </div>
 
-                    <!-- Summary Preview -->
                     <div class="pt-4 border-t border-slate-700/50">
                         <h3 class="text-sm font-medium text-white mb-3 flex items-center gap-2">
                             <span class="material-symbols-rounded text-cyan-400 text-lg">summarize</span>
@@ -501,7 +604,11 @@
                                 <span class="text-white/70">主机名称</span>
                                 <span class="text-white font-medium" x-text="name || '-'"></span>
                             </div>
-                            <div x-show="connectionType !== 'tunnel'" class="flex justify-between">
+                            <div class="flex justify-between">
+                                <span class="text-white/70">主机系统</span>
+                                <span class="text-white font-medium" x-text="osTypeLabel"></span>
+                            </div>
+                            <div class="flex justify-between">
                                 <span class="text-white/70">主机地址</span>
                                 <span class="text-white font-medium" x-text="hostname || '-'"></span>
                             </div>
@@ -509,16 +616,20 @@
                                 <span class="text-white/70">连接类型</span>
                                 <span class="text-white font-medium" x-text="connectionTypeLabel"></span>
                             </div>
-                            <template x-if="connectionType !== 'tunnel'">
+                            <div class="flex justify-between">
+                                <span class="text-white/70">端口</span>
+                                <span class="text-white font-medium" x-text="port"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-white/70">SSL</span>
+                                <span class="text-white font-medium" x-text="useSsl ? '是' : '否'"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-white/70">连接方式</span>
+                                <span class="text-white font-medium" x-text="authMethodLabel"></span>
+                            </div>
+                            <template x-if="authMethod === 'ntlm'">
                                 <div>
-                                    <div class="flex justify-between">
-                                        <span class="text-white/70">端口</span>
-                                        <span class="text-white font-medium" x-text="port"></span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-white/70">SSL</span>
-                                        <span class="text-white font-medium" x-text="useSsl ? '是' : '否'"></span>
-                                    </div>
                                     <div class="flex justify-between">
                                         <span class="text-white/70">用户名</span>
                                         <span class="text-white font-medium" x-text="username || '-'"></span>
@@ -529,15 +640,15 @@
                                     </div>
                                 </div>
                             </template>
-                            <template x-if="connectionType === 'tunnel'">
+                            <template x-if="authMethod === 'certificate'">
                                 <div>
                                     <div class="flex justify-between">
-                                        <span class="text-white/70">隧道Token</span>
-                                        <span class="text-white font-medium text-xs font-mono" x-text="tunnelToken ? tunnelToken.substring(0, 12) + '...' : '待生成'"></span>
+                                        <span class="text-white/70">证书</span>
+                                        <span class="text-white font-medium" x-text="certPemFileName || '未上传'"></span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-white/70">Gateway</span>
-                                        <span class="text-white font-medium text-xs font-mono" x-text="gatewayUrl"></span>
+                                        <span class="text-white/70">私钥</span>
+                                        <span class="text-white font-medium" x-text="certKeyFileName || '未上传'"></span>
                                     </div>
                                 </div>
                             </template>
@@ -588,14 +699,19 @@
         </div>
     </form>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 function hostWizard() {
     return {
         step: 1,
         name: '',
+        osType: 'windows',
         hostname: '',
         connectionType: 'winrm',
+        authMethod: 'ntlm',
+        certConfigMethod: 'quick',
         port: 5985,
         rdpPort: 3389,
         useSsl: false,
@@ -607,49 +723,53 @@ function hostWizard() {
         testingConnection: false,
         testResult: null,
         testSuccess: false,
-
-        tunnelToken: '',
-        gatewayUrl: '{{ gateway_url }}',
-        serverBaseUrl: '{{ server_base_url }}',
-        shellType: 'powershell',
-        arch: 'amd64',
-        commandCopied: false,
-        tokenCopied: false,
+        certPemFileName: '',
+        certKeyFileName: '',
+        initLoading: false,
+        initData: null,
+        initError: null,
+        initStatus: null,
+        initStatusError: '',
+        initEventSource: null,
+        copiedInitOneLiner: false,
+        copiedInitFallback: false,
+        isLocalWinServer: {{ is_local_winserver|default:'false' }},
 
         defaultPorts: {{ default_ports|safe }},
         defaultSsl: {{ default_ssl|safe }},
 
+        osTypeLabels: {
+            {% for value, label in os_type_choices %}
+            '{{ value }}': '{{ label }}',
+            {% endfor %}
+        },
         connectionTypeLabels: {
             {% for value, label in connection_type_choices %}
             '{{ value }}': '{{ label }}',
             {% endfor %}
         },
+        authMethodLabels: {
+            {% for value, label in auth_method_choices %}
+            '{{ value }}': '{{ label }}',
+            {% endfor %}
+        },
 
+        get osTypeLabel() {
+            return this.osTypeLabels[this.osType] || this.osType;
+        },
         get connectionTypeLabel() {
             return this.connectionTypeLabels[this.connectionType] || this.connectionType;
+        },
+        get authMethodLabel() {
+            return this.authMethodLabels[this.authMethod] || this.authMethod;
         },
 
         get portHint() {
             const hints = {
                 'winrm': 'WinRM默认: 5985(HTTP) / 5986(HTTPS)',
-                'ssh': 'SSH默认: 22',
                 'localwinserver': '本地WinServer默认: 5985',
-                'tunnel': '隧道模式默认: 5985',
             };
             return hints[this.connectionType] || '';
-        },
-
-        get tunnelCommand() {
-            if (!this.tunnelToken) return '';
-            const downloadUrl = `${this.serverBaseUrl}/tunnel/download/?arch=${this.arch}`;
-            const gatewayUrl = this.gatewayUrl;
-            const token = this.tunnelToken;
-
-            if (this.shellType === 'powershell') {
-                return `Invoke-WebRequest -Uri "${downloadUrl}" -OutFile "2c2a-tunnel.exe"; .\\2c2a-tunnel.exe install -token ${token} -server ${gatewayUrl}`;
-            } else {
-                return `curl -o 2c2a-tunnel.exe ${downloadUrl} && 2c2a-tunnel.exe install -token ${token} -server ${gatewayUrl}`;
-            }
         },
 
         onConnectionTypeChange() {
@@ -664,6 +784,43 @@ function hostWizard() {
             if (this.port === 5986) {
                 this.useSsl = true;
             }
+            if (this.connectionType === 'localwinserver') {
+                this.authMethod = 'ntlm';
+            }
+        },
+
+        onAuthMethodChange() {
+            if (this.authMethod === 'certificate') {
+                this.certConfigMethod = 'quick';
+            }
+        },
+
+        onCertPemChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.certPemFileName = file.name;
+                const validExts = ['.pem', '.cer', '.crt', '.cert'];
+                const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                if (!validExts.includes(ext)) {
+                    this.certPemFileName = file.name + ' (格式可能不正确，请上传PEM格式文件)';
+                }
+            } else {
+                this.certPemFileName = '';
+            }
+        },
+
+        onCertKeyChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.certKeyFileName = file.name;
+                const validExts = ['.pem', '.key'];
+                const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                if (!validExts.includes(ext)) {
+                    this.certKeyFileName = file.name + ' (格式可能不正确，请上传PEM格式文件)';
+                }
+            } else {
+                this.certKeyFileName = '';
+            }
         },
 
         togglePasswordVisibility() {
@@ -672,39 +829,90 @@ function hostWizard() {
             input.type = this.showPassword ? 'text' : 'password';
         },
 
-        async generateTunnelToken() {
-            try {
-                const response = await fetch('{% url "admin:admin_hosts:host_wizard_generate_token" %}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                        'Content-Type': 'application/json',
-                    },
-                });
-                const data = await response.json();
-                if (data.success) {
-                    this.tunnelToken = data.tunnel_token;
-                    this.gatewayUrl = data.gateway_url;
-                    this.serverBaseUrl = data.server_base_url;
-                }
-            } catch (e) {
-                console.error('Failed to generate tunnel token:', e);
+        generateInitCommand() {
+            if (this.initLoading) return;
+            this.initLoading = true;
+            this.initError = null;
+            this.initStatus = null;
+            if (this.initEventSource) {
+                this.initEventSource.close();
+                this.initEventSource = null;
             }
-        },
 
-        copyCommand() {
-            if (!this.tunnelCommand) return;
-            navigator.clipboard.writeText(this.tunnelCommand).then(() => {
-                this.commandCopied = true;
-                setTimeout(() => { this.commandCopied = false; }, 2000);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                || document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+
+            fetch('{% url "admin:admin_hosts:host_wizard_generate_init_command" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                this.initLoading = false;
+                if (data.success) {
+                    this.initData = data.data;
+                    this.initStatus = 'waiting';
+                    this.startInitStatusSSE(data.data.token);
+                } else {
+                    this.initError = data.error || '生成失败';
+                }
+            })
+            .catch(err => {
+                this.initLoading = false;
+                this.initError = '请求失败: ' + err.message;
             });
         },
 
-        copyToken() {
-            if (!this.tunnelToken) return;
-            navigator.clipboard.writeText(this.tunnelToken).then(() => {
-                this.tokenCopied = true;
-                setTimeout(() => { this.tokenCopied = false; }, 2000);
+        startInitStatusSSE(token) {
+            const url = '{% url "bootstrap:sse_init_status" %}?token=' + encodeURIComponent(token);
+            const es = new EventSource(url);
+            this.initEventSource = es;
+
+            es.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.host_status === 'online') {
+                        this.initStatus = 'connected';
+                        es.close();
+                        this.initEventSource = null;
+                    } else if (data.status === 'CONSUMED') {
+                        this.initStatus = 'cert_uploading';
+                    } else if (data.status === 'NOT_FOUND') {
+                        this.initStatus = 'error';
+                        this.initStatusError = '令牌不存在或已过期';
+                        es.close();
+                        this.initEventSource = null;
+                    } else if (data.status === 'TIMEOUT') {
+                        this.initStatus = 'timeout';
+                        es.close();
+                        this.initEventSource = null;
+                    } else {
+                        this.initStatus = 'waiting';
+                    }
+                } catch (e) {}
+            };
+
+            es.onerror = () => {
+                es.close();
+                this.initEventSource = null;
+                if (this.initStatus === 'waiting') {
+                    this.initStatus = 'timeout';
+                }
+            };
+        },
+
+        copyText(text, type) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (type === 'initOneLiner') {
+                    this.copiedInitOneLiner = true;
+                    setTimeout(() => { this.copiedInitOneLiner = false; }, 2000);
+                } else if (type === 'initFallback') {
+                    this.copiedInitFallback = true;
+                    setTimeout(() => { this.copiedInitFallback = false; }, 2000);
+                }
             });
         },
 
@@ -714,23 +922,35 @@ function hostWizard() {
                     this.shakeField('id_name');
                     return;
                 }
-                if (this.connectionType !== 'tunnel' && !this.hostname.trim()) {
+                if (!this.hostname.trim()) {
                     this.shakeField('id_hostname');
                     return;
                 }
             }
-            if (this.step === 2 && this.connectionType !== 'tunnel') {
-                if (!this.username.trim()) {
+            if (this.step === 2) {
+                if (this.authMethod === 'ntlm' && !this.username.trim()) {
                     this.shakeField('id_username');
                     return;
+                }
+                if (this.authMethod === 'ntlm' && !this.password.trim()) {
+                    this.shakeField('id_password');
+                    return;
+                }
+                if (this.authMethod === 'certificate' && this.certConfigMethod === 'manual') {
+                    const pemInput = document.getElementById('id_cert_pem');
+                    const keyInput = document.getElementById('id_cert_key');
+                    if (!pemInput.files.length) {
+                        this.shakeField('id_cert_pem');
+                        return;
+                    }
+                    if (!keyInput.files.length) {
+                        this.shakeField('id_cert_key');
+                        return;
+                    }
                 }
             }
 
             this.step++;
-
-            if (this.step === 2 && this.connectionType === 'tunnel' && !this.tunnelToken) {
-                this.generateTunnelToken();
-            }
         },
 
         shakeField(id) {
@@ -745,17 +965,65 @@ function hostWizard() {
         },
 
         testConnection() {
+            if (!this.hostname.trim()) {
+                this.testResult = '请先填写主机地址';
+                this.testSuccess = false;
+                return;
+            }
+            if (this.authMethod === 'ntlm') {
+                if (!this.username.trim()) {
+                    this.testResult = '请先填写用户名';
+                    this.testSuccess = false;
+                    return;
+                }
+                if (!this.password) {
+                    this.testResult = '请先填写密码';
+                    this.testSuccess = false;
+                    return;
+                }
+            }
+
             this.testingConnection = true;
             this.testResult = null;
-            setTimeout(() => {
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                || document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+
+            fetch('{% url "admin:admin_hosts:host_wizard_test_connection" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({
+                    hostname: this.hostname,
+                    port: this.port,
+                    use_ssl: this.useSsl,
+                    connection_type: this.connectionType,
+                    auth_method: this.authMethod,
+                    username: this.username,
+                    password: this.password,
+                }),
+            })
+            .then(resp => resp.json())
+            .then(data => {
                 this.testingConnection = false;
-                this.testResult = '连接测试功能将在保存主机后自动执行';
-                this.testSuccess = true;
-            }, 1500);
+                if (data.success) {
+                    this.testResult = data.message || '连接成功';
+                    this.testSuccess = true;
+                } else {
+                    this.testResult = data.error || '连接失败';
+                    this.testSuccess = false;
+                }
+            })
+            .catch(err => {
+                this.testingConnection = false;
+                this.testResult = '请求失败: ' + err.message;
+                this.testSuccess = false;
+            });
         },
 
         onSubmit() {
-            const form = this.$el;
             this.$el.submit();
         },
     };

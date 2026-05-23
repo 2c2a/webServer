@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ZASCA 交互式部署脚本
+2c2a 交互式部署脚本
 根据部署环境动态生成 pyproject.toml，仅安装所需依赖，避免冗余库
 
 用法:
@@ -715,7 +715,7 @@ def _get_env_items(answers):
 
     items.append(("group", "Gateway 配置"))
     items.append(("field", {"key": "GATEWAY_ENABLED", "default": "False", "desc": "Gateway 开关", "type": "bool"}))
-    items.append(("field", {"key": "GATEWAY_CONTROL_SOCKET", "default": "/run/zasca/control.sock", "desc": "Gateway 控制套接字", "type": "text"}))
+    items.append(("field", {"key": "GATEWAY_CONTROL_SOCKET", "default": "/run/2c2a/control.sock", "desc": "Gateway 控制套接字", "type": "text"}))
 
     items.append(("group", "Beta 数据库配置（可选）"))
     items.append(("field", {"key": "BETA_DB_NAME", "default": "", "desc": "Beta 数据库名称（留空跳过）", "type": "text"}))
@@ -1391,7 +1391,7 @@ def generate_env_content(answers, values):
 
     lines.append("# ========== Gateway 配置 ==========")
     lines.append(f"GATEWAY_ENABLED={values.get('GATEWAY_ENABLED', 'False')}")
-    lines.append(f"GATEWAY_CONTROL_SOCKET={values.get('GATEWAY_CONTROL_SOCKET', '/run/zasca/control.sock')}")
+    lines.append(f"GATEWAY_CONTROL_SOCKET={values.get('GATEWAY_CONTROL_SOCKET', '/run/2c2a/control.sock')}")
     lines.append("")
 
     beta_fields = ['BETA_DB_NAME', 'BETA_DB_USER', 'BETA_DB_PASSWORD', 'BETA_DB_HOST', 'BETA_DB_PORT']

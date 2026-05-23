@@ -24,7 +24,8 @@ urlpatterns = [
     path('api/verify_pairing_code/', views.verify_pairing_code, name='api_verify_pairing_code'),
     path('api/exchange_token/', views.exchange_token, name='api_exchange_token'),
     path('api/get_session_token', views.get_session_token, name='api_get_session_token_no_slash'),  # 不带斜杠版本
-    path('api/get_session_token/', views.get_session_token, name='api_get_session_token'),  # 带斜杠版本
+    path('api/get_session_token/', views.get_session_token, name='api_get_session_token'),
+    path('api/upload_host_cert/', views.upload_host_cert, name='api_upload_host_cert'),
     path('api/check_pairing_status', views.check_pairing_status, name='api_check_pairing_status'),  # 新增：检查配对状态
     path('api/session/', views.revoke_session, name='api_revoke_session'),
     
@@ -33,4 +34,6 @@ urlpatterns = [
     path('api/complete-auto-register/', views.complete_auto_register, name='complete_auto_register'),
     path('api/pending-hosts/', views.get_pending_hosts, name='get_pending_hosts'),
     path('api/revoke-pending-host/', views.revoke_pending_host, name='revoke_pending_host'),
+
+    path('sse/init-status/', views.sse_init_status, name='sse_init_status'),
 ]

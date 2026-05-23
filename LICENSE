@@ -661,12 +661,12 @@ For more information, and how to apply and follow the GNU AGPL, see
 <https://www.gnu.org/licenses/>.
 
 
-                    ZASCA PLUGIN EXCEPTION TO THE
+                    2c2a PLUGIN EXCEPTION TO THE
               GNU AFFERO GENERAL PUBLIC LICENSE VERSION 3
 
   This Plugin Exception ("Exception") is an additional permission under
 Section 7 of the GNU Affero General Public License, Version 3 ("AGPLv3").
-It applies to the software known as ZASCA (the "Program"). This Exception
+It applies to the software known as 2c2a (the "Program"). This Exception
 modifies the AGPLv3 as it applies to the Program by providing an exception
 for qualifying Plugins, as defined below.
 
@@ -876,35 +876,35 @@ the following notices:
         a prominent comment at the beginning of the file containing:
 
           (i)   A statement identifying the work as a Plugin for the
-                ZASCA program;
+                2c2a program;
           (ii)  The Plugin's own license terms; and
           (iii) The following declaration:
 
-            "This is a plugin for the ZASCA program. ZASCA is licensed
+            "This is a plugin for the 2c2a program. 2c2a is licensed
              under the GNU Affero General Public License, Version 3
-             (AGPLv3). This plugin is NOT part of ZASCA and is NOT
-             licensed under the AGPLv3. The AGPLv3 applies to ZASCA
-             itself, not to this plugin. This plugin uses the ZASCA
+             (AGPLv3). This plugin is NOT part of 2c2a and is NOT
+             licensed under the AGPLv3. The AGPLv3 applies to 2c2a
+             itself, not to this plugin. This plugin uses the 2c2a
              Plugin Exception to the AGPLv3 for its interaction with
-             ZASCA."
+             2c2a."
 
     (b) Documentation Notice. Any documentation, README, or
         distribution materials for the Plugin must prominently state:
 
-          (i)   That the work is a Plugin for the ZASCA program;
-          (ii)  That ZASCA is licensed under the AGPLv3;
-          (iii) That the Plugin is NOT part of ZASCA and is NOT
-                subject to the AGPLv3 by virtue of the ZASCA Plugin
+          (i)   That the work is a Plugin for the 2c2a program;
+          (ii)  That 2c2a is licensed under the AGPLv3;
+          (iii) That the Plugin is NOT part of 2c2a and is NOT
+                subject to the AGPLv3 by virtue of the 2c2a Plugin
                 Exception;
           (iv)  The Plugin's own license terms; and
-          (v)   That the AGPLv3 applies to ZASCA itself, not to the
+          (v)   That the AGPLv3 applies to 2c2a itself, not to the
                 Plugin.
 
     (c) Runtime Notice. If the Plugin provides any user-facing
         interface (including but not limited to: web pages, API
         responses, CLI output, or log messages), it must display or
-        include a notice indicating that it is a Plugin for ZASCA and
-        that ZASCA's license (AGPLv3) does not apply to the Plugin.
+        include a notice indicating that it is a Plugin for 2c2a and
+        that 2c2a's license (AGPLv3) does not apply to the Plugin.
 
     (d) Visual Interface Attribution. In addition to the source code
         and documentation notices required by subsections (a) and (b),
@@ -926,7 +926,7 @@ the following notices:
                 HTML source code, comments, or developer tools. The
                 label must include at minimum the Plugin's name and a
                 statement that the content is provided by a third-party
-                Plugin (e.g., "Provided by [Plugin Name] (ZASCA
+                Plugin (e.g., "Provided by [Plugin Name] (2c2a
                 Plugin)").
 
           (ii)  Injected UI Panels and Widgets. Any panel, widget,
@@ -951,14 +951,14 @@ the following notices:
                 mechanism must include a visible notice (such as a
                 footer, header badge, or sidebar indicator) stating
                 that the page is provided by the Plugin and is not part
-                of ZASCA's core interface.
+                of 2c2a's core interface.
 
           (v)   General Principle. The overarching requirement is that
                 no UI content injected by a Plugin may appear to the
-                end user as though it is a native part of the ZASCA
+                end user as though it is a native part of the 2c2a
                 program. The attribution must be sufficient for a
                 typical user to distinguish Plugin-provided UI elements
-                from ZASCA's core interface elements. Minimal or
+                from 2c2a's core interface elements. Minimal or
                 hard-to-notice attributions (such as light-colored
                 small text, hidden metadata, or code comments) do not
                 satisfy this requirement. The attribution must be
@@ -1012,7 +1012,7 @@ the following notices:
 
                     5. SCOPE AND LIMITATIONS
 
-    (a) This Exception applies only to the Program known as ZASCA, as
+    (a) This Exception applies only to the Program known as 2c2a, as
         identified by its copyright holders. It does not apply to any
         other software licensed under the AGPLv3.
 

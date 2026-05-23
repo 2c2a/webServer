@@ -239,6 +239,80 @@
     <p class="text-sm text-white/70">暂无关联产品</p>
     {% endif %}
 </x-admin-card>
+
+<!-- Host Init Command -->
+{% if host.auth_method == 'certificate' %}
+<x-admin-card title="H 端初始化" icon="terminal" class="mt-6">
+    <div x-data="initCommand()">
+        <p class="text-sm text-white/70 mb-4">
+            在目标主机上以<b>管理员权限</b>运行以下命令，自动完成 H 端初始化和证书配置。
+        </p>
+
+        <button
+            @click="generateCommand()"
+            :disabled="loading"
+            class="inline-flex items-center gap-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-md px-4 py-2 backdrop-blur-xl transition font-medium border border-cyan-500/30 disabled:opacity-50"
+        >
+            <span class="material-symbols-rounded text-lg" :class="{ 'animate-spin': loading }" x-text="loading ? 'progress_activity' : 'key'"></span>
+            <span x-text="loading ? '生成中...' : '生成初始化命令'"></span>
+        </button>
+
+        <template x-if="initData">
+            <div class="mt-4 space-y-4">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-white">一行命令（推荐）</label>
+                        <button @click="copyText(initData.one_liner, 'oneLiner')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
+                            <span class="material-symbols-rounded text-sm" x-text="copiedOneLiner ? 'check' : 'content_copy'"></span>
+                            <span x-text="copiedOneLiner ? '已复制' : '复制'"></span>
+                        </button>
+                    </div>
+                    <div class="relative bg-slate-950/50 border border-slate-700/50 rounded-md overflow-hidden">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
+                            <span class="material-symbols-rounded text-sm">terminal</span>
+                            <span class="text-xs text-white/50 font-mono">PowerShell (管理员)</span>
+                        </div>
+                        <div class="p-4 overflow-x-auto">
+                            <code class="text-sm text-green-400 font-mono whitespace-pre-wrap break-all" x-text="initData.one_liner"></code>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-white/70">备用命令（如果一行命令无法执行）</label>
+                        <button @click="copyText(initData.fallback_command, 'fallback')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
+                            <span class="material-symbols-rounded text-sm" x-text="copiedFallback ? 'check' : 'content_copy'"></span>
+                            <span x-text="copiedFallback ? '已复制' : '复制'"></span>
+                        </button>
+                    </div>
+                    <div class="relative bg-slate-950/50 border border-slate-700/50 rounded-md overflow-hidden">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
+                            <span class="material-symbols-rounded text-sm">terminal</span>
+                            <span class="text-xs text-white/50 font-mono">PowerShell (管理员)</span>
+                        </div>
+                        <div class="p-4 overflow-x-auto">
+                            <code class="text-sm text-yellow-400 font-mono whitespace-pre-wrap break-all" x-text="initData.fallback_command"></code>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-xs text-white/50">
+                    命令有效期至: <span x-text="new Date(initData.expires_at).toLocaleString()"></span>
+                </p>
+            </div>
+        </template>
+
+        <template x-if="initError">
+            <div class="mt-4">
+                <x-admin-alert type="error" dismissible="true">
+                    <span x-text="initError"></span>
+                </x-admin-alert>
+            </div>
+        </template>
+    </div>
+</x-admin-card>
+{% endif %}
 </div>
 
 <script>
@@ -274,6 +348,53 @@ document.addEventListener('alpine:init', () => {
             } finally {
                 this.loading = false;
             }
+        },
+    }));
+
+    Alpine.data('initCommand', () => ({
+        loading: false,
+        initData: null,
+        initError: null,
+        copiedOneLiner: false,
+        copiedFallback: false,
+
+        async generateCommand() {
+            if (this.loading) return;
+            this.loading = true;
+            this.initError = null;
+
+            try {
+                const resp = await fetch('{% url "admin:admin_hosts:host_generate_init_command" host.pk %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.initData = data.data;
+                } else {
+                    this.initError = data.error || '生成失败';
+                }
+            } catch (e) {
+                this.initError = '请求失败: ' + e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        copyText(text, type) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (type === 'oneLiner') {
+                    this.copiedOneLiner = true;
+                    setTimeout(() => { this.copiedOneLiner = false; }, 2000);
+                } else {
+                    this.copiedFallback = true;
+                    setTimeout(() => { this.copiedFallback = false; }, 2000);
+                }
+            });
         },
     }));
 });

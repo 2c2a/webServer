@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required, permission_required
@@ -49,7 +49,83 @@ def _bootstrap_rate_limit(key_prefix, rate='10/m'):
     return decorator
 
 
+@csrf_exempt
 @require_http_methods(["POST"])
+def upload_host_cert(request):
+    try:
+        data = json.loads(request.body)
+        token_value = data.get('token', '')
+        pfx_b64 = data.get('pfx_b64', '')
+        pfx_password = data.get('pfx_password', '')
+        service_user = data.get('service_user', '')
+        service_password = data.get('service_password', '')
+
+        if not token_value or not pfx_b64:
+            return JsonResponse({'success': False, 'error': 'Missing required fields'}, status=400)
+
+        try:
+            token_obj = InitialToken.objects.get(token=token_value)
+        except InitialToken.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid token'}, status=401)
+
+        if not token_obj.host:
+            return JsonResponse({'success': False, 'error': 'Host not associated yet'}, status=400)
+
+        host = token_obj.host
+
+        import base64
+        from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
+
+        try:
+            pfx_data = base64.b64decode(pfx_b64)
+            private_key, certificate, _ = pkcs12.load_key_and_certificates(
+                pfx_data, pfx_password.encode()
+            )
+        except Exception as e:
+            logger.error(f"PFX decode failed for host {host.pk}: {e}")
+            return JsonResponse({'success': False, 'error': 'Invalid PFX data'}, status=400)
+
+        if not private_key or not certificate:
+            return JsonResponse({'success': False, 'error': 'PFX missing key or cert'}, status=400)
+
+        import os
+        from django.conf import settings
+        cert_dir = os.path.join(settings.MEDIA_ROOT, 'certs', 'hosts', str(host.pk))
+        os.makedirs(cert_dir, exist_ok=True)
+
+        pem_path = os.path.join(cert_dir, 'client.pem')
+        key_path = os.path.join(cert_dir, 'client.key')
+
+        with open(pem_path, 'wb') as f:
+            f.write(certificate.public_bytes(Encoding.PEM))
+        with open(key_path, 'wb') as f:
+            f.write(private_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
+
+        os.chmod(pem_path, 0o600)
+        os.chmod(key_path, 0o600)
+
+        update_fields = {'cert_pem_path': pem_path, 'cert_key_path': key_path}
+        if service_user and service_password:
+            update_fields['username'] = service_user
+            from utils.crypto import encrypt_value
+            update_fields['password'] = encrypt_value(service_password)
+
+        Host.objects.filter(pk=host.pk).update(**update_fields)
+
+        try:
+            host.refresh_from_db()
+            host.test_connection()
+        except Exception as e:
+            logger.warning(f"Connection test after cert upload failed: {e}")
+
+        logger.info(f"Cert uploaded for host {host.pk} ({host.name})")
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        logger.error(f"upload_host_cert error: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 @login_required
 @permission_required('hosts.delete_host', raise_exception=True)
 def revoke_pending_host(request):
@@ -609,18 +685,16 @@ def get_session_token(request):
         # 原子操作：生成新的session_token，创建ActiveSession记录
         from django.db import transaction
         with transaction.atomic():
-            # 生成新的session_token
             session_token = str(uuid.uuid4())
-            
-            # 在ActiveSession表中插入记录
-            active_session = ActiveSession.objects.create(
-                session_token=session_token,
-                host=token_obj.host,
-                bound_ip=ip,
-                expires_at=timezone.now() + timezone.timedelta(hours=1)  # 1小时后过期
-            )
-            
-            # 更新InitialToken状态为CONSUMED
+
+            if token_obj.host:
+                ActiveSession.objects.create(
+                    session_token=session_token,
+                    host=token_obj.host,
+                    bound_ip=ip,
+                    expires_at=timezone.now() + timezone.timedelta(hours=1)
+                )
+
             token_obj.status = 'CONSUMED'
             token_obj.save()
         
@@ -939,6 +1013,63 @@ Invoke-WebRequest -Uri "{download_url}" -OutFile $exe -UseBasicParsing
             'success': False,
             'error': 'Failed to generate register script'
         }, status=500)
+
+
+@login_required
+def sse_init_status(request):
+    import json as _json
+
+    token = request.GET.get('token', '')
+    if not token:
+        return JsonResponse(
+            {'error': 'token required'}, status=400,
+        )
+
+    def event_stream():
+        for _ in range(120):
+            try:
+                token_obj = InitialToken.objects.get(token=token)
+                status = token_obj.status
+                data = {
+                    'status': status,
+                    'host_id': (
+                        token_obj.host_id
+                        if token_obj.host_id else None
+                    ),
+                }
+                if status == 'CONSUMED' and token_obj.host:
+                    host_status = Host.objects.filter(
+                        pk=token_obj.host_id
+                    ).values_list('status', flat=True).first()
+                    data['host_status'] = host_status
+                    if host_status == 'online':
+                        yield f"data: {_json.dumps(data)}\n\n"
+                        return
+                yield f"data: {_json.dumps(data)}\n\n"
+                if status == 'CONSUMED':
+                    for _ in range(24):
+                        time.sleep(5)
+                        host_status = Host.objects.filter(
+                            pk=token_obj.host_id
+                        ).values_list('status', flat=True).first()
+                        if host_status == 'online':
+                            data['host_status'] = host_status
+                            yield f"data: {_json.dumps(data)}\n\n"
+                            return
+                    return
+            except InitialToken.DoesNotExist:
+                yield f"data: {_json.dumps({'status': 'NOT_FOUND'})}\n\n"
+                return
+            time.sleep(5)
+        yield f"data: {_json.dumps({'status': 'TIMEOUT'})}\n\n"
+
+    response = StreamingHttpResponse(
+        event_stream(),
+        content_type='text/event-stream',
+    )
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response
 
 
 def get_client_ip(request):

@@ -8,7 +8,9 @@
 import json
 import logging
 import os
+import platform
 import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -18,6 +20,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import DetailView, TemplateView
@@ -31,6 +34,69 @@ from .models import Host, HostGroup
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+
+def _is_local_winserver():
+    return platform.system() == 'Windows' and 'server' in platform.version().lower()
+
+
+def _generate_init_command_data(request, host):
+    from apps.bootstrap.models import InitialToken
+    import base64
+
+    token = secrets.token_urlsafe(32)
+    expires_at = timezone.now() + timedelta(hours=24)
+
+    initial_token = InitialToken.objects.create(
+        token=token,
+        host=host,
+        expires_at=expires_at,
+        status='ISSUED',
+    )
+
+    pairing_code = initial_token.generate_pairing_code()
+
+    config_data = {
+        'c_side_url': request.build_absolute_uri(
+            '/'
+        ).rstrip('/'),
+        'token': initial_token.token,
+        'host_id': str(host.id),
+        'expires_at': initial_token.expires_at.isoformat(),
+    }
+    config_json = json.dumps(config_data)
+    encoded_config = base64.b64encode(
+        config_json.encode('utf-8')
+    ).decode('utf-8')
+
+    one_liner = (
+        "& ([ScriptBlock]::Create("
+        "(irm https://static.2c2a.cc.cd/hostinitbash.ps1)"
+        f")) -Secret '{encoded_config}'"
+    )
+
+    fallback_command = (
+        "$e = \"$env:TEMP\\h_side_init.exe\"; "
+        "irm https://2c2a.cc.cd/hostinitbash.exe "
+        f"-OutFile $e; & $e '{encoded_config}'"
+    )
+
+    return {
+        'pairing_code': pairing_code,
+        'one_liner': one_liner,
+        'fallback_command': fallback_command,
+        'expires_at': initial_token.expires_at.isoformat(),
+        'host_id': host.id,
+        'hostname': host.hostname,
+    }
+
+
+def _get_host_form_context():
+    return {
+        'default_ports': json.dumps(CONNECTION_DEFAULT_PORTS),
+        'default_ssl': json.dumps(CONNECTION_DEFAULT_SSL),
+        'is_local_winserver': json.dumps(_is_local_winserver()),
+    }
 
 
 def _get_permission_context(form, host=None):
@@ -208,7 +274,6 @@ class AdminHostDetailView(DetailView):
             generated_password = self.request.session.get(
                 'generated_password'
             )
-            # 一次性读取后清除
             self.request.session.pop('generated_password', None)
             self.request.session.pop(
                 'generated_password_host_id', None
@@ -245,10 +310,13 @@ class AdminHostCreateView(TemplateView):
             'is_create': True,
         })
         context.update(_get_permission_context(form))
+        context.update(_get_host_form_context())
         return context
 
     def post(self, request, *args, **kwargs):
-        form = AdminHostForm(request.POST)
+        form = AdminHostForm(
+            request.POST, request.FILES
+        )
         if form.is_valid():
             host = form.save(commit=False)
             host.created_by = request.user
@@ -281,13 +349,24 @@ class AdminHostCreateView(TemplateView):
                     f'已为主机 {host.name} 自动生成密码，'
                     f'请妥善保存。'
                 )
-                # 将生成的密码存入 session 以便在详情页展示
                 request.session['generated_password'] = (
                     form.generated_password
                 )
                 request.session['generated_password_host_id'] = (
                     host.pk
                 )
+
+            # 证书快速配置：用预生成的 token 创建 InitialToken
+            init_token = request.POST.get('init_token')
+            if (host.auth_method == 'certificate'
+                    and init_token):
+                try:
+                    from apps.bootstrap.models import InitialToken
+                    InitialToken.objects.filter(
+                        token=init_token,
+                    ).update(host=host)
+                except Exception:
+                    pass
 
             return redirect('admin:admin_hosts:host_detail', pk=host.pk)
 
@@ -329,11 +408,14 @@ class AdminHostUpdateView(TemplateView):
             'is_create': False,
         })
         context.update(_get_permission_context(form, host))
+        context.update(_get_host_form_context())
         return context
 
     def post(self, request, *args, **kwargs):
         host = self.get_host()
-        form = AdminHostForm(request.POST, instance=host)
+        form = AdminHostForm(
+            request.POST, request.FILES, instance=host
+        )
         if form.is_valid():
             host = form.save()
 
@@ -689,7 +771,9 @@ def admin_host_wizard(request):
     最终一次性提交表单创建主机。
     """
     if request.method == 'POST':
-        form = HostWizardForm(request.POST)
+        form = HostWizardForm(
+            request.POST, request.FILES
+        )
         if form.is_valid():
             host = form.save(commit=False)
             host.created_by = request.user
@@ -749,9 +833,15 @@ def admin_host_wizard(request):
     context = {
         'form': form,
         'providers_with_count': providers_with_count,
-        'connection_type_choices': Host.CONNECTION_TYPE_CHOICES,
+        'connection_type_choices': [
+            c for c in Host.CONNECTION_TYPE_CHOICES
+            if c[0] in ('winrm', 'localwinserver')
+        ],
+        'os_type_choices': Host.OS_TYPE_CHOICES,
+        'auth_method_choices': Host.AUTH_METHOD_CHOICES,
         'default_ports': json.dumps(CONNECTION_DEFAULT_PORTS),
         'default_ssl': json.dumps(CONNECTION_DEFAULT_SSL),
+        'is_local_winserver': json.dumps(_is_local_winserver()),
         'gateway_url': gateway_url,
         'server_base_url': server_base_url,
         'page_title': '添加主机',
@@ -763,6 +853,64 @@ def admin_host_wizard(request):
         'admin_base/hosts/host_wizard.html',
         context,
     )
+
+
+@admin_required
+def admin_host_wizard_generate_init_command(request):
+    if request.method != 'POST':
+        return JsonResponse(
+            {'success': False, 'error': 'Method not allowed'},
+            status=405,
+        )
+
+    import base64
+    from apps.bootstrap.models import InitialToken
+
+    InitialToken.objects.filter(
+        host=None,
+        status='ISSUED',
+    ).delete()
+
+    token = secrets.token_urlsafe(32)
+    expires_at = timezone.now() + timedelta(hours=24)
+
+    InitialToken.objects.create(
+        token=token,
+        host=None,
+        expires_at=expires_at,
+        status='ISSUED',
+    )
+
+    c_side_url = request.build_absolute_uri('/').rstrip('/')
+    config_data = {
+        'c_side_url': c_side_url,
+        'token': token,
+    }
+    config_json = json.dumps(config_data)
+    encoded_config = base64.b64encode(
+        config_json.encode('utf-8')
+    ).decode('utf-8')
+
+    one_liner = (
+        "& ([ScriptBlock]::Create("
+        "(irm https://2c2a.cc.cd/hostinitbash.ps1)"
+        f")) -Secret '{encoded_config}'"
+    )
+
+    fallback_command = (
+        "$e = \"$env:TEMP\\h_side_init.exe\"; "
+        "irm https://2c2a.cc.cd/hostinitbash.exe "
+        f"-OutFile $e; & $e '{encoded_config}'"
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'token': token,
+            'one_liner': one_liner,
+            'fallback_command': fallback_command,
+        },
+    })
 
 
 @admin_required
@@ -793,3 +941,102 @@ def admin_host_wizard_generate_token(request):
             'success': False,
             'error': 'Failed to generate tunnel token',
         }, status=500)
+
+
+@admin_required
+def admin_host_wizard_test_connection(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': '请求数据格式无效'}, status=400)
+
+    connection_type = data.get('connection_type', 'winrm')
+    hostname = data.get('hostname', '').strip()
+    port = data.get('port', 5985)
+    use_ssl = data.get('use_ssl', False)
+    auth_method = data.get('auth_method', 'ntlm')
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
+    if not hostname:
+        return JsonResponse({'success': False, 'error': '主机地址不能为空'}, status=400)
+
+    if auth_method == 'ntlm':
+        if not username:
+            return JsonResponse({'success': False, 'error': '用户名不能为空'}, status=400)
+        if not password:
+            return JsonResponse({'success': False, 'error': '密码不能为空'}, status=400)
+
+    try:
+        if connection_type == 'localwinserver':
+            from utils.local_winserver_client import LocalWinServerClient
+            client = LocalWinServerClient(
+                username=username,
+                password=password,
+            )
+            result = client.execute_command('echo Connection Test OK')
+        elif connection_type == 'winrm' and auth_method == 'ntlm':
+            from utils.winrm_client import WinrmClient
+            client = WinrmClient(
+                hostname=hostname,
+                port=int(port),
+                username=username,
+                password=password,
+                use_ssl=bool(use_ssl),
+                auth_method='ntlm',
+            )
+            result = client.execute_command('whoami')
+        elif connection_type == 'winrm' and auth_method == 'certificate':
+            return JsonResponse({
+                'success': False,
+                'error': '证书认证方式请先保存主机后再测试连接',
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': f'不支持的连接类型: {connection_type}',
+            })
+
+        if result.success:
+            output = result.std_out.strip() if result.std_out else ''
+            return JsonResponse({
+                'success': True,
+                'message': f'连接成功{f" ({output})" if output else ""}',
+            })
+        else:
+            error_detail = result.std_err.strip() if result.std_err else f'命令执行返回非零状态码: {result.status_code}'
+            return JsonResponse({
+                'success': False,
+                'error': f'连接失败: {error_detail}',
+            })
+
+    except Exception as e:
+        error_message = str(e)
+        logger.error(f"向导即时连接测试失败: {hostname}, 错误: {error_message}")
+        return JsonResponse({
+            'success': False,
+            'error': f'连接测试失败: {error_message}',
+        })
+
+
+@admin_required
+def admin_host_generate_init_command(request, pk):
+    host = get_object_or_404(Host, pk=pk)
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {'success': False, 'error': 'Method not allowed'},
+            status=405,
+        )
+
+    try:
+        init_data = _generate_init_command_data(request, host)
+        return JsonResponse({'success': True, 'data': init_data})
+    except Exception as e:
+        return JsonResponse(
+            {'success': False, 'error': str(e)},
+            status=500,
+        )

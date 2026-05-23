@@ -18,7 +18,7 @@ class InitialToken(models.Model):
     MAX_PAIRING_ATTEMPTS = 5
 
     token = models.CharField(max_length=255, primary_key=True, verbose_name="AccessToken")
-    host = models.ForeignKey(Host, on_delete=models.CASCADE, verbose_name="关联的主机")
+    host = models.ForeignKey(Host, on_delete=models.CASCADE, verbose_name="关联的主机", null=True, blank=True)
     expires_at = models.DateTimeField(verbose_name="AccessToken过期时间")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ISSUED', verbose_name="状态")
     pairing_code = models.CharField(max_length=6, verbose_name="配对码", blank=True, null=True)

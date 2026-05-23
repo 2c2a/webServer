@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from utils.crypto import encrypt_value, decrypt_value
 import os
 
 
@@ -7,13 +8,22 @@ class Host(models.Model):
     """
     主机模型
     """
+    OS_TYPE_CHOICES = [
+        ('windows', 'Windows'),
+    ]
+
     CONNECTION_TYPE_CHOICES = [
         ('winrm', 'WinRM'),
-        ('ssh', 'SSH'),
         ('localwinserver', '本地WinServer'),
+        ('ssh', 'SSH'),
         ('tunnel', '隧道模式(零公网IP)'),
     ]
-    
+
+    AUTH_METHOD_CHOICES = [
+        ('ntlm', '管理员账户密码'),
+        ('certificate', '证书'),
+    ]
+
     STATUS_CHOICES = [
         ('online', '在线'),
         ('offline', '离线'),
@@ -28,13 +38,17 @@ class Host(models.Model):
     ]
 
     name = models.CharField(max_length=100, verbose_name='主机名称')
+    os_type = models.CharField(max_length=20, choices=OS_TYPE_CHOICES, default='windows', verbose_name='主机系统')
     hostname = models.CharField(max_length=255, verbose_name='主机地址')
     connection_type = models.CharField(max_length=20, choices=CONNECTION_TYPE_CHOICES, default='winrm', verbose_name='连接类型')
+    auth_method = models.CharField(max_length=20, choices=AUTH_METHOD_CHOICES, default='ntlm', verbose_name='连接方式')
     port = models.IntegerField(default=5985, verbose_name='连接端口')
     rdp_port = models.IntegerField(default=3389, verbose_name='RDP端口')
     use_ssl = models.BooleanField(default=False, verbose_name='使用SSL')
-    username = models.CharField(max_length=100, verbose_name='用户名')
+    username = models.CharField(max_length=100, blank=True, default='', verbose_name='用户名')
     _password = models.CharField(max_length=255, verbose_name='密码', db_column='password')  # 加密存储
+    cert_pem_path = models.CharField(max_length=512, blank=True, default='', verbose_name='客户端证书路径')
+    cert_key_path = models.CharField(max_length=512, blank=True, default='', verbose_name='客户端私钥路径')
     os_version = models.CharField(max_length=100, blank=True, verbose_name='操作系统版本')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='offline', verbose_name='状态')
     description = models.TextField(blank=True, verbose_name='描述')
@@ -94,26 +108,14 @@ class Host(models.Model):
 
     @property
     def password(self):
-        from cryptography.fernet import Fernet
-        import base64
-        import hashlib
-        from django.conf import settings
-        key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
-        f = Fernet(base64.urlsafe_b64encode(key))
         try:
-            return f.decrypt(self._password.encode()).decode()
-        except Exception:
+            return decrypt_value(self._password)
+        except ValueError:
             raise ValueError("密码解密失败，数据可能已损坏或密钥已变更")
 
     @password.setter
     def password(self, raw_password):
-        from cryptography.fernet import Fernet
-        import base64
-        import hashlib
-        from django.conf import settings
-        key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
-        f = Fernet(base64.urlsafe_b64encode(key))
-        self._password = f.encrypt(raw_password.encode()).decode()
+        self._password = encrypt_value(raw_password)
 
     def save(self, *args, **kwargs):
         """
@@ -127,13 +129,25 @@ class Host(models.Model):
     def get_connection_client(self):
         if self.connection_type == 'winrm':
             from utils.winrm_client import WinrmClient
-            return WinrmClient(
+            kwargs = dict(
                 hostname=self.hostname,
-                username=self.username,
-                password=self.password,
                 port=self.port,
-                use_ssl=self.use_ssl
+                use_ssl=self.use_ssl,
             )
+            if self.auth_method == 'certificate':
+                kwargs.update(
+                    auth_method='certificate',
+                    cert_pem_path=self.cert_pem_path,
+                    cert_key_path=self.cert_key_path,
+                    server_cert_validation='ignore',
+                )
+            else:
+                kwargs.update(
+                    username=self.username,
+                    password=self.password,
+                    auth_method='ntlm',
+                )
+            return WinrmClient(**kwargs)
         elif self.connection_type == 'localwinserver':
             from utils.local_winserver_client import LocalWinServerClient
             return LocalWinServerClient(
@@ -158,6 +172,12 @@ class Host(models.Model):
         if self.connection_type == 'tunnel':
             new_status = 'online' if self.tunnel_status == 'online' else 'offline'
             Host.objects.filter(pk=self.pk).update(status=new_status)
+            return
+
+        if (self.auth_method == 'certificate'
+                and (not self.cert_pem_path
+                     or not os.path.exists(self.cert_pem_path))):
+            Host.objects.filter(pk=self.pk).update(status='pending')
             return
         
         try:
