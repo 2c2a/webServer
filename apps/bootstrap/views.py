@@ -69,7 +69,21 @@ def upload_host_cert(request):
             return JsonResponse({'success': False, 'error': 'Invalid token'}, status=401)
 
         if not token_obj.host:
-            return JsonResponse({'success': False, 'error': 'Host not associated yet'}, status=400)
+            from apps.hosts.models import Host
+            client_ip = get_client_ip(request)
+            host = Host.objects.create(
+                name=f"Host-{token_obj.pk[:8]}",
+                hostname=client_ip or '0.0.0.0',
+                os_type='windows',
+                connection_type='winrm',
+                auth_method='certificate',
+                port=5986,
+                use_ssl=True,
+                status='pending',
+            )
+            token_obj.host = host
+            token_obj.save(update_fields=['host'])
+            logger.info(f"Auto-created host {host.pk} for token {token_obj.pk[:8]}")
 
         host = token_obj.host
 

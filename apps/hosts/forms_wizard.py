@@ -123,6 +123,13 @@ class HostWizardForm(forms.ModelForm):
         required=False,
     )
 
+    init_token = forms.CharField(
+        widget=forms.HiddenInput(attrs={
+            'x-model': 'initToken',
+        }),
+        required=False,
+    )
+
     cert_config_method = forms.CharField(
         widget=forms.HiddenInput(attrs={
             'x-model': 'certConfigMethod',

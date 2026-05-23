@@ -318,10 +318,42 @@ class AdminHostCreateView(TemplateView):
             request.POST, request.FILES
         )
         if form.is_valid():
-            host = form.save(commit=False)
-            host.created_by = request.user
-            host.save()
-            form.save_m2m()
+            init_token_value = form.cleaned_data.get('init_token', '')
+            existing_host = None
+            if init_token_value:
+                from apps.bootstrap.models import InitialToken
+                try:
+                    token_obj = InitialToken.objects.get(token=init_token_value)
+                    if token_obj.host:
+                        existing_host = token_obj.host
+                except InitialToken.DoesNotExist:
+                    pass
+
+            if existing_host:
+                for field in ['name', 'os_type', 'hostname', 'connection_type',
+                              'auth_method', 'port', 'rdp_port', 'use_ssl',
+                              'username', 'description']:
+                    if field in form.cleaned_data:
+                        setattr(existing_host, field, form.cleaned_data[field])
+                pwd = form.cleaned_data.get('password', '')
+                if pwd:
+                    existing_host.password = pwd
+                existing_host.save()
+                form.instance = existing_host
+                form.save_m2m()
+                host = existing_host
+            else:
+                host = form.save(commit=False)
+                host.created_by = request.user
+                host.save()
+                form.save_m2m()
+
+            if init_token_value and not existing_host:
+                from apps.bootstrap.models import InitialToken
+                InitialToken.objects.filter(
+                    token=init_token_value,
+                    host__isnull=True,
+                ).update(host=host)
 
             # 测试连接
             try:
