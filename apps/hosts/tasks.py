@@ -1,8 +1,9 @@
 from celery import shared_task
 from django.contrib.auth.models import User
+from django.utils import timezone
+
 from apps.hosts.models import Host
 from apps.tasks.models import AsyncTask
-from apps.certificates.models import ServerCertificate, ClientCertificate
 import logging
 import re
 
@@ -163,61 +164,43 @@ def test_winrm_connection(self, host_id, use_certificate_auth=False):
         host = Host.objects.get(id=host_id)
         task.start_execution()
         
-        if use_certificate_auth and host.certificate_thumbprint:
-            import tempfile
+        if use_certificate_auth and host.auth_method == 'certificate':
             import os
-            
-            client_cert = ClientCertificate.objects.filter(is_active=True).first()
-            if not client_cert:
-                from apps.certificates.models import CertificateAuthority
-                ca = host.get_ca() if hasattr(host, 'get_ca') else None
-                if not ca:
-                    ca, _ = CertificateAuthority.objects.get_or_create(
-                        name='default-ca',
-                        defaults={'name': 'default-ca', 'description': 'Default Certificate Authority'}
-                    )
-                    if not ca.certificate:
-                        ca.generate_self_signed_cert()
-                        ca.save()
-                
-                client_cert = ClientCertificate(
-                    name=f'client-{host.hostname}',
-                    ca=ca
+
+            cert_pem_path = host.cert_pem_path
+            cert_key_path = host.cert_key_path
+
+            if not cert_pem_path or not cert_key_path:
+                raise ValueError(
+                    "证书路径未配置，无法进行证书认证测试"
                 )
-                client_cert.generate_client_cert(f'client-{host.hostname}')
-                client_cert.save()
-            
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.pem') as cert_file:
-                cert_file.write(client_cert.certificate)
-                cert_file_path = cert_file.name
-            
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.pem') as key_file:
-                key_file.write(client_cert.private_key)
-                key_file_path = key_file.name
-            
-            try:
-                from utils.winrm_client import WinrmClient
-                client = WinrmClient(
-                    hostname=host.hostname or host.ip_address,
-                    port=5986,
-                    username='',
-                    password='',
-                    use_ssl=True,
-                    server_cert_validation='validate',
-                    client_cert_pem=cert_file_path,
-                    client_cert_key=key_file_path
+            if not os.path.exists(cert_pem_path):
+                raise ValueError(
+                    f"客户端证书文件不存在: {cert_pem_path}"
                 )
-                
-                result = client.execute_command('echo', ['Connection Test'])
-                success = result.status_code == 0
-                
-            finally:
-                os.unlink(cert_file_path)
-                os.unlink(key_file_path)
+            if not os.path.exists(cert_key_path):
+                raise ValueError(
+                    f"客户端私钥文件不存在: {cert_key_path}"
+                )
+
+            from utils.winrm_client import WinrmClient
+            client = WinrmClient(
+                hostname=host.hostname,
+                port=host.port,
+                username='',
+                password='',
+                use_ssl=True,
+                auth_method='certificate',
+                cert_pem_path=cert_pem_path,
+                cert_key_path=cert_key_path,
+                server_cert_validation='ignore',
+            )
+            result = client.execute_command('echo', ['Connection Test'])
+            success = result.status_code == 0
         else:
             from utils.winrm_client import WinrmClient
             client = WinrmClient(
-                hostname=host.hostname or host.ip_address,
+                hostname=host.hostname,
                 port=host.port,
                 username=host.username,
                 password=host.password,
@@ -228,6 +211,11 @@ def test_winrm_connection(self, host_id, use_certificate_auth=False):
             success = result.status_code == 0
         
         if success:
+            if host.auth_method == 'certificate' and host.cert_provision_status in ('pending', 'ready'):
+                Host.objects.filter(pk=host.pk).update(
+                    cert_provision_status='configured',
+                    cert_activated_at=timezone.now(),
+                )
             task.progress = 100
             task.complete_success({
                 'connected': True,
@@ -241,6 +229,8 @@ def test_winrm_connection(self, host_id, use_certificate_auth=False):
                 'protocol': 'HTTPS with Certificate' if use_certificate_auth else 'HTTP with Basic Auth'
             }
         else:
+            if host.auth_method == 'certificate' and host.cert_provision_status in ('pending', 'ready'):
+                Host.objects.filter(pk=host.pk).update(cert_provision_status='failed')
             task.complete_failure("Connection test failed")
             return {
                 'success': False,
@@ -250,6 +240,15 @@ def test_winrm_connection(self, host_id, use_certificate_auth=False):
         
     except Exception as e:
         logger.error(f"测试WinRM连接失败: {str(e)}", exc_info=True)
+        try:
+            host = Host.objects.get(id=host_id)
+            if host.auth_method == 'certificate' and host.cert_provision_status in ('pending', 'ready'):
+                Host.objects.filter(pk=host.pk).update(cert_provision_status='failed')
+        except Host.DoesNotExist:
+            logger.warning(
+                "测试WinRM连接失败后的清理阶段：主机 #%s 不存在，跳过证书状态更新",
+                host_id
+            )
         task.complete_failure(str(e))
         
         return {

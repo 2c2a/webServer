@@ -7,9 +7,12 @@ import os
 import sys
 import importlib
 import importlib.util
+import logging
 from typing import Any, Dict, List, Optional, Type
 
 from plugins.core.base import PluginInterface, EventHook
+
+logger = logging.getLogger(__name__)
 
 
 class PluginManager:
@@ -49,7 +52,7 @@ class PluginManager:
         loaded_plugins = []
         
         if not os.path.isdir(directory):
-            print(f"Plugin directory does not exist: {directory}")
+            logger.warning(f"Plugin directory does not exist: {directory}")
             return loaded_plugins
             
         NON_PLUGIN_FILES = frozenset([
@@ -90,7 +93,7 @@ class PluginManager:
             except ImportError:
                 pass
             except Exception as e:
-                print(f"Error loading plugin from {item_path}: {str(e)}")
+                logger.error(f"Error loading plugin from {item_path}: {str(e)}")
 
         for subdir in os.listdir(directory):
             subdir_path = os.path.join(directory, subdir)
@@ -124,12 +127,12 @@ class PluginManager:
                 self._extract_and_register_plugins(module, subdir)
             )
         except ImportError as e:
-            print(
+            logger.error(
                 f"Error importing plugin package "
                 f"{package_name}: {str(e)}"
             )
         except Exception as e:
-            print(
+            logger.error(
                 f"Error loading plugin package "
                 f"{package_name}: {str(e)}"
             )
@@ -157,7 +160,7 @@ class PluginManager:
                     if self.register_plugin(plugin_instance):
                         loaded.append(plugin_instance.plugin_id)
                 except Exception as e:
-                    print(
+                    logger.error(
                         f"Error instantiating plugin "
                         f"{attr_name}: {str(e)}"
                     )
@@ -170,14 +173,14 @@ class PluginManager:
         :return: 注册是否成功
         """
         if plugin.plugin_id in self.plugins:
-            print(f"Plugin with ID {plugin.plugin_id} already exists")
+            logger.warning(f"Plugin with ID {plugin.plugin_id} already exists")
             return False
             
         try:
             # 初始化插件
             if plugin.initialize():
                 self.plugins[plugin.plugin_id] = plugin
-                print(f"Successfully registered plugin: {plugin.name} ({plugin.plugin_id})")
+                logger.info(f"Successfully registered plugin: {plugin.name} ({plugin.plugin_id})")
                 
                 # 同步到数据库（如果Django可用）
                 plugin_model = self._get_plugin_model()
@@ -196,14 +199,14 @@ class PluginManager:
                                 }
                             )
                     except Exception as db_error:
-                        print(f"Error syncing plugin to database: {str(db_error)}")
+                        logger.error(f"Error syncing plugin to database: {str(db_error)}")
                 
                 return True
             else:
-                print(f"Failed to initialize plugin: {plugin.name}")
+                logger.warning(f"Failed to initialize plugin: {plugin.name}")
                 return False
         except Exception as e:
-            print(f"Error initializing plugin {plugin.name}: {str(e)}")
+            logger.error(f"Error initializing plugin {plugin.name}: {str(e)}")
             return False
             
     def unregister_plugin(self, plugin_id: str) -> bool:
@@ -213,7 +216,7 @@ class PluginManager:
         :return: 卸载是否成功
         """
         if plugin_id not in self.plugins:
-            print(f"Plugin with ID {plugin_id} does not exist")
+            logger.warning(f"Plugin with ID {plugin_id} does not exist")
             return False
             
         plugin = self.plugins[plugin_id]
@@ -222,14 +225,14 @@ class PluginManager:
             # 关闭插件
             if plugin.shutdown():
                 del self.plugins[plugin_id]
-                print(f"Successfully unregistered plugin: {plugin.name}")
+                logger.info(f"Successfully unregistered plugin: {plugin.name}")
                 
                 return True
             else:
-                print(f"Failed to shutdown plugin: {plugin.name}")
+                logger.warning(f"Failed to shutdown plugin: {plugin.name}")
                 return False
         except Exception as e:
-            print(f"Error shutting down plugin {plugin.name}: {str(e)}")
+            logger.error(f"Error shutting down plugin {plugin.name}: {str(e)}")
             return False
             
     def enable_plugin(self, plugin_id: str) -> bool:
@@ -244,9 +247,9 @@ class PluginManager:
                     # 使用 update 方法直接更新数据库，避免触发信号
                     rows_updated = plugin_model.objects.filter(plugin_id=plugin_id).update(is_active=True)
                     if rows_updated > 0:
-                        print(f"Database updated for plugin {plugin_id} (enabled)")
+                        logger.info(f"Database updated for plugin {plugin_id} (enabled)")
                 except Exception as db_error:
-                    print(f"Error updating plugin status in database: {str(db_error)}")
+                    logger.error(f"Error updating plugin status in database: {str(db_error)}")
             
             return True
         return False
@@ -263,9 +266,9 @@ class PluginManager:
                     # 使用 update 方法直接更新数据库，避免触发信号
                     rows_updated = plugin_model.objects.filter(plugin_id=plugin_id).update(is_active=False)
                     if rows_updated > 0:
-                        print(f"Database updated for plugin {plugin_id} (disabled)")
+                        logger.info(f"Database updated for plugin {plugin_id} (disabled)")
                 except Exception as db_error:
-                    print(f"Error updating plugin status in database: {str(db_error)}")
+                    logger.error(f"Error updating plugin status in database: {str(db_error)}")
             
             return True
         return False
@@ -302,7 +305,7 @@ class PluginManager:
         loaded_plugins = []
         
         if not os.path.isdir(directory):
-            print(f"Plugin directory does not exist: {directory}")
+            logger.warning(f"Plugin directory does not exist: {directory}")
             return loaded_plugins
             
         for item in os.listdir(directory):
@@ -343,9 +346,9 @@ class PluginManager:
                                     loaded_plugins.append(plugin_instance.plugin_id)
                                     
                 except ImportError as e:
-                    print(f"Failed to import plugin module from {item_path}: {str(e)}")
+                    logger.error(f"Failed to import plugin module from {item_path}: {str(e)}")
                 except Exception as e:
-                    print(f"Error loading plugin from {item_path}: {str(e)}")
+                    logger.error(f"Error loading plugin from {item_path}: {str(e)}")
                     
         return loaded_plugins
         

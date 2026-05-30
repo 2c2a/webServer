@@ -24,7 +24,8 @@ urlpatterns = [
     path('api/verify_pairing_code/', views.verify_pairing_code, name='api_verify_pairing_code'),
     path('api/exchange_token/', views.exchange_token, name='api_exchange_token'),
     path('api/get_session_token', views.get_session_token, name='api_get_session_token_no_slash'),  # 不带斜杠版本
-    path('api/get_session_token/', views.get_session_token, name='api_get_session_token'),  # 带斜杠版本
+    path('api/get_session_token/', views.get_session_token, name='api_get_session_token'),
+    path('api/upload_host_cert/', views.upload_host_cert, name='api_upload_host_cert'),
     path('api/check_pairing_status', views.check_pairing_status, name='api_check_pairing_status'),  # 新增：检查配对状态
     path('api/session/', views.revoke_session, name='api_revoke_session'),
     
@@ -33,4 +34,15 @@ urlpatterns = [
     path('api/complete-auto-register/', views.complete_auto_register, name='complete_auto_register'),
     path('api/pending-hosts/', views.get_pending_hosts, name='get_pending_hosts'),
     path('api/revoke-pending-host/', views.revoke_pending_host, name='revoke_pending_host'),
+
+    path('sse/init-status/', views.sse_init_status, name='sse_init_status'),
+
+    path('api/cert-provision/validate/', views.cert_provision_validate, name='cert_provision_validate'),
+    path('api/cert-provision/upload-hostname/', views.cert_provision_upload_hostname, name='cert_provision_upload_hostname'),
+    path('api/cert-provision/download-certs/', views.cert_provision_download_certs, name='cert_provision_download_certs'),
+    path('api/cert-provision/notify-complete/', views.cert_provision_notify_complete, name='cert_provision_notify_complete'),
+    path('api/cert-provision/disable-password-auth/', views.cert_provision_disable_password_auth, name='cert_provision_disable_password_auth'),
+    path('api/cert-provision/test-result/', views.cert_provision_test_result, name='cert_provision_test_result'),
+    path('api/cert-provision/status-stream/', views.cert_provision_status_stream, name='cert_provision_status_stream'),
+    path('api/cert-provision/test-stream/', views.cert_provision_test_stream, name='cert_provision_test_stream'),
 ]

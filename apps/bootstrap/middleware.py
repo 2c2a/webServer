@@ -28,14 +28,18 @@ class SessionValidationMiddleware:
             '/api/exchange_token', 
             '/api/exchange_token/',
             '/bootstrap/exchange-token/',
-            '/api/get_session_token',  # 允许InitialToken访问（无斜杠版本）
-            '/api/get_session_token/',  # 允许InitialToken访问（有斜杠版本）
-            '/bootstrap/api/get_session_token',  # Bootstrap应用下的路径（无斜杠）
-            '/bootstrap/api/get_session_token/',  # Bootstrap应用下的路径（有斜杠）
-            '/api/check_totp_status',  # 允许InitialToken访问检查状态（无斜杠版本）
-            '/api/check_totp_status/',  # 允许InitialToken访问检查状态（有斜杠版本）
-            '/bootstrap/api/check_totp_status',  # Bootstrap应用下的检查状态路径（无斜杠）
-            '/bootstrap/api/check_totp_status/'  # Bootstrap应用下的检查状态路径（有斜杠）
+            '/api/get_session_token',
+            '/api/get_session_token/',
+            '/bootstrap/api/get_session_token',
+            '/bootstrap/api/get_session_token/',
+            '/api/check_totp_status',
+            '/api/check_totp_status/',
+            '/bootstrap/api/check_totp_status',
+            '/bootstrap/api/check_totp_status/',
+            '/bootstrap/sse/init-status',
+            '/bootstrap/sse/init-status/',
+            '/bootstrap/api/upload_host_cert',
+            '/bootstrap/api/upload_host_cert/',
         ]
         
         if (request.path.startswith('/api/') or 

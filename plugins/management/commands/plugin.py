@@ -1,6 +1,7 @@
 """
 插件管理命令
 提供类似 pip 的插件管理功能，支持安装、卸载、搜索、登录等操作
+支持从文件安装：将插件目录解压到 plugins/ 目录后，使用 scan 发现并 install 安装
 """
 import os
 import sys
@@ -9,6 +10,8 @@ import json
 import re
 import toml
 import inspect
+import zipfile
+import tempfile
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from plugins.core.plugin_manager import get_plugin_manager
@@ -29,8 +32,8 @@ class Command(BaseCommand):
     help = '插件管理命令，类似 pip 的功能'
 
     def add_arguments(self, parser):
-        parser.add_argument('action', type=str, help='操作类型: install, upgrade, uninstall, list, info, search, login, enable, disable')
-        parser.add_argument('plugin_name', nargs='?', type=str, help='插件名称或本地路径')
+        parser.add_argument('action', type=str, help='操作类型: install, upgrade, uninstall, list, info, search, scan, login, enable, disable')
+        parser.add_argument('plugin_name', nargs='?', type=str, help='插件名称、本地路径或zip文件路径')
         parser.add_argument('--source', type=str, help='插件源地址或本地路径')
         parser.add_argument('--force', action='store_true', help='强制执行操作')
         parser.add_argument('--no-migrate', action='store_true', help='跳过数据库迁移')
@@ -38,6 +41,7 @@ class Command(BaseCommand):
         parser.add_argument('--registry', type=str, default=PLUGIN_REGISTRY_URL, help='插件仓库地址')
         parser.add_argument('--force-github', action='store_true', help='强制使用 GitHub 插件仓库')
         parser.add_argument('--force-gitee', action='store_true', help='强制使用 Gitee 插件仓库镜像')
+        parser.add_argument('--install-all', action='store_true', help='与 scan 配合使用，安装所有发现的未注册插件')
 
     def handle(self, *args, **options):
         action = options['action']
@@ -53,9 +57,14 @@ class Command(BaseCommand):
 
         if action == 'list':
             self.list_plugins()
+        elif action == 'scan':
+            self.scan_plugins(
+                install_all=options.get('install_all', False),
+                no_migrate=no_migrate,
+            )
         elif action == 'install':
             if not plugin_name:
-                raise CommandError('安装插件需要指定插件名称或路径')
+                raise CommandError('安装插件需要指定插件名称、路径或zip文件')
             self.install_plugin(
                 plugin_name,
                 options.get('source'),
@@ -96,7 +105,7 @@ class Command(BaseCommand):
             raise CommandError(
                 f'未知的操作: {action}. '
                 f'支持的操作: install, upgrade, uninstall, '
-                f'list, info, search, login, enable, disable'
+                f'list, info, search, scan, login, enable, disable'
             )
 
     def _fetch_registry(self, registry_url=None):
@@ -175,6 +184,201 @@ class Command(BaseCommand):
             self.stdout.write(f'    版本: {info.get("version", "N/A")}')
             self.stdout.write('')
 
+    def scan_plugins(self, install_all=False, no_migrate=False):
+        plugins_base = os.path.join(settings.BASE_DIR, 'plugins')
+        if not os.path.isdir(plugins_base):
+            raise CommandError(f'插件目录不存在: {plugins_base}')
+
+        registered_ids = set(ALL_AVAILABLE_PLUGINS.keys())
+        db_ids = set(
+            PluginRecord.objects.values_list('plugin_id', flat=True)
+        )
+        loaded_plugins = get_plugin_manager().get_all_plugins()
+        loaded_ids = set(loaded_plugins.keys())
+
+        skip_dirs = {'core', 'management', 'templatetags', 'migrations',
+                     '__pycache__', '.git'}
+
+        discovered = []
+
+        for entry in sorted(os.listdir(plugins_base)):
+            entry_path = os.path.join(plugins_base, entry)
+            if not os.path.isdir(entry_path):
+                continue
+            if entry in skip_dirs:
+                continue
+            if entry.startswith('.') or entry.startswith('_'):
+                continue
+            init_file = os.path.join(entry_path, '__init__.py')
+            if not os.path.exists(init_file):
+                continue
+
+            has_plugin_class = self._detect_plugin_class(entry, entry_path)
+            if not has_plugin_class:
+                continue
+
+            is_registered = entry in registered_ids
+            is_in_db = entry in db_ids
+            is_loaded = entry in loaded_ids
+
+            if is_registered or is_in_db or is_loaded:
+                continue
+
+            plugin_class, plugin_module_name = self._load_plugin_class_from_package(
+                entry, entry_path
+            )
+            plugin_name = entry
+            plugin_version = '0.0.0'
+            plugin_desc = ''
+            if plugin_class:
+                try:
+                    inst = plugin_class()
+                    plugin_name = inst.name
+                    plugin_version = inst.version
+                    plugin_desc = inst.description
+                except Exception as exc:
+                    self.stderr.write(
+                        f"Warning: failed to read metadata from plugin '{entry}': {exc}"
+                    )
+
+            discovered.append({
+                'dir_name': entry,
+                'path': entry_path,
+                'name': plugin_name,
+                'version': plugin_version,
+                'description': plugin_desc,
+                'plugin_class': plugin_class,
+                'plugin_module_name': plugin_module_name,
+            })
+
+        if not discovered:
+            self.stdout.write(self.style.SUCCESS('没有发现未注册的插件'))
+            return
+
+        self.stdout.write(self.style.SUCCESS(
+            f'发现 {len(discovered)} 个未注册的插件:'
+        ))
+        self.stdout.write('')
+        for info in discovered:
+            self.stdout.write(f'  {self.style.SUCCESS(info["dir_name"])}')
+            self.stdout.write(f'    名称: {info["name"]}')
+            self.stdout.write(f'    版本: {info["version"]}')
+            self.stdout.write(f'    描述: {info["description"]}')
+            self.stdout.write(f'    路径: {info["path"]}')
+            self.stdout.write('')
+
+        if install_all:
+            self.stdout.write('正在安装所有发现的插件...')
+            for info in discovered:
+                try:
+                    app_label = self._register_discovered_plugin(
+                        info, no_migrate=no_migrate
+                    )
+                    self.stdout.write(self.style.SUCCESS(
+                        f'  ✓ {info["name"]} 安装完成'
+                    ))
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(
+                        f'  ✗ {info["dir_name"]} 安装失败: {str(e)}'
+                    ))
+        else:
+            self.stdout.write(
+                '使用 "uv run python manage.py plugin install <目录名>" '
+                '安装单个插件\n'
+                '使用 "uv run python manage.py plugin scan --install-all" '
+                '安装所有发现的插件'
+            )
+
+    def _detect_plugin_class(self, dir_name, dir_path):
+        init_file = os.path.join(dir_path, '__init__.py')
+        if os.path.exists(init_file):
+            try:
+                with open(init_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                if re.search(
+                    r'class\s+\w+\s*\([^)]*PluginInterface',
+                    content, re.DOTALL
+                ):
+                    return True
+                if 'PLUGIN_INFO' in content:
+                    return True
+            except Exception as e:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'读取插件 {dir_name} 的 __init__.py 失败: {e}'
+                    )
+                )
+
+        for item in os.listdir(dir_path):
+            if not item.endswith('.py') or item == '__init__.py':
+                continue
+            fp = os.path.join(dir_path, item)
+            try:
+                with open(fp, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                if re.search(
+                    r'class\s+\w+\s*\([^)]*PluginInterface',
+                    content, re.DOTALL
+                ):
+                    return True
+            except Exception:
+                continue
+
+        return False
+
+    def _register_discovered_plugin(self, info, no_migrate=False):
+        plugin_class = info['plugin_class']
+        plugin_module_name = info['plugin_module_name']
+        dir_name = info['dir_name']
+
+        if not plugin_class:
+            plugin_class, plugin_module_name = self._load_plugin_class_from_package(
+                dir_name, info['path']
+            )
+
+        if not plugin_class:
+            raise CommandError(
+                f'在 {info["path"]} 中未找到有效的插件类'
+            )
+
+        plugin_instance = plugin_class()
+        plugin_manager = get_plugin_manager()
+        plugin_manager.plugins[plugin_instance.plugin_id] = plugin_instance
+
+        try:
+            plugin_instance.initialize()
+        except Exception as e:
+            self.stdout.write(
+                self.style.WARNING(
+                    f'插件 {plugin_instance.plugin_id} 初始化失败，已继续安装流程: {e}'
+                )
+            )
+
+        PluginRecord.objects.update_or_create(
+            plugin_id=plugin_instance.plugin_id,
+            defaults={
+                'name': plugin_instance.name,
+                'version': plugin_instance.version,
+                'description': plugin_instance.description,
+                'is_active': True,
+            }
+        )
+
+        self.add_plugin_to_toml_config(plugin_instance.plugin_id, {
+            'name': plugin_instance.name,
+            'module': plugin_module_name,
+            'class': plugin_class.__name__,
+            'description': plugin_instance.description,
+            'version': plugin_instance.version,
+            'enabled': True
+        })
+
+        app_label = self._get_app_label_from_module(plugin_module_name)
+        if app_label and not no_migrate:
+            self._run_migrate(app_label)
+
+        return app_label
+
     def login_github(self):
         self.stdout.write('正在检查 GitHub CLI 认证状态...')
         try:
@@ -213,7 +417,11 @@ class Command(BaseCommand):
 
         app_label = None
 
-        if os.path.exists(plugin_name) and os.path.isdir(plugin_name):
+        if plugin_name.endswith('.zip'):
+            if not os.path.exists(plugin_name):
+                raise CommandError(f'zip 文件不存在: {plugin_name}')
+            app_label = self.install_from_zip(plugin_name, force=force, no_migrate=no_migrate)
+        elif os.path.exists(plugin_name) and os.path.isdir(plugin_name):
             app_label = self.install_from_path(plugin_name)
         else:
             plugin_path = os.path.join(
@@ -236,7 +444,9 @@ class Command(BaseCommand):
                         found = True
                         break
                 if not found:
-                    if source and os.path.exists(source) and os.path.isdir(source):
+                    if source and source.endswith('.zip') and os.path.exists(source):
+                        app_label = self.install_from_zip(source, force=force, no_migrate=no_migrate)
+                    elif source and os.path.exists(source) and os.path.isdir(source):
                         app_label = self.install_from_path(source)
                     else:
                         app_label = self.install_from_registry(
@@ -245,6 +455,111 @@ class Command(BaseCommand):
 
         if app_label and not no_migrate:
             self._run_migrate(app_label)
+
+    def install_from_zip(self, zip_path, force=False, no_migrate=False):
+        if not zipfile.is_zipfile(zip_path):
+            raise CommandError(f'不是有效的 zip 文件: {zip_path}')
+
+        plugins_base = os.path.join(settings.BASE_DIR, 'plugins')
+        zip_basename = os.path.basename(zip_path)
+        plugin_dir_name = os.path.splitext(zip_basename)[0]
+
+        with zipfile.ZipFile(zip_path, 'r') as zf:
+            top_dirs = set()
+            for name in zf.namelist():
+                parts = name.split('/')
+                if len(parts) > 1 and parts[0]:
+                    top_dirs.add(parts[0])
+
+            if len(top_dirs) == 1:
+                single_dir = top_dirs.pop()
+                if single_dir == plugin_dir_name or single_dir.replace('-', '_') == plugin_dir_name:
+                    plugin_dir_name = single_dir
+
+            if len(top_dirs) == 1:
+                single_dir = list(top_dirs)[0] if not plugin_dir_name else plugin_dir_name
+                has_init = any(
+                    n == f'{single_dir}/__init__.py' or n.startswith(f'{single_dir}/')
+                    for n in zf.namelist()
+                    if n.endswith('__init__.py')
+                )
+                if not has_init:
+                    nested = [n for n in zf.namelist()
+                              if n.startswith(f'{single_dir}/') and n.endswith('/')]
+                    if nested:
+                        for sub in nested:
+                            sub_name = sub.rstrip('/').split('/')[-1]
+                            sub_init = f'{single_dir}/{sub_name}/__init__.py'
+                            if sub_init in zf.namelist():
+                                plugin_dir_name = sub_name
+                                break
+
+        target_dir = os.path.join(plugins_base, plugin_dir_name)
+        if os.path.exists(target_dir):
+            if force:
+                shutil.rmtree(target_dir)
+            else:
+                raise CommandError(
+                    f'插件目录已存在: {target_dir}\n'
+                    f'使用 --force 强制重新安装'
+                )
+
+        self.stdout.write(f'正在从 zip 文件解压插件: {zip_path}')
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                zf.extractall(tmp_dir)
+
+            extracted_items = os.listdir(tmp_dir)
+            if len(extracted_items) == 1 and os.path.isdir(
+                os.path.join(tmp_dir, extracted_items[0])
+            ):
+                src_dir = os.path.join(tmp_dir, extracted_items[0])
+                inner_items = os.listdir(src_dir)
+                has_init = '__init__.py' in inner_items
+                if has_init:
+                    plugin_dir_name = extracted_items[0]
+                    target_dir = os.path.join(plugins_base, plugin_dir_name)
+                    if os.path.exists(target_dir):
+                        if force:
+                            shutil.rmtree(target_dir)
+                        else:
+                            raise CommandError(
+                                f'插件目录已存在: {target_dir}\n'
+                                f'使用 --force 强制重新安装'
+                            )
+                    shutil.copytree(src_dir, target_dir)
+                else:
+                    sub_dirs = [
+                        d for d in inner_items
+                        if os.path.isdir(os.path.join(src_dir, d))
+                        and os.path.exists(os.path.join(src_dir, d, '__init__.py'))
+                    ]
+                    if len(sub_dirs) == 1:
+                        plugin_dir_name = sub_dirs[0]
+                        target_dir = os.path.join(plugins_base, plugin_dir_name)
+                        if os.path.exists(target_dir):
+                            if force:
+                                shutil.rmtree(target_dir)
+                            else:
+                                raise CommandError(
+                                    f'插件目录已存在: {target_dir}\n'
+                                    f'使用 --force 强制重新安装'
+                                )
+                        shutil.copytree(
+                            os.path.join(src_dir, sub_dirs[0]), target_dir
+                        )
+                    else:
+                        shutil.copytree(src_dir, target_dir)
+            else:
+                shutil.copytree(tmp_dir, target_dir)
+
+        self.stdout.write(self.style.SUCCESS(
+            f'插件已解压到: {target_dir}'
+        ))
+
+        app_label = self.install_from_path(target_dir)
+        return app_label
 
     def install_from_registry(self, plugin_name, registry_url=None, force=False):
         remote_plugins = self._fetch_registry(registry_url)
@@ -393,9 +708,51 @@ class Command(BaseCommand):
                         plugin_module_name = mod_name
                         if self.debug:
                             self.stdout.write(f'[DEBUG] 从 PLUGIN_INFO 找到插件类: {plugin_class.__name__}')
+
+                if not plugin_class:
+                    for attr_name in dir(init_module):
+                        attr = getattr(init_module, attr_name)
+                        if (inspect.isclass(attr) and
+                            hasattr(attr, '__mro__') and
+                            attr.__name__ != 'PluginInterface' and
+                            any(hasattr(b, '__name__') and b.__name__ == 'PluginInterface'
+                                for b in attr.__mro__)):
+                            plugin_class = attr
+                            plugin_module_name = mod_name
+                            break
             except ImportError as e:
                 if self.debug:
                     self.stdout.write(f'[DEBUG] import_module({mod_name}) 失败: {e}')
+
+                try:
+                    spec = importlib.util.spec_from_file_location(
+                        mod_name, init_file
+                    )
+                    if spec is not None and spec.loader is not None:
+                        init_module = importlib.util.module_from_spec(spec)
+                        sys.modules[mod_name] = init_module
+                        spec.loader.exec_module(init_module)
+
+                        if hasattr(init_module, 'PLUGIN_INFO'):
+                            pinfo = getattr(init_module, 'PLUGIN_INFO')
+                            if 'main_class' in pinfo and hasattr(init_module, pinfo['main_class']):
+                                plugin_class = getattr(init_module, pinfo['main_class'])
+                                plugin_module_name = mod_name
+
+                        if not plugin_class:
+                            for attr_name in dir(init_module):
+                                attr = getattr(init_module, attr_name)
+                                if (inspect.isclass(attr) and
+                                    hasattr(attr, '__mro__') and
+                                    attr.__name__ != 'PluginInterface' and
+                                    any(hasattr(b, '__name__') and b.__name__ == 'PluginInterface'
+                                        for b in attr.__mro__)):
+                                    plugin_class = attr
+                                    plugin_module_name = mod_name
+                                    break
+                except Exception as e2:
+                    if self.debug:
+                        self.stdout.write(f'[DEBUG] spec_from_file_location 也失败: {e2}')
 
         if not plugin_class:
             plugin_class, plugin_module_name = self._scan_py_files_for_plugin(
@@ -459,12 +816,15 @@ class Command(BaseCommand):
         if not os.path.exists(plugin_path):
             raise CommandError(f'插件路径不存在: {plugin_path}')
 
-        plugin_dir_name = os.path.basename(plugin_path)
+        plugin_dir_name = os.path.basename(os.path.abspath(plugin_path))
         plugins_base = os.path.join(settings.BASE_DIR, 'plugins')
         is_under_plugins = (
             os.path.dirname(os.path.abspath(plugin_path)) ==
             os.path.abspath(plugins_base)
         )
+
+        plugin_manager = get_plugin_manager()
+        loaded_plugins = plugin_manager.get_all_plugins()
 
         plugin_class = None
         plugin_module_name = None
@@ -482,24 +842,39 @@ class Command(BaseCommand):
 
         if not plugin_class:
             raise CommandError(
-                f'在 {plugin_path} 中未找到有效的插件类'
+                f'在 {plugin_path} 中未找到有效的插件类\n'
+                f'请确保插件目录中包含继承自 PluginInterface 的类'
             )
 
         try:
             plugin_instance = plugin_class()
-            plugin_manager = get_plugin_manager()
+
+            if plugin_instance.plugin_id in loaded_plugins:
+                self.stdout.write(self.style.WARNING(
+                    f'插件 {plugin_instance.name} (ID: {plugin_instance.plugin_id}) 已加载，跳过重复安装'
+                ))
+                return self._get_app_label_from_module(plugin_module_name)
 
             plugin_manager.plugins[plugin_instance.plugin_id] = (
                 plugin_instance
             )
 
-            if plugin_instance.initialize():
-                self.stdout.write(self.style.SUCCESS(
-                    f'成功从路径安装插件: {plugin_instance.name}'
-                ))
-            else:
+            from plugins.core.base import ServiceProvider
+            if isinstance(plugin_instance, ServiceProvider):
+                plugin_manager.service_registry.register(plugin_instance)
+
+            try:
+                if plugin_instance.initialize():
+                    self.stdout.write(self.style.SUCCESS(
+                        f'成功从路径安装插件: {plugin_instance.name}'
+                    ))
+                else:
+                    self.stdout.write(self.style.WARNING(
+                        f'插件 {plugin_instance.name} 安装成功但初始化失败'
+                    ))
+            except Exception as e:
                 self.stdout.write(self.style.WARNING(
-                    f'插件 {plugin_instance.name} 安装成功但初始化失败'
+                    f'插件 {plugin_instance.name} 初始化出错: {str(e)}'
                 ))
 
             plugin_record, created = PluginRecord.objects.update_or_create(
@@ -513,7 +888,9 @@ class Command(BaseCommand):
             )
 
             if created:
-                self.stdout.write(f'已创建插件数据库记录')
+                self.stdout.write('已创建插件数据库记录')
+            else:
+                self.stdout.write('已更新插件数据库记录')
 
             self.add_plugin_to_toml_config(plugin_instance.plugin_id, {
                 'name': plugin_instance.name,
@@ -523,7 +900,17 @@ class Command(BaseCommand):
                 'version': plugin_instance.version,
                 'enabled': True
             })
+
+            self.stdout.write(self.style.SUCCESS(
+                f'插件 {plugin_instance.name} (v{plugin_instance.version}) 安装完成！'
+            ))
+            self.stdout.write(
+                '提示: 需要重启服务以使 Django App 注册生效'
+            )
+
             return self._get_app_label_from_module(plugin_module_name)
+        except CommandError:
+            raise
         except Exception as e:
             raise CommandError(f'从路径安装插件失败: {str(e)}')
 

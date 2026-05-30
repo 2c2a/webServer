@@ -524,6 +524,8 @@ def product_invite_view(request, token):
     产品邀请链接视图
 
     用户访问邀请链接后，解锁对应产品或产品组的访问权限
+    GET: 显示邀请信息和确认页面
+    POST: 确认接受邀请，执行授权操作
     """
     from django.shortcuts import render, redirect
     from django.contrib import messages
@@ -542,7 +544,6 @@ def product_invite_view(request, token):
             'message': '邀请链接无效或不存在。',
         })
 
-    # 校验令牌状态
     if not invite_token.is_valid():
         if invite_token.is_expired():
             return render(request, 'operations/invite_result.html', {
@@ -559,12 +560,10 @@ def product_invite_view(request, token):
             'message': '邀请链接已被禁用。',
         })
 
-    # 如果用户未登录，重定向到登录页
     if not request.user.is_authenticated:
         login_url = reverse('accounts:login') + f'?next={request.path}'
         return redirect(login_url)
 
-    # 检查是否已有授权
     existing_grant = ProductAccessGrant.objects.filter(
         user=request.user,
         product=invite_token.product,
@@ -580,7 +579,21 @@ def product_invite_view(request, token):
             'product_group': invite_token.product_group,
         })
 
-    # 创建授权记录
+    if request.method == 'GET':
+        target_name = (
+            invite_token.product.display_name
+            if invite_token.product
+            else (invite_token.product_group.name if invite_token.product_group else '未知')
+        )
+        return render(request, 'operations/invite_result.html', {
+            'success': None,
+            'message': f'您即将解锁 "{target_name}" 的访问权限。',
+            'product': invite_token.product,
+            'product_group': invite_token.product_group,
+            'needs_confirm': True,
+            'token': token,
+        })
+
     try:
         grant, created = ProductAccessGrant.objects.get_or_create(
             user=request.user,
@@ -592,7 +605,6 @@ def product_invite_view(request, token):
             }
         )
         if not created:
-            # 如果记录已存在但被撤销或过期，重新激活
             if grant.is_revoked or grant.is_expired():
                 grant.is_revoked = False
                 grant.revoked_at = None
@@ -610,7 +622,6 @@ def product_invite_view(request, token):
             'message': '授权处理失败，请稍后重试。',
         })
 
-    # 更新令牌使用次数
     invite_token.increment_usage()
 
     target_name = (

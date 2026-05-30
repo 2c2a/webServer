@@ -7,19 +7,13 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.utils import timezone
 from django.dispatch import Signal
+from utils.crypto import encrypt_value, decrypt_value
 import logging
-import hashlib
-import base64
 
 User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
-
-def _get_fernet():
-    from cryptography.fernet import Fernet
-    key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
-    return Fernet(base64.urlsafe_b64encode(key))
 
 # 定义开户申请提交前的信号
 account_opening_request_pre_submit = Signal()
@@ -400,6 +394,12 @@ class Product(models.Model):
         help_text=_('产品的可见性：公开对所有用户可见，邀请访问仅对已授权用户可见')
     )
 
+    limit_one_per_user = models.BooleanField(
+        default=False,
+        verbose_name=_('每人限购一个'),
+        help_text=_('是否限制每个用户只能拥有一个此产品')
+    )
+    
     enable_disk_quota = models.BooleanField(
         default=False,
         verbose_name=_('启用磁盘配额管理'),
@@ -732,7 +732,11 @@ class AccountOpeningRequest(models.Model):
 
         if ((old_status == 'pending' and self.status == 'approved') or 
             (is_new_instance and auto_approved and self.status == 'approved')):
-            self.auto_process_creation()
+            try:
+                from apps.operations.tasks import process_account_creation
+                process_account_creation.delay(self.pk)
+            except Exception as e:
+                logger.error(f"Failed to dispatch account creation task for request {self.pk}: {str(e)}")
 
     def auto_process_creation(self):
         """审批通过后自动创建用户"""
@@ -781,15 +785,7 @@ class AccountOpeningRequest(models.Model):
 
         # 正式模式
         try:
-            from utils.winrm_client import WinrmClient
-
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
 
             password = CloudComputerUser.generate_complex_password()
             result = client.create_user(
@@ -947,14 +943,14 @@ class CloudComputerUser(models.Model):
         if not self._initial_password:
             return ''
         try:
-            return _get_fernet().decrypt(self._initial_password.encode()).decode()
-        except Exception:
+            return decrypt_value(self._initial_password)
+        except ValueError:
             raise ValueError("密码解密失败，数据可能已损坏或密钥已变更")
 
     @initial_password.setter
     def initial_password(self, value):
         if value:
-            self._initial_password = _get_fernet().encrypt(value.encode()).decode()
+            self._initial_password = encrypt_value(value)
         else:
             self._initial_password = ''
     password_viewed = models.BooleanField(
@@ -1026,7 +1022,7 @@ class CloudComputerUser(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        重写save方法，当状态改变时自动执行相应操作
+        重写save方法，当状态改变时通过Celery异步执行远程操作
         """
         old_status = None
         if self.pk:
@@ -1038,96 +1034,74 @@ class CloudComputerUser(models.Model):
         super().save(*args, **kwargs)
 
         if old_status is not None:
+            remote_action = None
             if old_status != 'disabled' and self.status == 'disabled':
-                self.disable_remote_user()
+                remote_action = 'disable'
             elif old_status == 'disabled' and self.status == 'active':
-                self.enable_remote_user()
+                remote_action = 'enable'
             elif old_status != 'deleted' and self.status == 'deleted':
-                self.delete_remote_user()
+                remote_action = 'delete'
+
+            if remote_action:
+                try:
+                    from apps.operations.tasks import execute_cloud_user_remote_action
+                    execute_cloud_user_remote_action.delay(self.pk, remote_action)
+                except Exception as e:
+                    logger.error(f"Failed to dispatch remote action '{remote_action}' for user {self.username}: {str(e)}")
 
     def disable_remote_user(self):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟禁用用户 {self.username} 在产品 {self.product.display_name}')
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.disabled_user(self.username)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to disable user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to disable user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error disabling user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error disabling user {self.username} on host {host.name}: {str(e)}")
 
     def enable_remote_user(self):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟启用用户 {self.username} 在产品 {self.product.display_name}')
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.enable_user(self.username)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to enable user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to enable user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error enabling user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error enabling user {self.username} on host {host.name}: {str(e)}")
 
     def delete_remote_user(self):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟删除用户 {self.username} 在产品 {self.product.display_name}')
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.delete_user(self.username)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to delete user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to delete user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error deleting user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error deleting user {self.username} on host {host.name}: {str(e)}")
 
     def get_and_burn_password(self):
         from django.utils import timezone
@@ -1148,30 +1122,20 @@ class CloudComputerUser(models.Model):
     def reset_windows_password(self, new_password):
         import os
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f'DEMO模式: 模拟重置用户 {self.username} 的密码')
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.reset_password(self.username, new_password)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
-                print(f"Failed to reset password for user {self.username} on host {host.name}: {error_msg}")
+                logger.error(f"Failed to reset password for user {self.username} on host {host.name}: {error_msg}")
         except Exception as e:
-            print(f"Error resetting password for user {self.username} on host {host.name}: {str(e)}")
+            logger.error(f"Error resetting password for user {self.username} on host {host.name}: {str(e)}")
 
     @staticmethod
     def generate_complex_password(length=16):
@@ -1388,8 +1352,10 @@ class ProductInvitationToken(models.Model):
         return self.is_active and not self.is_expired() and not self.is_exhausted()
 
     def increment_usage(self):
-        self.used_count += 1
+        from django.db.models import F
+        self.used_count = F('used_count') + 1
         self.save(update_fields=['used_count', 'updated_at'])
+        self.refresh_from_db()
 
     def generate_token(self):
         import secrets

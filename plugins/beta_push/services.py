@@ -1,9 +1,10 @@
 import logging
+import os
 from collections import OrderedDict
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import models
+from django.db import connections, models, IntegrityError
 from django.utils import timezone
 
 import redis as redis_lib
@@ -14,6 +15,11 @@ logger = logging.getLogger(__name__)
 BETA_DB = 'beta'
 
 REDIS_KEY_PREFIX = 'beta_push:progress'
+
+ENCRYPTED_FIELDS = {
+    'hosts.Host._password',
+    'operations.CloudComputerUser._initial_password',
+}
 
 
 def _get_redis():
@@ -55,7 +61,41 @@ def get_progress(task_id):
     return None
 
 
+def _get_fernet(secret_key):
+    try:
+        from cryptography.fernet import Fernet
+        import base64
+        import hashlib
+        key = hashlib.sha256(secret_key.encode()).digest()
+        return Fernet(base64.urlsafe_b64encode(key))
+    except ImportError:
+        return None
+
+
+def _re_encrypt_value(encrypted_value, model_label, field_name):
+    beta_secret_key = os.environ.get('BETA_SECRET_KEY', '')
+    if not beta_secret_key or not encrypted_value:
+        return encrypted_value
+
+    field_key = f'{model_label}.{field_name}'
+    if field_key not in ENCRYPTED_FIELDS:
+        return encrypted_value
+
+    prod_fernet = _get_fernet(settings.SECRET_KEY)
+    beta_fernet = _get_fernet(beta_secret_key)
+    if not prod_fernet or not beta_fernet:
+        return encrypted_value
+
+    try:
+        plaintext = prod_fernet.decrypt(encrypted_value.encode()).decode()
+        return beta_fernet.encrypt(plaintext.encode()).decode()
+    except Exception as e:
+        logger.warning(f'重加密失败 [{field_key}]: {e}')
+        return encrypted_value
+
+
 class BetaPushService:
+    _beta_schema_cache = {}
 
     def __init__(self, user_id, task_id=''):
         self.user_id = user_id
@@ -68,6 +108,7 @@ class BetaPushService:
             'errors': [],
         }
         self._synced_pks = {}
+        self._missing_tables = set()
         self.last_sync_at = self._get_last_sync_at()
 
     def _get_last_sync_at(self):
@@ -82,6 +123,8 @@ class BetaPushService:
             return None
 
     def push_all(self):
+        self.__class__._beta_schema_cache.clear()
+
         steps = [
             ('用户信息', self._push_user),
             ('用户资料', self._push_user_profile),
@@ -122,6 +165,35 @@ class BetaPushService:
             return True
         return False
 
+    def _get_beta_table_info(self, model):
+        table_name = model._meta.db_table
+        if table_name in self._beta_schema_cache:
+            return self._beta_schema_cache[table_name]
+
+        info = {'exists': False, 'columns': set(), 'not_null_no_default': set()}
+
+        try:
+            with connections[BETA_DB].cursor() as cursor:
+                cursor.execute(
+                    "SELECT column_name, is_nullable, column_default "
+                    "FROM information_schema.columns "
+                    "WHERE table_schema = 'public' AND table_name = %s",
+                    [table_name]
+                )
+                rows = cursor.fetchall()
+
+                if rows:
+                    info['exists'] = True
+                    for col_name, is_nullable, col_default in rows:
+                        info['columns'].add(col_name)
+                        if is_nullable == 'NO' and col_default is None:
+                            info['not_null_no_default'].add(col_name)
+        except Exception as e:
+            logger.error(f'查询Beta数据库表结构失败 [{table_name}]: {e}')
+
+        self._beta_schema_cache[table_name] = info
+        return info
+
     def _sync_instance(self, instance):
         model = instance.__class__
         model_label = f'{model._meta.app_label}.{model.__name__}'
@@ -131,12 +203,24 @@ class BetaPushService:
             self.stats['skipped'] += 1
             return True
 
+        table_info = self._get_beta_table_info(model)
+        if not table_info['exists']:
+            if model._meta.db_table not in self._missing_tables:
+                self.stats['errors'].append(
+                    f'{model.__name__}: Beta数据库中表 {model._meta.db_table} 不存在，已跳过'
+                )
+                self._missing_tables.add(model._meta.db_table)
+            self._synced_pks.setdefault(model_label, set()).add(pk)
+            self.stats['skipped'] += 1
+            return True
+
         if not self._is_changed(instance):
             if model.objects.using(BETA_DB).filter(pk=pk).exists():
                 self._synced_pks.setdefault(model_label, set()).add(pk)
                 self.stats['skipped'] += 1
                 return True
 
+        beta_columns = table_info['columns']
         field_values = {}
         m2m_values = OrderedDict()
 
@@ -155,6 +239,9 @@ class BetaPushService:
             if not hasattr(instance, field.attname):
                 continue
 
+            if not hasattr(field, 'column') or field.column not in beta_columns:
+                continue
+
             value = getattr(instance, field.attname)
 
             if isinstance(field, models.ForeignKey):
@@ -166,6 +253,8 @@ class BetaPushService:
                     except Exception:
                         pass
 
+            value = _re_encrypt_value(value, model_label, field.name)
+
             field_values[field.name] = value
 
         try:
@@ -173,33 +262,67 @@ class BetaPushService:
                 pk=pk,
                 defaults=field_values,
             )
-
-            for field_name, related_pks in m2m_values.items():
+        except IntegrityError as e:
+            logger.warning(f'IntegrityError [{model.__name__}:{pk}]: {e}')
+            if model.objects.using(BETA_DB).filter(pk=pk).exists():
                 try:
-                    m2m_model = model._meta.get_field(field_name).related_model
-                    existing_pks = set(
-                        m2m_model.objects.using(BETA_DB).filter(
-                            pk__in=related_pks
-                        ).values_list('pk', flat=True)
+                    model.objects.using(BETA_DB).filter(pk=pk).update(**field_values)
+                    obj = model.objects.using(BETA_DB).get(pk=pk)
+                except Exception as e2:
+                    self.stats['failed'] += 1
+                    self.stats['errors'].append(
+                        f'{model.__name__}:{pk} - 更新失败: {str(e2)}'
                     )
-                    m2m_manager = getattr(obj, field_name)
-                    m2m_manager.set(existing_pks)
-                except Exception as e:
-                    logger.warning(f'M2M同步失败 [{model.__name__}.{field_name}]: {e}')
+                    return False
+            else:
+                prod_cols = {
+                    f.column for f in model._meta.concrete_fields if hasattr(f, 'column')
+                }
+                missing = table_info['not_null_no_default'] - prod_cols
+                hint = (
+                    f'Beta数据库存在额外NOT NULL无默认值列: {missing}'
+                    if missing else str(e)
+                )
+                self.stats['failed'] += 1
+                self.stats['errors'].append(
+                    f'{model.__name__}:{pk} - 创建失败: {hint}'
+                )
+                return False
 
-            self._synced_pks.setdefault(model_label, set()).add(pk)
-            self.stats['pushed'] += 1
-            return True
-        except Exception as e:
-            logger.error(f'同步实例失败 [{model.__name__}:{pk}]: {e}', exc_info=True)
-            self.stats['failed'] += 1
-            self.stats['errors'].append(f'{model.__name__}:{pk} - {str(e)}')
-            return False
+        for field_name, related_pks in m2m_values.items():
+            try:
+                m2m_field = model._meta.get_field(field_name)
+                m2m_through_info = self._get_beta_table_info(
+                    m2m_field.remote_field.through
+                )
+                if not m2m_through_info['exists']:
+                    logger.warning(
+                        f'M2M中间表不存在于Beta数据库 [{model.__name__}.{field_name}]'
+                    )
+                    continue
+
+                m2m_model = m2m_field.related_model
+                existing_pks = set(
+                    m2m_model.objects.using(BETA_DB).filter(
+                        pk__in=related_pks
+                    ).values_list('pk', flat=True)
+                )
+                m2m_manager = getattr(obj, field_name)
+                m2m_manager.set(existing_pks)
+            except Exception as e:
+                logger.warning(f'M2M同步失败 [{model.__name__}.{field_name}]: {e}')
+
+        self._synced_pks.setdefault(model_label, set()).add(pk)
+        self.stats['pushed'] += 1
+        return True
 
     def _ensure_stub_exists(self, related_instance):
         model = related_instance.__class__
         model_label = f'{model._meta.app_label}.{model.__name__}'
         pk = related_instance.pk
+
+        if model._meta.db_table in self._missing_tables:
+            return
 
         if model_label in self._synced_pks and pk in self._synced_pks[model_label]:
             return

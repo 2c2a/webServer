@@ -85,13 +85,16 @@ class WinrmClient:
     def __init__(
             self,
             hostname: str,
-            username: str,
-            password: str,
+            username: Optional[str] = None,
+            password: Optional[str] = None,
             port: int = 5985,
             use_ssl: bool = False,
+            auth_method: str = 'ntlm',
+            cert_pem_path: Optional[str] = None,
+            cert_key_path: Optional[str] = None,
             timeout: Optional[int] = None,
             max_retries: Optional[int] = None,
-            server_cert_validation: str = 'ignore',
+            server_cert_validation: str = 'validate',
             ca_trust_path: Optional[str] = None,
             client_cert_pem: Optional[str] = None,
             client_cert_key: Optional[str] = None
@@ -101,17 +104,48 @@ class WinrmClient:
 
         参数:
             hostname: 主机名或IP地址
-            username: 登录用户名
-            password: 登录密码
+            username: 登录用户名(ntlm方式必填)
+            password: 登录密码(ntlm方式必填)
             port: WinRM服务端口，默认为5985
             use_ssl: 是否使用SSL连接，默认为False
+            auth_method: 认证方式 ('ntlm', 'certificate')
+            cert_pem_path: 客户端证书PEM文件路径(certificate方式必填)
+            cert_key_path: 客户端私钥PEM文件路径(certificate方式必填)
             timeout: 操作超时时间（秒），默认使用配置文件中的值
             max_retries: 最大重试次数，默认使用配置文件中的值
             server_cert_validation: 服务器证书验证模式 ('ignore', 'validate')
             ca_trust_path: CA证书路径（用于验证服务器证书）
-            client_cert_pem: 客户端证书PEM文件路径
-            client_cert_key: 客户端证书私钥文件路径
+            client_cert_pem: 客户端证书PEM文件路径(已弃用，使用cert_pem_path)
+            client_cert_key: 客户端证书私钥文件路径(已弃用，使用cert_key_path)
         """
+        if auth_method == 'certificate':
+            if not cert_pem_path and client_cert_pem:
+                cert_pem_path = client_cert_pem
+            if not cert_key_path and client_cert_key:
+                cert_key_path = client_cert_key
+            if not cert_pem_path or not cert_key_path:
+                raise ValueError("证书认证方式必须提供证书和私钥路径")
+            if not os.path.exists(cert_pem_path):
+                raise ValueError(f"客户端证书文件不存在: {cert_pem_path}")
+            if not os.path.exists(cert_key_path):
+                raise ValueError(f"客户端私钥文件不存在: {cert_key_path}")
+            self.auth_method = 'certificate'
+            self.cert_pem_path = cert_pem_path
+            self.cert_key_path = cert_key_path
+            self.username = username or ''
+            self.password = password or ''
+        elif auth_method == 'ntlm':
+            if not username:
+                raise ValueError("NTLM认证方式必须提供用户名")
+            if not password:
+                raise ValueError("NTLM认证方式必须提供密码")
+            self.auth_method = 'ntlm'
+            self.username = username
+            self.password = password
+            self.cert_pem_path = ''
+            self.cert_key_path = ''
+        else:
+            raise ValueError(f"不支持的认证方式: {auth_method}")
         # 检查主机名是否包含端口（例如 "hostname:port" 或 "ip:port" 格式）
         if ':' in hostname and not hostname.startswith('http'):
             # 分离主机名和端口
@@ -135,13 +169,10 @@ class WinrmClient:
             self.hostname = hostname
             self.port = port
 
-        self.username = username
-        self.password = password
         self.use_ssl = use_ssl
         self.timeout = timeout or settings.WINRM_TIMEOUT
         self.max_retries = max_retries or settings.WINRM_MAX_RETRIES
 
-        # 证书验证配置
         self.server_cert_validation = server_cert_validation
         self.ca_trust_path = ca_trust_path
         self.client_cert_pem = client_cert_pem
@@ -153,7 +184,6 @@ class WinrmClient:
                 "存在中间人攻击风险"
             )
 
-        # 验证证书配置
         if use_ssl and server_cert_validation == 'validate':
             if not ca_trust_path:
                 logger.warning("SSL验证启用但未提供CA证书路径，将使用系统默认证书")
@@ -161,39 +191,46 @@ class WinrmClient:
                 logger.error(f"CA证书文件不存在: {ca_trust_path}")
                 raise ValueError(f"CA证书文件不存在: {ca_trust_path}")
 
-        if client_cert_pem and not os.path.exists(client_cert_pem):
-            raise ValueError(f"客户端证书文件不存在: {client_cert_pem}")
-
-        if client_cert_key and not os.path.exists(client_cert_key):
-            raise ValueError(f"客户端私钥文件不存在: {client_cert_key}")
-
-        if (client_cert_pem and not client_cert_key) or (not client_cert_pem and client_cert_key):
-            raise ValueError("必须同时提供客户端证书和私钥文件")
+        if self.auth_method == 'certificate':
+            transport = 'certificate'
+            if not self.use_ssl:
+                self.use_ssl = True
+            if self.port == 5985:
+                self.port = 5986
+        else:
+            transport = 'ntlm'
 
         protocol = 'https' if self.use_ssl else 'http'
         self.endpoint = f'{protocol}://{self.hostname}:{self.port}/wsman'
 
-        # 验证主机可达性
         if not self._validate_hostname():
             raise ValueError(f"主机名无法解析: {self.hostname}")
 
-        # 初始化会话对象
-        self.session = Session(
-            self.endpoint,
-            auth=(self.username, self.password),
-            transport='ntlm',
+        session_kwargs = dict(
+            transport=transport,
             server_cert_validation=self.server_cert_validation,
             ca_trust_path=self.ca_trust_path or None,
-            cert_pem=self.client_cert_pem,
-            cert_key_pem=self.client_cert_key,
-            # 设置连接超时
             operation_timeout_sec=self.timeout,
-            read_timeout_sec=self.timeout + 10
+            read_timeout_sec=self.timeout + 10,
         )
+        if self.auth_method == 'certificate':
+            session_kwargs['cert_pem'] = self.cert_pem_path
+            session_kwargs['cert_key_pem'] = self.cert_key_path
+            self.session = Session(
+                self.endpoint,
+                auth=(self.username, self.password),
+                **session_kwargs,
+            )
+        else:
+            self.session = Session(
+                self.endpoint,
+                auth=(self.username, self.password),
+                **session_kwargs,
+            )
 
         logger.info(
             f"初始化WinRM客户端: 主机={self.hostname}, 端口={self.port}, "
-            f"SSL={use_ssl}, 验证模式={server_cert_validation}, "
+            f"SSL={self.use_ssl}, 认证={self.auth_method}, "
             f"超时={self.timeout}秒, 最大重试={self.max_retries}次"
         )
 

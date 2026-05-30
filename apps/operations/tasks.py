@@ -64,8 +64,6 @@ def process_opening_request(self, request_id, operator_id):
             message="找到可用主机"
         )
         
-        from utils.winrm_client import WinrmClient
-        
         username = request_obj.username
         password = generate_secure_password()
         
@@ -78,13 +76,7 @@ def process_opening_request(self, request_id, operator_id):
             message="执行PowerShell命令创建用户"
         )
         
-        client = WinrmClient(
-            hostname=available_host.hostname,
-            port=available_host.port,
-            username=available_host.username,
-            password=available_host.password,
-            use_ssl=available_host.use_ssl
-        )
+        client = available_host.get_connection_client()
         
         result = client.create_user(
             username=username,
@@ -170,6 +162,68 @@ def process_opening_request(self, request_id, operator_id):
         }
 
 
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    autoretry_for=(Exception,),
+)
+def execute_cloud_user_remote_action(self, user_id, action):
+    """
+    异步执行云电脑用户的远程操作（禁用/启用/删除）
+    将远程 WinRM 调用从 save() 中解耦，避免阻塞数据库事务
+    """
+    try:
+        cloud_user = CloudComputerUser.objects.get(pk=user_id)
+    except CloudComputerUser.DoesNotExist:
+        logger.error(f"CloudComputerUser with pk={user_id} does not exist, skipping remote action '{action}'")
+        return {'success': False, 'error': f'User {user_id} not found'}
+
+    if action == 'disable':
+        cloud_user.disable_remote_user()
+    elif action == 'enable':
+        cloud_user.enable_remote_user()
+    elif action == 'delete':
+        cloud_user.delete_remote_user()
+    else:
+        logger.error(f"Unknown remote action '{action}' for user {cloud_user.username}")
+        return {'success': False, 'error': f'Unknown action: {action}'}
+
+    return {'success': True, 'action': action, 'user_id': user_id}
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60,
+)
+def process_account_creation(self, request_id):
+    """
+    异步处理开户请求的用户创建流程
+    将远程 WinRM 调用从 AccountOpeningRequest.save() 中解耦
+    """
+    try:
+        request_obj = AccountOpeningRequest.objects.get(pk=request_id)
+    except AccountOpeningRequest.DoesNotExist:
+        logger.error(f"AccountOpeningRequest with pk={request_id} does not exist")
+        return {'success': False, 'error': f'Request {request_id} not found'}
+
+    try:
+        request_obj.auto_process_creation()
+        return {'success': True, 'request_id': request_id}
+    except Exception as e:
+        logger.error(f"Account creation failed for request {request_id}: {str(e)}", exc_info=True)
+        try:
+            request_obj.refresh_from_db()
+            if request_obj.status not in ('completed', 'failed'):
+                request_obj.status = 'failed'
+                request_obj.result_message = f"异步处理异常: {str(e)}"
+                request_obj.save(update_fields=['status', 'result_message'])
+        except Exception as save_err:
+            logger.error(f"Failed to update request status: {str(save_err)}")
+        return {'success': False, 'error': str(e)}
+
+
 @shared_task
 def cleanup_expired_rdp_domains():
     from django.utils import timezone
@@ -245,14 +299,7 @@ def rollback_opening_request(request_id):
     try:
         request_obj = AccountOpeningRequest.objects.get(id=request_id)
         if request_obj.host and request_obj.windows_username:
-            from utils.winrm_client import WinrmClient
-            client = WinrmClient(
-                hostname=request_obj.host.hostname,
-                port=request_obj.host.port,
-                username=request_obj.host.username,
-                password=request_obj.host.password,
-                use_ssl=request_obj.host.use_ssl
-            )
+            client = request_obj.host.get_connection_client()
             
             result = client.disabled_user(request_obj.windows_username)
             
@@ -285,14 +332,7 @@ def reset_user_password(self, user_id, operator_id):
         
         new_password = generate_secure_password()
         
-        from utils.winrm_client import WinrmClient
-        client = WinrmClient(
-            hostname=user.host.hostname,
-            port=user.host.port,
-            username=user.host.username,
-            password=user.host.password,
-            use_ssl=user.host.use_ssl
-        )
+        client = user.host.get_connection_client()
         
         result = client.reset_password(user.windows_username, new_password)
         
@@ -411,14 +451,7 @@ def cleanup_inactive_users(self, days_inactive=30):
         
         cleaned_count = 0
         for user in inactive_users:
-            from utils.winrm_client import WinrmClient
-            client = WinrmClient(
-                hostname=user.host.hostname,
-                port=user.host.port,
-                username=user.host.username,
-                password=user.host.password,
-                use_ssl=user.host.use_ssl
-            )
+            client = user.host.get_connection_client()
             
             result = client.disabled_user(user.windows_username)
             

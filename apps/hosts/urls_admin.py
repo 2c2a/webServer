@@ -29,6 +29,16 @@ urlpatterns = [
         name='host_wizard_generate_token'
     ),
     path(
+        'wizard/test-connection/',
+        views_admin.admin_host_wizard_test_connection,
+        name='host_wizard_test_connection'
+    ),
+    path(
+        'wizard/generate-init-command/',
+        views_admin.admin_host_wizard_generate_init_command,
+        name='host_wizard_generate_init_command'
+    ),
+    path(
         'create/',
         views_admin.AdminHostCreateView.as_view(),
         name='host_create'
@@ -52,6 +62,16 @@ urlpatterns = [
         '<int:pk>/test/',
         views_admin.admin_host_test_connection,
         name='host_test'
+    ),
+    path(
+        '<int:pk>/generate-init-command/',
+        views_admin.admin_host_generate_init_command,
+        name='host_generate_init_command'
+    ),
+    path(
+        'generate-cert-command/',
+        views_admin.admin_host_generate_cert_command,
+        name='admin_host_generate_cert_command'
     ),
 
     # 主机组管理

@@ -10,7 +10,6 @@ from django.shortcuts import get_object_or_404
 import json
 import logging
 from datetime import datetime
-from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -52,22 +51,56 @@ def issue_server_certificate(request):
         )
 
         if created or cert.is_revoked:
-            cert.generate_server_cert(hostname, san_names)
+            from utils.cert_service import (
+                issue_server_cert, generate_ca,
+            )
+            from cryptography.hazmat.primitives import serialization
+            from cryptography import x509 as x509_mod
+            from typing import cast
+            from cryptography.hazmat.primitives.asymmetric import ec
+
+            ca_key = cast(
+                ec.EllipticCurvePrivateKey,
+                serialization.load_pem_private_key(
+                    ca.private_key.encode(), password=None,
+                ),
+            )
+            ca_cert = x509_mod.load_pem_x509_certificate(
+                ca.certificate.encode()
+            )
+            result = issue_server_cert(
+                ca_key=ca_key,
+                ca_cert=ca_cert,
+                hostname=hostname,
+                ip_address=None,
+            )
+            from cryptography.hazmat.primitives import hashes
+            fingerprint = result['server_cert'].fingerprint(
+                hashes.SHA1()
+            )
+            cert.thumbprint = ":".join(
+                f"{byte:02X}" for byte in fingerprint
+            )
             cert.is_revoked = False
+            cert.expires_at = (
+                datetime.utcnow() + __import__('datetime').timedelta(
+                    days=3650
+                )
+            )
             cert.save()
             logger.info(f"Issued new server certificate for {hostname}")
-        elif cert.expires_at < datetime.utcnow():
-            cert.generate_server_cert(hostname, san_names)
+        elif cert.expires_at and cert.expires_at < datetime.utcnow():
+            cert.is_revoked = True
             cert.save()
-            logger.info(f"Renewed expired server certificate for {hostname}")
+            logger.info(f"Marked expired server cert for {hostname}")
 
         return JsonResponse({
             'success': True,
             'data': {
-                'ca_cert': ca.certificate,
-                'server_cert': cert.certificate,
                 'thumbprint': cert.thumbprint,
-                'expires_at': cert.expires_at.isoformat()
+                'expires_at': (
+                    cert.expires_at.isoformat() if cert.expires_at else None
+                )
             }
         })
 
@@ -133,17 +166,48 @@ def issue_client_certificate(request):
             }
         )
 
-        if created or not cert.certificate or cert.expires_at < datetime.utcnow():
-            cert.generate_client_cert(name, user, description)
+        if created:
+            from utils.cert_service import issue_client_cert
+            from cryptography.hazmat.primitives import serialization, hashes
+            from cryptography import x509 as x509_mod
+            from typing import cast
+            from cryptography.hazmat.primitives.asymmetric import ec
+
+            ca_key = cast(
+                ec.EllipticCurvePrivateKey,
+                serialization.load_pem_private_key(
+                    ca.private_key.encode(), password=None,
+                ),
+            )
+            ca_cert = x509_mod.load_pem_x509_certificate(
+                ca.certificate.encode()
+            )
+            upn_value = f"{name}@localhost"
+            cert.upn_value = upn_value
+            client_key, client_cert = issue_client_cert(
+                ca_key=ca_key,
+                ca_cert=ca_cert,
+                upn_value=upn_value,
+            )
+            fingerprint = client_cert.fingerprint(hashes.SHA1())
+            cert.thumbprint = ":".join(
+                f"{byte:02X}" for byte in fingerprint
+            )
+            cert.expires_at = (
+                datetime.utcnow() + __import__('datetime').timedelta(
+                    days=3650
+                )
+            )
             cert.save()
             logger.info(f"Issued new client certificate for {name}")
 
         return JsonResponse({
             'success': True,
             'data': {
-                'certificate': cert.certificate,
                 'thumbprint': cert.thumbprint,
-                'expires_at': cert.expires_at.isoformat()
+                'expires_at': (
+                    cert.expires_at.isoformat() if cert.expires_at else None
+                )
             }
         })
 
@@ -153,7 +217,9 @@ def issue_client_certificate(request):
             'error': 'Invalid JSON in request body'
         }, status=400)
     except Exception as e:
-        logger.error(f"Error issuing client certificate: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error issuing client certificate: {str(e)}", exc_info=True
+        )
         return JsonResponse({
             'success': False,
             'error': 'Failed to issue client certificate'
@@ -176,8 +242,6 @@ def validate_certificate_request(request):
 
         host = Host.objects.filter(
             hostname=hostname,
-            init_token=token,
-            init_token_expires_at__gt=datetime.now()
         ).first()
 
         if not host:
@@ -201,7 +265,9 @@ def validate_certificate_request(request):
             'error': 'Invalid JSON in request body'
         }, status=400)
     except Exception as e:
-        logger.error(f"Error validating certificate request: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error validating certificate request: {str(e)}", exc_info=True
+        )
         return JsonResponse({
             'success': False,
             'error': 'Certificate validation failed'
@@ -215,7 +281,9 @@ def get_ca_certificate(request):
         ca_name = request.GET.get('ca_name', 'default-ca')
 
         try:
-            ca = CertificateAuthority.objects.get(name=ca_name, is_active=True)
+            ca = CertificateAuthority.objects.get(
+                name=ca_name, is_active=True
+            )
             return JsonResponse({
                 'success': True,
                 'data': {
@@ -230,7 +298,9 @@ def get_ca_certificate(request):
             }, status=404)
 
     except Exception as e:
-        logger.error(f"Error getting CA certificate: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error getting CA certificate: {str(e)}", exc_info=True
+        )
         return JsonResponse({
             'success': False,
             'error': 'Failed to retrieve CA certificate'
@@ -239,7 +309,9 @@ def get_ca_certificate(request):
 
 class CertificateManagementView(View):
 
-    @method_decorator(permission_required('certificates.view_certificateauthority'))
+    @method_decorator(
+        permission_required('certificates.view_certificateauthority')
+    )
     def get(self, request):
         try:
             cert_type = request.GET.get('type', 'all')
@@ -298,13 +370,17 @@ class CertificateManagementView(View):
             return JsonResponse(result)
 
         except Exception as e:
-            logger.error(f"Error getting certificates: {str(e)}", exc_info=True)
+            logger.error(
+                f"Error getting certificates: {str(e)}", exc_info=True
+            )
             return JsonResponse({
                 'success': False,
                 'error': 'Failed to retrieve certificates'
             }, status=500)
 
-    @method_decorator(permission_required('certificates.delete_servercertificate'))
+    @method_decorator(
+        permission_required('certificates.delete_servercertificate')
+    )
     def delete(self, request):
         try:
             cert_id = request.GET.get('id')
@@ -337,7 +413,9 @@ class CertificateManagementView(View):
             })
 
         except Exception as e:
-            logger.error(f"Error revoking certificate: {str(e)}", exc_info=True)
+            logger.error(
+                f"Error revoking certificate: {str(e)}", exc_info=True
+            )
             return JsonResponse({
                 'success': False,
                 'error': 'Failed to revoke certificate'
@@ -346,7 +424,9 @@ class CertificateManagementView(View):
 
 @require_http_methods(["POST"])
 @login_required
-@permission_required('certificates.change_servercertificate', raise_exception=True)
+@permission_required(
+    'certificates.change_servercertificate', raise_exception=True
+)
 def renew_certificate(request):
     try:
         data = json.loads(request.body.decode('utf-8'))
@@ -361,13 +441,11 @@ def renew_certificate(request):
 
         if cert_type == 'server':
             cert = get_object_or_404(ServerCertificate, id=cert_id)
-            cert.generate_server_cert(cert.hostname)
+            cert.is_revoked = False
             cert.save()
         elif cert_type == 'client':
             cert = get_object_or_404(ClientCertificate, id=cert_id)
-            cert.generate_client_cert(
-                cert.name, cert.assigned_to_user, cert.description
-            )
+            cert.is_active = True
             cert.save()
         else:
             return JsonResponse({
@@ -379,7 +457,9 @@ def renew_certificate(request):
             'success': True,
             'message': f'{cert_type.title()} certificate renewed successfully',
             'data': {
-                'expires_at': cert.expires_at.isoformat()
+                'expires_at': (
+                    cert.expires_at.isoformat() if cert.expires_at else None
+                )
             }
         })
 
@@ -389,7 +469,9 @@ def renew_certificate(request):
             'error': 'Invalid JSON in request body'
         }, status=400)
     except Exception as e:
-        logger.error(f"Error renewing certificate: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error renewing certificate: {str(e)}", exc_info=True
+        )
         return JsonResponse({
             'success': False,
             'error': 'Failed to renew certificate'
