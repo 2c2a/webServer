@@ -58,6 +58,7 @@ def delete_cert_files(cert_root: str, cert_sub: str):
         try:
             parent_dir.rmdir()
         except OSError:
+            # Best-effort cleanup: parent may be non-empty or changed concurrently.
             pass
         return True
     return False
