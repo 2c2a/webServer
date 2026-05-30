@@ -73,7 +73,7 @@ jobs:
       uses: cloudflare/wrangler-action@v3
       with:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        command: pages deploy deploy --project-name=zascastatic --branch=main
+        command: pages deploy deploy --project-name=2c2astatic --branch=main
 
     - name: Upload static files artifact
       uses: actions/upload-artifact@v6
