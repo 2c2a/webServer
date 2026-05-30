@@ -258,4 +258,7 @@ def cleanup_orphan_cert_dirs():
             try:
                 root_dir.rmdir()
             except OSError:
-                pass
+                logger.debug(
+                    "Skipping removal of non-empty or inaccessible orphan cert root dir: %s",
+                    root_dir,
+                )
