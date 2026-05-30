@@ -12,6 +12,8 @@ dependencies = [
     "django-formtools>=2.5.1",
     "Django==4.2.27",
     "djangorestframework==3.15.2",
+    "idna==3.15",
+    "kombu==5.6.2",
     "Markdown==3.10.1",
     "pillow==12.1.0",
     "PyJWT>=2.8.0",
@@ -41,12 +43,15 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "pytest>=9.0.3",
+    "pytest-django",
     "black",
     "django-stubs>=6.0.2",
     "flake8",
     "pyrefly>=0.60.0",
     "pytest",
     "pytest-django",
+    "redis>=7.4.0",
 ]
 
 [tool.hatch.metadata]
@@ -54,6 +59,14 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["."]
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --import-mode=importlib"
 
 [tool.pyright]
 venvPath = "."
