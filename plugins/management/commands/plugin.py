@@ -343,8 +343,12 @@ class Command(BaseCommand):
 
         try:
             plugin_instance.initialize()
-        except Exception:
-            pass
+        except Exception as e:
+            self.stdout.write(
+                self.style.WARNING(
+                    f'插件 {plugin_instance.plugin_id} 初始化失败，已继续安装流程: {e}'
+                )
+            )
 
         PluginRecord.objects.update_or_create(
             plugin_id=plugin_instance.plugin_id,
