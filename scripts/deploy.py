@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ZASCA 交互式部署脚本
+2c2a 交互式部署脚本
 根据部署环境动态生成 pyproject.toml，仅安装所需依赖，避免冗余库
 
 用法:
@@ -500,7 +500,7 @@ def _page_progress(stdscr, step, total_steps, message):
     stdscr.refresh()
 
 
-def _page_result(stdscr, success, answers, backup_name=None, env_configured=False, env_backup_name=None):
+def _page_result(stdscr, success, answers, backup_name=None, env_configured=False, env_backup_name=None, migrate_success=False):
     _init_colors()
     stdscr.clear()
     max_y, max_x = stdscr.getmaxyx()
@@ -520,7 +520,10 @@ def _page_result(stdscr, success, answers, backup_name=None, env_configured=Fals
         else:
             steps.append(f"{n}. 配置 .env 文件          (参考 .env.example)")
         n += 1
-        steps.append(f"{n}. 初始化数据库            uv run python manage.py migrate")
+        if migrate_success:
+            steps.append(f"{n}. 数据库迁移              已完成")
+        else:
+            steps.append(f"{n}. 初始化数据库            uv run python manage.py migrate")
         n += 1
         steps.append(f"{n}. 创建管理员              uv run python manage.py createsuperuser")
         n += 1
@@ -594,11 +597,11 @@ def _tui_main(stdscr):
     backup = backup_file(toml_path)
     backup_name = backup.name if backup else None
 
-    _page_progress(stdscr, 1, 2, "正在生成 pyproject.toml ...")
+    _page_progress(stdscr, 1, 3, "正在生成 pyproject.toml ...")
     content = generate_pyproject_toml(answers, deps, dev_deps)
     toml_path.write_text(content, encoding="utf-8")
 
-    _page_progress(stdscr, 2, 2, "正在执行 uv sync ...")
+    _page_progress(stdscr, 2, 3, "正在执行 uv sync ...")
     try:
         proc = subprocess.run(
             ["uv", "sync"],
@@ -615,6 +618,7 @@ def _tui_main(stdscr):
 
     env_configured = False
     env_backup_name = None
+    migrate_success = False
     if success:
         env_values = _configure_env(stdscr, answers)
         if env_values is not None:
@@ -625,7 +629,22 @@ def _tui_main(stdscr):
             env_path.write_text(env_content, encoding="utf-8")
             env_configured = True
 
-    _page_result(stdscr, success, answers, backup_name, env_configured, env_backup_name)
+            _page_progress(stdscr, 3, 3, "正在执行数据库迁移 ...")
+            try:
+                migrate_proc = subprocess.run(
+                    ["uv", "run", "python", "manage.py", "migrate"],
+                    cwd=BASE_DIR,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                )
+                migrate_success = migrate_proc.returncode == 0
+            except FileNotFoundError:
+                migrate_success = False
+            except subprocess.TimeoutExpired:
+                migrate_success = False
+
+    _page_result(stdscr, success, answers, backup_name, env_configured, env_backup_name, migrate_success)
 
 
 def _generate_secret(length=50):
@@ -656,8 +675,8 @@ def _get_env_items(answers):
     items.append(("group", "核心配置"))
     items.append(("field", {"key": "DEBUG", "default": "True", "desc": "调试模式（生产环境必须 False）", "type": "bool"}))
     items.append(("field", {"key": "DJANGO_SECRET_KEY", "default": "", "desc": "Django 密钥", "type": "secret"}))
-    items.append(("field", {"key": "ALLOWED_HOSTS", "default": "localhost,127.0.0.1", "desc": "允许访问的主机", "type": "text"}))
-    items.append(("field", {"key": "CSRF_TRUSTED_ORIGINS", "default": "https://localhost,https://127.0.0.1", "desc": "CSRF 可信来源", "type": "text"}))
+    items.append(("field", {"key": "ALLOWED_HOSTS", "default": "localhost,127.0.0.1", "desc": "允许访问的主机", "type": "list"}))
+    items.append(("field", {"key": "CSRF_TRUSTED_ORIGINS", "default": "https://localhost,https://127.0.0.1", "desc": "CSRF 可信来源", "type": "list"}))
 
     items.append(("group", "数据库配置"))
     items.append(("field", {"key": "DB_ENGINE", "default": db, "desc": "数据库引擎（根据之前的选择自动设置）", "type": "auto"}))
@@ -696,7 +715,7 @@ def _get_env_items(answers):
 
     items.append(("group", "Gateway 配置"))
     items.append(("field", {"key": "GATEWAY_ENABLED", "default": "False", "desc": "Gateway 开关", "type": "bool"}))
-    items.append(("field", {"key": "GATEWAY_CONTROL_SOCKET", "default": "/run/zasca/control.sock", "desc": "Gateway 控制套接字", "type": "text"}))
+    items.append(("field", {"key": "GATEWAY_CONTROL_SOCKET", "default": "/run/2c2a/control.sock", "desc": "Gateway 控制套接字", "type": "text"}))
 
     items.append(("group", "Beta 数据库配置（可选）"))
     items.append(("field", {"key": "BETA_DB_NAME", "default": "", "desc": "Beta 数据库名称（留空跳过）", "type": "text"}))
@@ -983,6 +1002,101 @@ def _step_auto(stdscr, field_data, current_val, step, total):
             return None
 
 
+def _step_list(stdscr, field_data, current_val, step, total):
+    key = field_data["key"]
+    desc = field_data.get("desc", "")
+    items = [x.strip() for x in current_val.split(",") if x.strip()] if current_val else []
+    cursor = 0
+    scroll = 0
+
+    while True:
+        _init_colors()
+        stdscr.clear()
+        max_y, max_x = stdscr.getmaxyx()
+
+        box_w = min(72, max_x - 4)
+        box_h = max(14, min(20, max_y - 4))
+        box_x = max(0, (max_x - box_w) // 2)
+        box_y = 1
+
+        _draw_banner(stdscr, 0, max_x)
+        _draw_box(stdscr, box_y, box_x, box_h, box_w)
+
+        title = f" 环境变量配置 ({step}/{total}) "
+        tx = box_x + max(0, (box_w - len(title)) // 2)
+        _safe_addstr(stdscr, box_y, tx, title, curses.color_pair(C_TITLE) | curses.A_BOLD)
+
+        ry = box_y + 2
+        _safe_addstr(stdscr, ry, box_x + 4, key, curses.color_pair(C_SELECTED) | curses.A_BOLD)
+
+        ry += 1
+        if desc:
+            _safe_addstr(stdscr, ry, box_x + 4, desc[:box_w - 8], curses.color_pair(C_DESC))
+
+        ry += 2
+        max_list_visible = box_h - 8
+        max_scroll = max(0, len(items) - max_list_visible)
+        if cursor < scroll:
+            scroll = cursor
+        elif cursor >= scroll + max_list_visible:
+            scroll = cursor - max_list_visible + 1
+        scroll = max(0, min(scroll, max_scroll))
+
+        if not items:
+            _safe_addstr(stdscr, ry, box_x + 6, "（空列表，按 + 添加项）", curses.color_pair(C_DESC))
+        else:
+            visible_items = items[scroll:scroll + max_list_visible]
+            for i, item in enumerate(visible_items):
+                actual_idx = scroll + i
+                iy = ry + i
+                is_active = (actual_idx == cursor)
+                marker = "▸" if is_active else " "
+                line = f"  {marker} {item}"
+                if is_active:
+                    _safe_addstr(stdscr, iy, box_x + 4, line[:box_w - 8], curses.color_pair(C_HIGHLIGHT) | curses.A_BOLD)
+                else:
+                    _safe_addstr(stdscr, iy, box_x + 4, line[:box_w - 8], curses.color_pair(C_UNSELECTED))
+
+        count_y = box_y + box_h - 3
+        _safe_addstr(stdscr, count_y, box_x + 4, f"共 {len(items)} 项", curses.color_pair(C_DESC))
+
+        if max_scroll > 0:
+            scroll_info = f" [{scroll + 1}-{min(scroll + max_list_visible, len(items))}/{len(items)}] "
+            _safe_addstr(stdscr, count_y, box_x + box_w - len(scroll_info) - 2, scroll_info, curses.color_pair(C_DESC))
+
+        hint_y = box_y + box_h + 1
+        _draw_hint(stdscr, hint_y, box_x + 2, "↑↓ 切换  + 添加  - 删除  Enter 编辑  Ctrl+D 完成  Esc 返回")
+
+        stdscr.refresh()
+
+        ch = stdscr.getch()
+        if ch == curses.KEY_UP:
+            if items:
+                cursor = max(0, cursor - 1)
+        elif ch == curses.KEY_DOWN:
+            if items:
+                cursor = min(len(items) - 1, cursor + 1)
+        elif ch in (ord('+'), ord('=')):
+            new_item = _step_text(stdscr, {"key": f"{key}[新项]", "desc": "输入新项的值"}, "", step, total)
+            if new_item is not None and new_item.strip():
+                items.append(new_item.strip())
+                cursor = len(items) - 1
+        elif ch in (ord('-'), ord('_')):
+            if items and 0 <= cursor < len(items):
+                items.pop(cursor)
+                if cursor >= len(items) and len(items) > 0:
+                    cursor = len(items) - 1
+        elif ch in (curses.KEY_ENTER, 10, 13):
+            if items and 0 <= cursor < len(items):
+                new_item = _step_text(stdscr, {"key": f"{key}[{cursor}]", "desc": "编辑当前项"}, items[cursor], step, total)
+                if new_item is not None:
+                    items[cursor] = new_item.strip() if new_item.strip() else items[cursor]
+        elif ch == 4:
+            return ",".join(items)
+        elif ch == 27:
+            return None
+
+
 def _env_preview(stdscr, items, values, secret_auto):
     field_indices = [i for i, (kind, _) in enumerate(items) if kind == "field"]
     cursor = 0
@@ -1048,6 +1162,12 @@ def _env_preview(stdscr, items, values, secret_auto):
                     display = f"{val}  (自动)"
                 elif ftype == "bool":
                     display = val
+                elif ftype == "list":
+                    list_items = [x.strip() for x in val.split(",") if x.strip()] if val else []
+                    if list_items:
+                        display = ", ".join(list_items)
+                    else:
+                        display = "(空列表)"
                 else:
                     display = val if val else "(空)"
 
@@ -1106,6 +1226,10 @@ def _env_preview(stdscr, items, values, secret_auto):
                         secret_auto.add(key)
                     else:
                         secret_auto.discard(key)
+            elif ftype == "list":
+                result = _step_list(stdscr, field_data, current, cursor + 1, len(field_indices))
+                if result is not None:
+                    values[key] = result
             else:
                 result = _step_text(stdscr, field_data, current, cursor + 1, len(field_indices))
                 if result is not None:
@@ -1165,6 +1289,13 @@ def _configure_env(stdscr, answers):
             if result is None:
                 step -= 1
                 continue
+            step += 1
+        elif ftype == "list":
+            result = _step_list(stdscr, data, current, step + 1, total)
+            if result is None:
+                step -= 1
+                continue
+            values[key] = result
             step += 1
         else:
             result = _step_text(stdscr, data, current, step + 1, total)
@@ -1260,7 +1391,7 @@ def generate_env_content(answers, values):
 
     lines.append("# ========== Gateway 配置 ==========")
     lines.append(f"GATEWAY_ENABLED={values.get('GATEWAY_ENABLED', 'False')}")
-    lines.append(f"GATEWAY_CONTROL_SOCKET={values.get('GATEWAY_CONTROL_SOCKET', '/run/zasca/control.sock')}")
+    lines.append(f"GATEWAY_CONTROL_SOCKET={values.get('GATEWAY_CONTROL_SOCKET', '/run/2c2a/control.sock')}")
     lines.append("")
 
     beta_fields = ['BETA_DB_NAME', 'BETA_DB_USER', 'BETA_DB_PASSWORD', 'BETA_DB_HOST', 'BETA_DB_PORT']

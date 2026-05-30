@@ -18,13 +18,14 @@ class InitialToken(models.Model):
     MAX_PAIRING_ATTEMPTS = 5
 
     token = models.CharField(max_length=255, primary_key=True, verbose_name="AccessToken")
-    host = models.ForeignKey(Host, on_delete=models.CASCADE, verbose_name="关联的主机")
+    host = models.ForeignKey(Host, on_delete=models.CASCADE, verbose_name="关联的主机", null=True, blank=True)
     expires_at = models.DateTimeField(verbose_name="AccessToken过期时间")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ISSUED', verbose_name="状态")
     pairing_code = models.CharField(max_length=6, verbose_name="配对码", blank=True, null=True)
     pairing_code_expires_at = models.DateTimeField(verbose_name="配对码过期时间", blank=True, null=True)
     pairing_attempts = models.IntegerField(default=0, verbose_name="配对码验证尝试次数")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    cert_data = models.JSONField(verbose_name="暂存证书数据", blank=True, null=True, default=None)
 
     class Meta:
         verbose_name = "初始令牌"
@@ -37,7 +38,7 @@ class InitialToken(models.Model):
         self.pairing_code = code
         self.pairing_code_expires_at = timezone.now() + timedelta(minutes=5)
         self.pairing_attempts = 0
-        self.save()
+        self.save(update_fields=['pairing_code', 'pairing_code_expires_at', 'pairing_attempts'])
         return code
 
     def verify_pairing_code(self, input_code):
@@ -48,23 +49,26 @@ class InitialToken(models.Model):
         if timezone.now() > self.pairing_code_expires_at:
             return False
 
+        from django.db.models import F
+        InitialToken.objects.filter(pk=self.pk).update(
+            pairing_attempts=F('pairing_attempts') + 1
+        )
+        self.refresh_from_db()
+
         if self.pairing_attempts >= self.MAX_PAIRING_ATTEMPTS:
             self.pairing_code = None
             self.pairing_code_expires_at = None
-            self.save()
+            self.save(update_fields=['pairing_code', 'pairing_code_expires_at'])
             return False
 
-        self.pairing_attempts += 1
-
         if self.pairing_code != input_code:
-            self.save(update_fields=['pairing_attempts'])
             return False
 
         self.status = 'PAIRED'
         self.pairing_code = None
         self.pairing_code_expires_at = None
         self.pairing_attempts = 0
-        self.save()
+        self.save(update_fields=['status', 'pairing_code', 'pairing_code_expires_at', 'pairing_attempts'])
         return True
 
 
@@ -80,3 +84,36 @@ class ActiveSession(models.Model):
         verbose_name = "活动会话"
         verbose_name_plural = "活动会话"
         db_table = "active_session"
+
+
+class CertProvisionToken(models.Model):
+    STATUS_CHOICES = [
+        ('ISSUED', '已签发'),
+        ('HOSTNAME_UPLOADED', '主机名已上传'),
+        ('CERT_ISSUED', '证书已签发'),
+        ('HOST_CONFIGURED', '主机已配置'),
+        ('CONSUMED', '已消耗'),
+    ]
+
+    token = models.CharField(max_length=64, primary_key=True, verbose_name="配置令牌")
+    host = models.ForeignKey(Host, on_delete=models.CASCADE, verbose_name="关联的主机", null=True, blank=True)
+    server_host = models.CharField(max_length=255, verbose_name="服务器地址")
+    hostname = models.CharField(max_length=255, verbose_name="主机名", blank=True, default='')
+    ip_address = models.CharField(max_length=255, verbose_name="主机IP地址", blank=True, default='')
+    expires_at = models.DateTimeField(verbose_name="过期时间")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ISSUED', verbose_name="状态")
+    cert_data = models.JSONField(verbose_name="暂存证书数据", blank=True, null=True, default=None)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="创建者")
+    consumed_at = models.DateTimeField(null=True, blank=True, verbose_name="消耗时间")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        verbose_name = "证书配置令牌"
+        verbose_name_plural = "证书配置令牌"
+        db_table = "cert_provision_token"
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def is_valid(self):
+        return self.status == 'ISSUED' and not self.is_expired()

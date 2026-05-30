@@ -246,9 +246,9 @@ class HostGroupForm(forms.ModelForm):
 
             # 过滤 providers：只显示提供商组的用户
             from django.contrib.auth.models import User
-            from utils.provider import is_provider
+            from utils.provider import is_provider, PROVIDER_GROUP_NAME
             provider_users = User.objects.filter(
-                groups__name='提供商',
+                groups__name=PROVIDER_GROUP_NAME,
                 is_staff=True,
                 is_superuser=False,
             ).order_by('username')

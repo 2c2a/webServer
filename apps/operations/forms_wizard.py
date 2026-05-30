@@ -88,7 +88,7 @@ class ProductWizardForm(forms.ModelForm):
             'host', 'is_available', 'auto_approval', 'visibility',
             'enable_host_protection',
             'display_hostname', 'rdp_port',
-            'enable_disk_quota',
+            'enable_disk_quota', 'limit_one_per_user',
         ]
         widgets = {
             'display_name': forms.TextInput(attrs={
@@ -143,6 +143,10 @@ class ProductWizardForm(forms.ModelForm):
                 'class': _CHECKBOX_CLASS,
                 'x-model': 'enableDiskQuota',
             }),
+            'limit_one_per_user': forms.CheckboxInput(attrs={
+                'class': _CHECKBOX_CLASS,
+                'x-model': 'limitOnePerUser',
+            }),
         }
         labels = {
             'display_name': _('显示名称'),
@@ -156,6 +160,7 @@ class ProductWizardForm(forms.ModelForm):
             'display_hostname': _('显示地址'),
             'rdp_port': _('RDP端口'),
             'enable_disk_quota': _('启用磁盘配额管理'),
+            'limit_one_per_user': _('每人限购一个'),
         }
         help_texts = {
             'host': _('此产品运行所在的主机'),
@@ -172,6 +177,9 @@ class ProductWizardForm(forms.ModelForm):
             'enable_disk_quota': _(
                 '是否启用磁盘配额管理，'
                 '启用后将自动为新用户设置磁盘配额'
+            ),
+            'limit_one_per_user': _(
+                '启用后，每个用户只能拥有一个此产品'
             ),
         }
 

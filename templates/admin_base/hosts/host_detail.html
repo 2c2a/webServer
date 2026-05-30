@@ -136,6 +136,51 @@
     {% endif %}
 </x-admin-card>
 
+{% if host.auth_method == 'certificate' %}
+<x-admin-card title="证书自动配置" icon="key" class="mt-6">
+    <div x-data="certProvision()">
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-sm text-white/70">在目标主机上运行配置指令，自动完成证书签发与部署。</p>
+            <span class="px-2 py-1 rounded text-xs font-medium"
+                  :class="statusClass" x-text="statusText"></span>
+        </div>
+
+        <template x-if="!command">
+            <button x-on:click="generateCommand"
+                    class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)] transition">
+                生成配置指令
+            </button>
+        </template>
+
+        <template x-if="command">
+            <div>
+                <p class="text-xs text-white/50 mb-1">部署指令</p>
+                <div class="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 font-mono text-sm break-all" x-text="command"></div>
+                <div class="flex gap-2 mt-2">
+                    <button x-on:click="copyCommand" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)] transition text-sm">
+                        复制指令
+                    </button>
+                    <span x-show="copied" class="text-cyan-400 text-sm self-center">已复制!</span>
+                </div>
+
+                <div x-show="debugCommand" class="mt-4">
+                    <p class="text-xs text-white/50 mb-1">调试部署指令</p>
+                    <div class="bg-slate-900/50 backdrop-blur-sm border border-yellow-700/30 rounded px-3 py-2 text-yellow-200 font-mono text-sm break-all" x-text="debugCommand"></div>
+                    <div class="flex gap-2 mt-2">
+                        <button x-on:click="copyDebugCommand" class="bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(234,179,8,0.3)] transition text-sm">
+                            复制调试指令
+                        </button>
+                        <span x-show="debugCopied" class="text-yellow-400 text-sm self-center">已复制!</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-slate-400 text-xs" x-show="expiresAt" x-text="'有效期至: ' + expiresAt"></div>
+            </div>
+        </template>
+    </div>
+</x-admin-card>
+{% endif %}
+
 <!-- Tunnel Info -->
 {% if host.connection_type == 'tunnel' %}
 <x-admin-card title="隧道信息" icon="vpn_lock" class="mt-6">
@@ -239,6 +284,80 @@
     <p class="text-sm text-white/70">暂无关联产品</p>
     {% endif %}
 </x-admin-card>
+
+<!-- Host Init Command -->
+{% if host.auth_method == 'certificate' %}
+<x-admin-card title="H 端初始化" icon="terminal" class="mt-6">
+    <div x-data="initCommand()">
+        <p class="text-sm text-white/70 mb-4">
+            在目标主机上以<b>管理员权限</b>运行以下命令，自动完成 H 端初始化和证书配置。
+        </p>
+
+        <button
+            @click="generateCommand()"
+            :disabled="loading"
+            class="inline-flex items-center gap-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-md px-4 py-2 backdrop-blur-xl transition font-medium border border-cyan-500/30 disabled:opacity-50"
+        >
+            <span class="material-symbols-rounded text-lg" :class="{ 'animate-spin': loading }" x-text="loading ? 'progress_activity' : 'key'"></span>
+            <span x-text="loading ? '生成中...' : '生成初始化命令'"></span>
+        </button>
+
+        <template x-if="initData">
+            <div class="mt-4 space-y-4">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-white">一行命令（推荐）</label>
+                        <button @click="copyText(initData.one_liner, 'oneLiner')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
+                            <span class="material-symbols-rounded text-sm" x-text="copiedOneLiner ? 'check' : 'content_copy'"></span>
+                            <span x-text="copiedOneLiner ? '已复制' : '复制'"></span>
+                        </button>
+                    </div>
+                    <div class="relative bg-slate-950/50 border border-slate-700/50 rounded-md overflow-hidden">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
+                            <span class="material-symbols-rounded text-sm">terminal</span>
+                            <span class="text-xs text-white/50 font-mono">PowerShell (管理员)</span>
+                        </div>
+                        <div class="p-4 overflow-x-auto">
+                            <code class="text-sm text-green-400 font-mono whitespace-pre-wrap break-all" x-text="initData.one_liner"></code>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-white/70">备用命令（如果一行命令无法执行）</label>
+                        <button @click="copyText(initData.fallback_command, 'fallback')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
+                            <span class="material-symbols-rounded text-sm" x-text="copiedFallback ? 'check' : 'content_copy'"></span>
+                            <span x-text="copiedFallback ? '已复制' : '复制'"></span>
+                        </button>
+                    </div>
+                    <div class="relative bg-slate-950/50 border border-slate-700/50 rounded-md overflow-hidden">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700/50">
+                            <span class="material-symbols-rounded text-sm">terminal</span>
+                            <span class="text-xs text-white/50 font-mono">PowerShell (管理员)</span>
+                        </div>
+                        <div class="p-4 overflow-x-auto">
+                            <code class="text-sm text-yellow-400 font-mono whitespace-pre-wrap break-all" x-text="initData.fallback_command"></code>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-xs text-white/50">
+                    命令有效期至: <span x-text="new Date(initData.expires_at).toLocaleString()"></span>
+                </p>
+            </div>
+        </template>
+
+        <template x-if="initError">
+            <div class="mt-4">
+                <x-admin-alert type="error" dismissible="true">
+                    <span x-text="initError"></span>
+                </x-admin-alert>
+            </div>
+        </template>
+    </div>
+</x-admin-card>
+{% endif %}
 </div>
 
 <script>
@@ -275,6 +394,104 @@ document.addEventListener('alpine:init', () => {
                 this.loading = false;
             }
         },
+    }));
+
+    Alpine.data('initCommand', () => ({
+        loading: false,
+        initData: null,
+        initError: null,
+        copiedOneLiner: false,
+        copiedFallback: false,
+
+        async generateCommand() {
+            if (this.loading) return;
+            this.loading = true;
+            this.initError = null;
+
+            try {
+                const resp = await fetch('{% url "admin:admin_hosts:host_generate_init_command" host.pk %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.initData = data.data;
+                } else {
+                    this.initError = data.error || '生成失败';
+                }
+            } catch (e) {
+                this.initError = '请求失败: ' + e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        copyText(text, type) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (type === 'oneLiner') {
+                    this.copiedOneLiner = true;
+                    setTimeout(() => { this.copiedOneLiner = false; }, 2000);
+                } else {
+                    this.copiedFallback = true;
+                    setTimeout(() => { this.copiedFallback = false; }, 2000);
+                }
+            });
+        },
+    }));
+
+    Alpine.data('certProvision', () => ({
+        command: '',
+        debugCommand: '',
+        token: '',
+        expiresAt: '',
+        copied: false,
+        debugCopied: false,
+        status: '{{ host.cert_provision_status }}',
+        get statusText() {
+            const map = {not_started: '未开始', pending: '签发中', ready: '已就绪', configured: '已配置', failed: '失败'};
+            return map[this.status] || this.status;
+        },
+        get statusClass() {
+            const map = {not_started: 'bg-slate-700 text-slate-300', pending: 'bg-yellow-900/50 text-yellow-400', ready: 'bg-cyan-900/50 text-cyan-400', configured: 'bg-green-900/50 text-green-400', failed: 'bg-red-900/50 text-red-400'};
+            return map[this.status] || 'bg-slate-700 text-slate-300';
+        },
+        async generateCommand() {
+            const formData = new FormData();
+            formData.append('host_id', '{{ host.pk }}');
+            const resp = await fetch('{% url "admin:admin_hosts:admin_host_generate_cert_command" %}', {method: 'POST', body: formData, headers: {'X-CSRFToken': '{{ csrf_token }}'}});
+            const data = await resp.json();
+            if (data.success) {
+                this.command = data.command;
+                this.debugCommand = data.debug_command;
+                this.token = data.token;
+                this.expiresAt = data.expires_at;
+                this.status = 'pending';
+                this.startSSE();
+            }
+        },
+        copyCommand() {
+            navigator.clipboard.writeText(this.command);
+            this.copied = true;
+            setTimeout(() => this.copied = false, 2000);
+        },
+        copyDebugCommand() {
+            navigator.clipboard.writeText(this.debugCommand);
+            this.debugCopied = true;
+            setTimeout(() => this.debugCopied = false, 2000);
+        },
+        startSSE() {
+            const es = new EventSource('/bootstrap/api/cert-provision/status-stream/?token=' + this.token);
+            es.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.status === 'ready') { this.status = 'ready'; es.close(); }
+                else if (data.status === 'configured') { this.status = 'configured'; es.close(); }
+                else if (data.status === 'failed') { this.status = 'failed'; es.close(); }
+            };
+        }
     }));
 });
 </script>
