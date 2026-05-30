@@ -302,8 +302,12 @@ class Command(BaseCommand):
                     return True
                 if 'PLUGIN_INFO' in content:
                     return True
-            except Exception:
-                pass
+            except Exception as e:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'读取插件 {dir_name} 的 __init__.py 失败: {e}'
+                    )
+                )
 
         for item in os.listdir(dir_path):
             if not item.endswith('.py') or item == '__init__.py':
