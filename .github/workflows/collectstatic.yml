@@ -40,7 +40,7 @@ jobs:
       run: uv run python manage.py collectstatic --noinput
       env:
         DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-        DEBUG: 'False'
+        DEBUG: 'True'
 
     - name: Prepare deployment directory
       run: |
