@@ -245,7 +245,10 @@ def test_winrm_connection(self, host_id, use_certificate_auth=False):
             if host.auth_method == 'certificate' and host.cert_provision_status in ('pending', 'ready'):
                 Host.objects.filter(pk=host.pk).update(cert_provision_status='failed')
         except Host.DoesNotExist:
-            pass
+            logger.warning(
+                "测试WinRM连接失败后的清理阶段：主机 #%s 不存在，跳过证书状态更新",
+                host_id
+            )
         task.complete_failure(str(e))
         
         return {
