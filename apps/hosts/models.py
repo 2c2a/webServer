@@ -421,7 +421,7 @@ class FallbackWinrmClient:
                 "SSL+Certificate",
                 dict(
                     hostname=self.host.hostname,
-                    port=5986,
+                    port=self.host.port,
                     use_ssl=True,
                     auth_method='certificate',
                     cert_pem_path=self.host.cert_pem_path,
@@ -436,7 +436,7 @@ class FallbackWinrmClient:
                 "HTTPS+NTLM",
                 dict(
                     hostname=self.host.hostname,
-                    port=5986,
+                    port=self.host.port,
                     use_ssl=True,
                     auth_method='ntlm',
                     username=self.host.ntlm_fallback_user,
