@@ -64,8 +64,6 @@ def process_opening_request(self, request_id, operator_id):
             message="找到可用主机"
         )
         
-        from utils.winrm_client import WinrmClient
-        
         username = request_obj.username
         password = generate_secure_password()
         
@@ -78,13 +76,7 @@ def process_opening_request(self, request_id, operator_id):
             message="执行PowerShell命令创建用户"
         )
         
-        client = WinrmClient(
-            hostname=available_host.hostname,
-            port=available_host.port,
-            username=available_host.username,
-            password=available_host.password,
-            use_ssl=available_host.use_ssl
-        )
+        client = available_host.get_connection_client()
         
         result = client.create_user(
             username=username,
@@ -307,14 +299,7 @@ def rollback_opening_request(request_id):
     try:
         request_obj = AccountOpeningRequest.objects.get(id=request_id)
         if request_obj.host and request_obj.windows_username:
-            from utils.winrm_client import WinrmClient
-            client = WinrmClient(
-                hostname=request_obj.host.hostname,
-                port=request_obj.host.port,
-                username=request_obj.host.username,
-                password=request_obj.host.password,
-                use_ssl=request_obj.host.use_ssl
-            )
+            client = request_obj.host.get_connection_client()
             
             result = client.disabled_user(request_obj.windows_username)
             
@@ -347,14 +332,7 @@ def reset_user_password(self, user_id, operator_id):
         
         new_password = generate_secure_password()
         
-        from utils.winrm_client import WinrmClient
-        client = WinrmClient(
-            hostname=user.host.hostname,
-            port=user.host.port,
-            username=user.host.username,
-            password=user.host.password,
-            use_ssl=user.host.use_ssl
-        )
+        client = user.host.get_connection_client()
         
         result = client.reset_password(user.windows_username, new_password)
         
@@ -473,14 +451,7 @@ def cleanup_inactive_users(self, days_inactive=30):
         
         cleaned_count = 0
         for user in inactive_users:
-            from utils.winrm_client import WinrmClient
-            client = WinrmClient(
-                hostname=user.host.hostname,
-                port=user.host.port,
-                username=user.host.username,
-                password=user.host.password,
-                use_ssl=user.host.use_ssl
-            )
+            client = user.host.get_connection_client()
             
             result = client.disabled_user(user.windows_username)
             

@@ -94,7 +94,7 @@ class WinrmClient:
             cert_key_path: Optional[str] = None,
             timeout: Optional[int] = None,
             max_retries: Optional[int] = None,
-            server_cert_validation: str = 'ignore',
+            server_cert_validation: str = 'validate',
             ca_trust_path: Optional[str] = None,
             client_cert_pem: Optional[str] = None,
             client_cert_key: Optional[str] = None
@@ -169,8 +169,6 @@ class WinrmClient:
             self.hostname = hostname
             self.port = port
 
-        self.username = username
-        self.password = password
         self.use_ssl = use_ssl
         self.timeout = timeout or settings.WINRM_TIMEOUT
         self.max_retries = max_retries or settings.WINRM_MAX_RETRIES
@@ -194,9 +192,11 @@ class WinrmClient:
                 raise ValueError(f"CA证书文件不存在: {ca_trust_path}")
 
         if self.auth_method == 'certificate':
-            transport = 'ssl'
+            transport = 'certificate'
             if not self.use_ssl:
                 self.use_ssl = True
+            if self.port == 5985:
+                self.port = 5986
         else:
             transport = 'ntlm'
 
@@ -216,7 +216,11 @@ class WinrmClient:
         if self.auth_method == 'certificate':
             session_kwargs['cert_pem'] = self.cert_pem_path
             session_kwargs['cert_key_pem'] = self.cert_key_path
-            self.session = Session(self.endpoint, **session_kwargs)
+            self.session = Session(
+                self.endpoint,
+                auth=(self.username, self.password),
+                **session_kwargs,
+            )
         else:
             self.session = Session(
                 self.endpoint,

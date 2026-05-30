@@ -394,6 +394,12 @@ class Product(models.Model):
         help_text=_('产品的可见性：公开对所有用户可见，邀请访问仅对已授权用户可见')
     )
 
+    limit_one_per_user = models.BooleanField(
+        default=False,
+        verbose_name=_('每人限购一个'),
+        help_text=_('是否限制每个用户只能拥有一个此产品')
+    )
+    
     enable_disk_quota = models.BooleanField(
         default=False,
         verbose_name=_('启用磁盘配额管理'),
@@ -779,15 +785,7 @@ class AccountOpeningRequest(models.Model):
 
         # 正式模式
         try:
-            from utils.winrm_client import WinrmClient
-
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
 
             password = CloudComputerUser.generate_complex_password()
             result = client.create_user(
@@ -1058,17 +1056,9 @@ class CloudComputerUser(models.Model):
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.disabled_user(self.username)
             if result.status_code != 0:
@@ -1084,17 +1074,9 @@ class CloudComputerUser(models.Model):
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.enable_user(self.username)
             if result.status_code != 0:
@@ -1110,17 +1092,9 @@ class CloudComputerUser(models.Model):
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.delete_user(self.username)
             if result.status_code != 0:
@@ -1152,17 +1126,9 @@ class CloudComputerUser(models.Model):
             return
         
         try:
-            from utils.winrm_client import WinrmClient
-            
             product = self.product
             host = product.host
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
+            client = host.get_connection_client()
             
             result = client.reset_password(self.username, new_password)
             if result.status_code != 0:

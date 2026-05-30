@@ -1095,13 +1095,8 @@ def admin_cloud_user_action(request, pk):
         cloud_user.is_admin = True
         cloud_user.save(update_fields=['is_admin', 'updated_at'])
         try:
-            from utils.winrm_client import WinrmClient
             host = cloud_user.product.host
-            client = WinrmClient(
-                hostname=host.hostname, port=host.port,
-                username=host.username, password=host.password,
-                use_ssl=host.use_ssl,
-            )
+            client = host.get_connection_client()
             client.op_user(cloud_user.username)
         except Exception as e:
             logger.error(f'远程设置管理员失败: {e}')
@@ -1117,13 +1112,8 @@ def admin_cloud_user_action(request, pk):
         cloud_user.is_admin = False
         cloud_user.save(update_fields=['is_admin', 'updated_at'])
         try:
-            from utils.winrm_client import WinrmClient
             host = cloud_user.product.host
-            client = WinrmClient(
-                hostname=host.hostname, port=host.port,
-                username=host.username, password=host.password,
-                use_ssl=host.use_ssl,
-            )
+            client = host.get_connection_client()
             client.deop_user(cloud_user.username)
         except Exception as e:
             logger.error(f'远程取消管理员失败: {e}')
@@ -1193,13 +1183,8 @@ def admin_cloud_user_set_quota(request, pk):
 
     try:
         from utils.disk_quota import set_disk_quota_via_client
-        from utils.winrm_client import WinrmClient
         host = cloud_user.product.host
-        client = WinrmClient(
-            hostname=host.hostname, port=host.port,
-            username=host.username, password=host.password,
-            use_ssl=host.use_ssl,
-        )
+        client = host.get_connection_client()
         result = set_disk_quota_via_client(client, cloud_user.username, disk, quota_mb)
         if not result['success']:
             return JsonResponse({'success': False, 'message': f'远程设置配额失败: {result["message"]}'})

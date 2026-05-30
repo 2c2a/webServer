@@ -36,4 +36,13 @@ urlpatterns = [
     path('api/revoke-pending-host/', views.revoke_pending_host, name='revoke_pending_host'),
 
     path('sse/init-status/', views.sse_init_status, name='sse_init_status'),
+
+    path('api/cert-provision/validate/', views.cert_provision_validate, name='cert_provision_validate'),
+    path('api/cert-provision/upload-hostname/', views.cert_provision_upload_hostname, name='cert_provision_upload_hostname'),
+    path('api/cert-provision/download-certs/', views.cert_provision_download_certs, name='cert_provision_download_certs'),
+    path('api/cert-provision/notify-complete/', views.cert_provision_notify_complete, name='cert_provision_notify_complete'),
+    path('api/cert-provision/disable-password-auth/', views.cert_provision_disable_password_auth, name='cert_provision_disable_password_auth'),
+    path('api/cert-provision/test-result/', views.cert_provision_test_result, name='cert_provision_test_result'),
+    path('api/cert-provision/status-stream/', views.cert_provision_status_stream, name='cert_provision_status_stream'),
+    path('api/cert-provision/test-stream/', views.cert_provision_test_stream, name='cert_provision_test_stream'),
 ]

@@ -143,25 +143,46 @@
                             <div class="text-red-400 text-sm mt-1">{{ error }}</div>
                             {% endfor %}
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="mb-4">
-                            <label for="{{ form.captcha_id.id_for_label }}" class="block text-sm font-medium text-slate-400 mb-2">{{ form.captcha_id.label }}</label>
-                            {{ form.captcha_id }}
-                            {% if form.captcha_id.help_text %}
-                            <small class="block text-xs text-slate-500 mt-1">{{ form.captcha_id.help_text }}</small>
+                            <label for="{{ form.captcha_type.id_for_label }}" class="block text-sm font-medium text-slate-400 mb-2">{{ form.captcha_type.label }}</label>
+                            {{ form.captcha_type }}
+                            {% if form.captcha_type.help_text %}
+                            <small class="block text-xs text-slate-500 mt-1">{{ form.captcha_type.help_text }}</small>
                             {% endif %}
-                            {% for error in form.captcha_id.errors %}
+                            {% for error in form.captcha_type.errors %}
+                            <div class="text-red-400 text-sm mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-500 mb-4">场景级别类型留空则使用默认类型</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="mb-4">
+                            <label for="{{ form.login_captcha_type.id_for_label }}" class="block text-sm font-medium text-slate-400 mb-2">{{ form.login_captcha_type.label }}</label>
+                            {{ form.login_captcha_type }}
+                            {% if form.login_captcha_type.help_text %}
+                            <small class="block text-xs text-slate-500 mt-1">{{ form.login_captcha_type.help_text }}</small>
+                            {% endif %}
+                            {% for error in form.login_captcha_type.errors %}
                             <div class="text-red-400 text-sm mt-1">{{ error }}</div>
                             {% endfor %}
                         </div>
                         <div class="mb-4">
-                            <label for="{{ form.captcha_key.id_for_label }}" class="block text-sm font-medium text-slate-400 mb-2">{{ form.captcha_key.label }}</label>
-                            {{ form.captcha_key }}
-                            {% if form.captcha_key.help_text %}
-                            <small class="block text-xs text-slate-500 mt-1">{{ form.captcha_key.help_text }}</small>
+                            <label for="{{ form.register_captcha_type.id_for_label }}" class="block text-sm font-medium text-slate-400 mb-2">{{ form.register_captcha_type.label }}</label>
+                            {{ form.register_captcha_type }}
+                            {% if form.register_captcha_type.help_text %}
+                            <small class="block text-xs text-slate-500 mt-1">{{ form.register_captcha_type.help_text }}</small>
                             {% endif %}
-                            {% for error in form.captcha_key.errors %}
+                            {% for error in form.register_captcha_type.errors %}
+                            <div class="text-red-400 text-sm mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4">
+                            <label for="{{ form.email_captcha_type.id_for_label }}" class="block text-sm font-medium text-slate-400 mb-2">{{ form.email_captcha_type.label }}</label>
+                            {{ form.email_captcha_type }}
+                            {% if form.email_captcha_type.help_text %}
+                            <small class="block text-xs text-slate-500 mt-1">{{ form.email_captcha_type.help_text }}</small>
+                            {% endif %}
+                            {% for error in form.email_captcha_type.errors %}
                             <div class="text-red-400 text-sm mt-1">{{ error }}</div>
                             {% endfor %}
                         </div>

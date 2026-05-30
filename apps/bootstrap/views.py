@@ -4,7 +4,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required, permission_required
 from django.utils.decorators import method_decorator
 from django.views import View
-from .models import InitialToken, ActiveSession
+from .models import InitialToken, ActiveSession, CertProvisionToken
 from apps.hosts.models import Host
 from apps.certificates.models import CertificateAuthority, ServerCertificate
 from apps.tasks.models import AsyncTask
@@ -12,6 +12,7 @@ from apps.bootstrap.tasks import generate_bootstrap_config, initialize_host_boot
 from django.shortcuts import get_object_or_404
 import json
 import logging
+import base64
 from django.utils import timezone
 from django.core.cache import cache
 import secrets
@@ -85,7 +86,7 @@ def _save_cert_to_host(host, pfx_b64, pfx_password, service_user, service_passwo
     if service_user and service_password:
         update_fields['username'] = service_user
         from utils.crypto import encrypt_value
-        update_fields['password'] = encrypt_value(service_password)
+        update_fields['_password'] = encrypt_value(service_password)
 
     from apps.hosts.models import Host
     Host.objects.filter(pk=host.pk).update(**update_fields)
@@ -1207,3 +1208,236 @@ class BootstrapManagementView(View):
                 'success': False,
                 'error': 'Failed to delete initial token'
             }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def cert_provision_validate(request):
+    token_str = request.GET.get('token', '')
+    try:
+        provision_token = CertProvisionToken.objects.get(token=token_str)
+        return JsonResponse({
+            'valid': provision_token.is_valid(),
+            'server_host': provision_token.server_host,
+            'status': provision_token.status,
+        })
+    except CertProvisionToken.DoesNotExist:
+        return JsonResponse({'valid': False, 'server_host': '', 'status': ''})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def cert_provision_upload_hostname(request):
+    try:
+        data = json.loads(request.body)
+        token_str = data.get('token', '')
+        hostname = data.get('hostname', '')
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+    try:
+        provision_token = CertProvisionToken.objects.get(token=token_str)
+    except CertProvisionToken.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Token not found'}, status=404)
+
+    if not provision_token.is_valid():
+        return JsonResponse({'success': False, 'error': 'Token expired'}, status=403)
+
+    host = provision_token.host
+    if host:
+        Host.objects.filter(pk=host.pk).update(hostname=hostname)
+        host.refresh_from_db()
+    else:
+        provision_token.hostname = hostname
+
+    provision_token.status = 'HOSTNAME_UPLOADED'
+    provision_token.save()
+
+    from apps.bootstrap.tasks import cert_provision_issue_certs
+    cert_provision_issue_certs.delay(token_str)
+
+    return JsonResponse({'success': True})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def cert_provision_download_certs(request):
+    token_str = request.GET.get('token', '')
+    try:
+        provision_token = CertProvisionToken.objects.get(token=token_str)
+    except CertProvisionToken.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Token not found'}, status=404)
+
+    if provision_token.status != 'CERT_ISSUED':
+        return JsonResponse({'success': False, 'error': 'Certificates not ready'}, status=400)
+
+    host = provision_token.host
+    if host and host.cert_root and host.cert_sub:
+        from utils.cert_storage import get_cert_file_paths
+        paths = get_cert_file_paths(host.cert_root, host.cert_sub)
+
+        ca_cert_b64 = base64.b64encode(paths['ca_cert'].read_bytes()).decode('utf-8')
+        client_cert_b64 = base64.b64encode(paths['client_cert'].read_bytes()).decode('utf-8')
+        server_pfx_b64 = base64.b64encode(paths['server_pfx'].read_bytes()).decode('utf-8')
+
+        return JsonResponse({
+            'success': True,
+            'ca_cert': ca_cert_b64,
+            'client_cert': client_cert_b64,
+            'server_pfx': server_pfx_b64,
+            'pfx_password': host.pfx_password,
+            'ntlm_user': host.ntlm_fallback_user,
+            'ntlm_password': host.ntlm_fallback_password,
+            'upn_value': f"{host.ntlm_fallback_user}@localhost",
+        })
+    elif provision_token.cert_data:
+        cd = provision_token.cert_data
+        return JsonResponse({
+            'success': True,
+            'ca_cert': cd.get('ca_cert_b64', ''),
+            'client_cert': cd.get('client_cert_b64', ''),
+            'server_pfx': cd.get('server_pfx_b64', ''),
+            'pfx_password': cd.get('pfx_password', ''),
+            'ntlm_user': cd.get('ntlm_user', ''),
+            'ntlm_password': cd.get('ntlm_password', ''),
+            'upn_value': f"{cd.get('ntlm_user', '')}@localhost",
+        })
+
+    return JsonResponse({'success': False, 'error': 'Host not configured'}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def cert_provision_notify_complete(request):
+    try:
+        data = json.loads(request.body)
+        token_str = data.get('token', '')
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+    try:
+        provision_token = CertProvisionToken.objects.get(token=token_str)
+    except CertProvisionToken.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Token not found'}, status=404)
+
+    provision_token.status = 'HOST_CONFIGURED'
+    provision_token.save()
+
+    host = provision_token.host
+    if host:
+        from apps.hosts.tasks import test_winrm_connection
+        use_cert = host.auth_method == 'certificate'
+        test_winrm_connection.delay(host.pk, use_certificate_auth=use_cert)
+        return JsonResponse({'success': True, 'test': 'started'})
+    else:
+        return JsonResponse({'success': True, 'test': 'deferred'})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def cert_provision_disable_password_auth(request):
+    try:
+        data = json.loads(request.body)
+        token_str = data.get('token', '')
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+    try:
+        provision_token = CertProvisionToken.objects.get(token=token_str)
+    except CertProvisionToken.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Token not found'}, status=404)
+
+    provision_token.status = 'CONSUMED'
+    provision_token.consumed_at = timezone.now()
+    provision_token.save()
+
+    return JsonResponse({'success': True})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def cert_provision_test_result(request):
+    token_str = request.GET.get('token', '')
+    try:
+        provision_token = CertProvisionToken.objects.get(token=token_str)
+    except CertProvisionToken.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Token not found'}, status=404)
+
+    host = provision_token.host
+    if not host:
+        return JsonResponse({'status': 'testing'})
+
+    if host.cert_provision_status == 'configured':
+        return JsonResponse({'status': 'success'})
+    elif host.cert_provision_status == 'failed':
+        return JsonResponse({'status': 'failed', 'error': 'Connection test failed'})
+    else:
+        return JsonResponse({'status': 'testing'})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def cert_provision_status_stream(request):
+    token_str = request.GET.get('token', '')
+
+    def event_stream():
+        for _ in range(120):
+            try:
+                provision_token = CertProvisionToken.objects.get(token=token_str)
+            except CertProvisionToken.DoesNotExist:
+                yield f"data: {json.dumps({'status': 'failed', 'error': 'Token not found'})}\n\n"
+                return
+
+            if provision_token.status == 'CERT_ISSUED':
+                host = provision_token.host
+                yield f"data: {json.dumps({'status': 'ready'})}\n\n"
+                return
+            elif provision_token.status == 'HOST_CONFIGURED':
+                yield f"data: {json.dumps({'status': 'configured'})}\n\n"
+                return
+            elif provision_token.is_expired():
+                yield f"data: {json.dumps({'status': 'failed', 'error': 'Token expired'})}\n\n"
+                return
+
+            yield f"data: {json.dumps({'status': 'pending'})}\n\n"
+            time.sleep(5)
+
+        yield f"data: {json.dumps({'status': 'failed', 'error': 'Timeout'})}\n\n"
+
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def cert_provision_test_stream(request):
+    token_str = request.GET.get('token', '')
+
+    def event_stream():
+        for _ in range(60):
+            try:
+                provision_token = CertProvisionToken.objects.get(token=token_str)
+            except CertProvisionToken.DoesNotExist:
+                yield f"data: {json.dumps({'status': 'failed', 'error': 'Token not found'})}\n\n"
+                return
+
+            host = provision_token.host
+            if host:
+                if host.cert_provision_status == 'configured':
+                    yield f"data: {json.dumps({'status': 'success'})}\n\n"
+                    return
+                elif host.cert_provision_status == 'failed':
+                    yield f"data: {json.dumps({'status': 'failed', 'error': 'Connection test failed'})}\n\n"
+                    return
+
+            yield f"data: {json.dumps({'status': 'testing'})}\n\n"
+            time.sleep(5)
+
+        yield f"data: {json.dumps({'status': 'failed', 'error': 'Timeout'})}\n\n"
+
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response

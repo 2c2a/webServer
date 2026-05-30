@@ -68,6 +68,11 @@ urlpatterns = [
         views_admin.admin_host_generate_init_command,
         name='host_generate_init_command'
     ),
+    path(
+        'generate-cert-command/',
+        views_admin.admin_host_generate_cert_command,
+        name='admin_host_generate_cert_command'
+    ),
 
     # 主机组管理
     path(

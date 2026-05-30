@@ -18,8 +18,6 @@ import os
 
 from .models import User, RegistrationLink
 from .forms import UserRegistrationForm, UserUpdateForm, UserLoginForm
-from . import geetest_utils
-from . import captcha_utils
 from . import rate_limit
 from apps.themes.models import ThemeConfig, PageContent
 
@@ -38,12 +36,15 @@ def get_theme_context():
 def get_captcha_context(scene):
     from apps.dashboard.models import SystemConfig
     sc = SystemConfig.get_config()
-    captcha_provider, captcha_id, captcha_key = sc.get_captcha_config(scene=scene)
-    return {
-        'GEETEST_ID': captcha_id,
+    captcha_provider, captcha_type = sc.get_captcha_config(scene=scene)
+    ctx = {
         'CAPTCHA_PROVIDER': captcha_provider,
-        'TURNSTILE_SITE_KEY': captcha_key if captcha_provider == 'turnstile' else None,
+        'CAPTCHA_TYPE': captcha_type,
     }
+    if scene in ('register', 'forgot_password'):
+        _, email_type = sc.get_captcha_config(scene='email')
+        ctx['CAPTCHA_TYPE_EMAIL'] = email_type
+    return ctx
 
 
 @method_decorator(rate_limit.register_rate_limit, name='dispatch')
@@ -269,42 +270,6 @@ def logout_view(request):
     return redirect('accounts:login')
 
 
-# Geetest endpoints
-@require_http_methods(['GET'])
-def geetest_register(request):
-    """为前端提供极验初始化参数（JSON）"""
-    data = geetest_utils.get_geetest_init(request)
-    return JsonResponse(data)
-
-
-@require_http_methods(['POST'])
-@csrf_protect
-@rate_limit.general_api_rate_limit
-def geetest_validate(request):
-    """可以做一次性的验证接口（可选）。
-    前端可直接把三个字段POST到此处获取验证结果
-    """
-    # 支持 v4 参数
-    # (lot_number / captcha_output / pass_token / gen_time / captcha_id)
-    lot_number = request.POST.get('lot_number')
-    captcha_output = request.POST.get('captcha_output')
-    pass_token = request.POST.get('pass_token')
-    gen_time = request.POST.get('gen_time')
-    captcha_id = request.POST.get('captcha_id')
-
-    if lot_number and captcha_output and pass_token and gen_time:
-        ok, resp = geetest_utils.verify_geetest_v4(
-            lot_number, captcha_output, pass_token, gen_time,
-            captcha_id=captcha_id
-        )
-        if ok:
-            return JsonResponse({'result': 'ok', 'detail': resp})
-        else:
-            return JsonResponse({'result': 'fail', 'detail': resp}, status=400)
-
-    return JsonResponse({'result': 'fail', 'detail': '参数不完整'}, status=400)
-
-
 @login_required
 @require_http_methods(["POST"])
 @rate_limit.general_api_rate_limit
@@ -354,14 +319,7 @@ def _gen_code(length=6):
 @csrf_protect
 @rate_limit.email_code_rate_limit
 def send_register_email_code(request):
-    """Send a one-time code to the supplied email for registration.
-
-    Requires behavior captcha validation to have been passed in this session
-    if captcha_provider == 'geetest' or 'turnstile'
-    (adapter should call /accounts/geetest/validate/ first and backend can
-    check session or just trust front-end - here we trust front-end token
-    by requiring v4 params in this request).
-    """
+    """Send a one-time code to the supplied email for registration."""
     # 检查是否启用了注册功能
     from apps.dashboard.models import SystemConfig
     cfg = SystemConfig.get_config()
@@ -648,36 +606,6 @@ def upload_avatar(request):
     return JsonResponse({'status': 'error', 'message': '没有上传文件'})
 
 
-# Local Captcha endpoints
-@require_http_methods(['GET'])
-def local_captcha_generate(request):
-    """Generate a local image captcha and return the captcha ID"""
-    result = captcha_utils.generate_captcha()
-    return JsonResponse({'captcha_id': result['captcha_id']})
-
-
-def local_captcha_image(request, captcha_id):
-    """Return the image for the given captcha ID"""
-    return captcha_utils.get_captcha_image(request, captcha_id)
-
-
-@require_http_methods(['POST'])
-@rate_limit.general_api_rate_limit
-def local_captcha_verify(request):
-    """Verify the user's input against the captcha"""
-    captcha_id = request.POST.get('captcha_id')
-    user_input = request.POST.get('captcha_input')
-    
-    # 验证时设置consume=False，这样验证后不会删除，可用于后续的表单提交验证
-    # 设置较低的尝试次数限制，防止暴力破解
-    if captcha_utils.verify_captcha(
-        captcha_id, user_input, consume=False, max_attempts=3
-    ):
-        return JsonResponse({'result': 'success'})
-    else:
-        return JsonResponse({'result': 'failure'}, status=400)
-
-
 @method_decorator(rate_limit.register_rate_limit, name='dispatch')
 class ForgotPasswordView(TemplateView):
     """忘记密码视图"""
@@ -755,14 +683,7 @@ class ForgotPasswordView(TemplateView):
 @csrf_protect
 @rate_limit.email_code_rate_limit
 def send_forgot_password_email_code(request):
-    """Send a one-time code to the supplied email for password reset.
-
-    Requires behavior captcha validation to have been passed in this session
-    if captcha_provider == 'geetest' or 'turnstile'
-    (adapter should call /accounts/geetest/validate/ first and backend can
-    check session or just trust front-end - here we trust front-end token
-    by requiring v4 params in this request).
-    """
+    """Send a one-time code to the supplied email for password reset."""
     email = request.POST.get('email')
 
     if not email:

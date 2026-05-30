@@ -108,7 +108,6 @@ class SystemConfigForm(forms.ModelForm):
 
     _PRESERVE_IF_EMPTY = [
         'smtp_password',
-        'captcha_key',
     ]
 
     class Meta:
@@ -123,9 +122,11 @@ class SystemConfigForm(forms.ModelForm):
             'smtp_username',
             'smtp_password',
             'smtp_from_email',
-            'captcha_id',
-            'captcha_key',
             'captcha_provider',
+            'captcha_type',
+            'login_captcha_type',
+            'register_captcha_type',
+            'email_captcha_type',
             'email_suffix_whitelist',
             'email_suffix_blacklist',
         ]
@@ -168,21 +169,6 @@ class SystemConfigForm(forms.ModelForm):
             'smtp_from_email': forms.EmailInput(attrs={
                 'class': MD_INPUT_CLASS,
                 'placeholder': '请输入发件人邮箱'
-            }),
-            'captcha_id': forms.TextInput(attrs={
-                'class': MD_INPUT_CLASS,
-                'placeholder': (
-                    '请输入验证码 ID '
-                    '(Geetest的captcha_id 或 Turnstile的site key)'
-                )
-            }),
-            'captcha_key': forms.TextInput(attrs={
-                'class': MD_INPUT_CLASS,
-                'placeholder': (
-                    '请输入验证码密钥 '
-                    '(Geetest的private_key 或 Turnstile的secret key)'
-                ),
-                'type': 'password'
             }),
             'captcha_provider': forms.Select(attrs={
                 'class': MD_SELECT_CLASS
@@ -227,19 +213,6 @@ class SystemConfigForm(forms.ModelForm):
         cleaned = super().clean()
         if cleaned is None:
             cleaned = {}
-        provider = cleaned.get('captcha_provider')
-        errors = {}
-
-        if provider in ['geetest', 'turnstile']:
-            if not (cleaned.get('captcha_id') and cleaned.get('captcha_key')):
-                provider_display = self.instance.get_captcha_provider_display()
-                msg = f'启用 {provider_display} 时必须填写验证码 ID 和密钥。'
-                errors['captcha_id'] = msg
-                errors['captcha_key'] = msg
-
-        if errors:
-            raise forms.ValidationError(errors)
-
         return cleaned
 
     def save(self, commit=True):

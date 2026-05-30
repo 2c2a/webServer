@@ -84,3 +84,36 @@ class ActiveSession(models.Model):
         verbose_name = "活动会话"
         verbose_name_plural = "活动会话"
         db_table = "active_session"
+
+
+class CertProvisionToken(models.Model):
+    STATUS_CHOICES = [
+        ('ISSUED', '已签发'),
+        ('HOSTNAME_UPLOADED', '主机名已上传'),
+        ('CERT_ISSUED', '证书已签发'),
+        ('HOST_CONFIGURED', '主机已配置'),
+        ('CONSUMED', '已消耗'),
+    ]
+
+    token = models.CharField(max_length=64, primary_key=True, verbose_name="配置令牌")
+    host = models.ForeignKey(Host, on_delete=models.CASCADE, verbose_name="关联的主机", null=True, blank=True)
+    server_host = models.CharField(max_length=255, verbose_name="服务器地址")
+    hostname = models.CharField(max_length=255, verbose_name="主机名", blank=True, default='')
+    ip_address = models.CharField(max_length=255, verbose_name="主机IP地址", blank=True, default='')
+    expires_at = models.DateTimeField(verbose_name="过期时间")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ISSUED', verbose_name="状态")
+    cert_data = models.JSONField(verbose_name="暂存证书数据", blank=True, null=True, default=None)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="创建者")
+    consumed_at = models.DateTimeField(null=True, blank=True, verbose_name="消耗时间")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        verbose_name = "证书配置令牌"
+        verbose_name_plural = "证书配置令牌"
+        db_table = "cert_provision_token"
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def is_valid(self):
+        return self.status == 'ISSUED' and not self.is_expired()

@@ -25,6 +25,8 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import DetailView, TemplateView
 
+from django.contrib.auth.decorators import login_required
+
 from apps.accounts.provider_decorators import admin_required
 from utils.provider import get_provider_hosts, PROVIDER_GROUP_NAME
 
@@ -321,13 +323,14 @@ class AdminHostCreateView(TemplateView):
             init_token_value = form.cleaned_data.get('init_token', '')
             logger.info(f"Wizard save: init_token={'yes' if init_token_value else 'no'}, value={init_token_value[:8] if init_token_value else 'N/A'}")
             existing_host = None
+            cert_token_obj = None
             if init_token_value:
-                from apps.bootstrap.models import InitialToken
+                from apps.bootstrap.models import CertProvisionToken
                 try:
-                    token_obj = InitialToken.objects.get(token=init_token_value)
-                    if token_obj.host:
-                        existing_host = token_obj.host
-                except InitialToken.DoesNotExist:
+                    cert_token_obj = CertProvisionToken.objects.get(token=init_token_value)
+                    if cert_token_obj.host:
+                        existing_host = cert_token_obj.host
+                except CertProvisionToken.DoesNotExist:
                     pass
 
             if existing_host:
@@ -342,38 +345,38 @@ class AdminHostCreateView(TemplateView):
                 existing_host.save()
                 form.instance = existing_host
                 form.save_m2m()
+                # 保存证书文件
+                if existing_host.auth_method == 'certificate':
+                    form._save_cert_files(existing_host)
                 host = existing_host
             else:
                 host = form.save(commit=False)
                 host.created_by = request.user
                 host.save()
                 form.save_m2m()
+                # 保存证书文件
+                if host.auth_method == 'certificate':
+                    form._save_cert_files(host)
 
-            if init_token_value and not existing_host:
-                from apps.bootstrap.models import InitialToken
-                InitialToken.objects.filter(
-                    token=init_token_value,
-                    host__isnull=True,
-                ).update(host=host)
-
-            if init_token_value:
-                from apps.bootstrap.models import InitialToken
-                from apps.bootstrap.views import _save_cert_to_host
-                try:
-                    token_obj = InitialToken.objects.get(token=init_token_value)
-                    if token_obj.cert_data:
-                        cd = token_obj.cert_data
-                        _save_cert_to_host(
-                            host,
-                            cd.get('pfx_b64', ''),
-                            cd.get('pfx_password', ''),
-                            cd.get('service_user', ''),
-                            cd.get('service_password', ''),
-                        )
-                        token_obj.cert_data = None
-                        token_obj.save(update_fields=['cert_data'])
-                except InitialToken.DoesNotExist:
-                    pass
+            if cert_token_obj and not existing_host:
+                cert_token_obj.host = host
+                if cert_token_obj.cert_data:
+                    cd = cert_token_obj.cert_data
+                    host.cert_root = cd.get('cert_root', '')
+                    host.cert_sub = cd.get('cert_sub', '')
+                    host.pfx_password = cd.get('pfx_password', '')
+                    host.ntlm_fallback_user = cd.get('ntlm_user', '')
+                    host.ntlm_fallback_password = cd.get('ntlm_password', '')
+                    host.cert_provision_status = 'ready'
+                    # 根据 cert_root 和 cert_sub 计算证书路径
+                    if host.cert_root and host.cert_sub:
+                        from utils.cert_storage import get_cert_dir
+                        cert_dir = get_cert_dir(host.cert_root, host.cert_sub)
+                        host.cert_pem_path = str(cert_dir / 'client.crt')
+                        host.cert_key_path = str(cert_dir / 'client.key')
+                    host.save()
+                    cert_token_obj.cert_data = None
+                cert_token_obj.save()
 
             # 测试连接
             try:
@@ -408,14 +411,14 @@ class AdminHostCreateView(TemplateView):
                     host.pk
                 )
 
-            # 证书快速配置：用预生成的 token 创建 InitialToken
             init_token = request.POST.get('init_token')
             if (host.auth_method == 'certificate'
-                    and init_token):
+                    and init_token and not cert_token_obj):
                 try:
-                    from apps.bootstrap.models import InitialToken
-                    InitialToken.objects.filter(
+                    from apps.bootstrap.models import CertProvisionToken
+                    CertProvisionToken.objects.filter(
                         token=init_token,
+                        host__isnull=True,
                     ).update(host=host)
                 except Exception:
                     pass
@@ -831,18 +834,57 @@ def admin_host_wizard(request):
             host.created_by = request.user
             host.save()
             form.save_m2m()
+            # 保存证书文件
+            if host.auth_method == 'certificate':
+                form._save_cert_files(host)
 
-            # 测试连接
+            init_token_value = form.cleaned_data.get('init_token', '')
+            if init_token_value:
+                from apps.bootstrap.models import CertProvisionToken
+                try:
+                    cert_token_obj = CertProvisionToken.objects.get(token=init_token_value)
+                    if not cert_token_obj.host_id:
+                        cert_token_obj.host = host
+                        if cert_token_obj.cert_data:
+                            cd = cert_token_obj.cert_data
+                            host.cert_root = cd.get('cert_root', '')
+                            host.cert_sub = cd.get('cert_sub', '')
+                            host.pfx_password = cd.get('pfx_password', '')
+                            host.ntlm_fallback_user = cd.get('ntlm_user', '')
+                            host.ntlm_fallback_password = cd.get('ntlm_password', '')
+                            host.cert_provision_status = 'ready'
+                            # 根据 cert_root 和 cert_sub 计算证书路径
+                            if host.cert_root and host.cert_sub:
+                                from utils.cert_storage import get_cert_dir
+                                cert_dir = get_cert_dir(host.cert_root, host.cert_sub)
+                                host.cert_pem_path = str(cert_dir / 'client.crt')
+                                host.cert_key_path = str(cert_dir / 'client.key')
+                            host.save()
+                            cert_token_obj.cert_data = None
+                        cert_token_obj.save()
+                        host.refresh_from_db()
+                except CertProvisionToken.DoesNotExist:
+                    pass
+
             try:
-                host.test_connection()
-                status_display = dict(Host.STATUS_CHOICES).get(
-                    host.status, host.status
-                )
-                messages.success(
-                    request,
-                    f'主机 {host.name} 创建成功，'
-                    f'状态: {status_display}'
-                )
+                if host.auth_method == 'certificate':
+                    from apps.hosts.tasks import test_winrm_connection
+                    test_winrm_connection.delay(host.pk, use_certificate_auth=True)
+                    messages.success(
+                        request,
+                        f'主机 {host.name} 创建成功，'
+                        f'证书连接测试正在后台执行'
+                    )
+                else:
+                    host.test_connection()
+                    status_display = dict(Host.STATUS_CHOICES).get(
+                        host.status, host.status
+                    )
+                    messages.success(
+                        request,
+                        f'主机 {host.name} 创建成功，'
+                        f'状态: {status_display}'
+                    )
             except Exception as e:
                 messages.warning(
                     request,
@@ -915,55 +957,46 @@ def admin_host_wizard_generate_init_command(request):
             status=405,
         )
 
-    import base64
-    from apps.bootstrap.models import InitialToken
+    import base64, json
+    from apps.bootstrap.models import CertProvisionToken
+    from apps.bootstrap.token_utils import encode_provision_token
 
-    InitialToken.objects.filter(
+    token_str = secrets.token_hex(32)
+    server_host = request.get_host()
+    scheme = 'https' if request.is_secure() else 'http'
+
+    ip_address = ''
+    try:
+        body = json.loads(request.body)
+        ip_address = body.get('ip_address', '')
+    except (json.JSONDecodeError, ValueError):
+        ip_address = request.POST.get('ip_address', '')
+
+    CertProvisionToken.objects.create(
+        token=token_str,
         host=None,
+        server_host=server_host,
+        ip_address=ip_address,
+        expires_at=timezone.now() + timedelta(minutes=60),
         status='ISSUED',
-    ).delete()
-
-    InitialToken.objects.filter(
-        expires_at__lt=timezone.now(),
-        host=None,
-    ).delete()
-
-    token = secrets.token_urlsafe(32)
-    expires_at = timezone.now() + timedelta(hours=24)
-
-    InitialToken.objects.create(
-        token=token,
-        host=None,
-        expires_at=expires_at,
-        status='ISSUED',
+        created_by=request.user,
     )
 
-    c_side_url = request.build_absolute_uri('/').rstrip('/')
-    config_data = {
-        'c_side_url': c_side_url,
-        'token': token,
-    }
-    config_json = json.dumps(config_data)
-    encoded_config = base64.b64encode(
-        config_json.encode('utf-8')
-    ).decode('utf-8')
-
+    encoded = encode_provision_token(token_str, scheme, server_host)
+    script_url = f"{scheme}://{server_host}/static/scripts/init.ps1"
     one_liner = (
-        "& ([ScriptBlock]::Create("
-        "(irm https://2c2a.cc.cd/hostinitbash.ps1)"
-        f")) -Secret '{encoded_config}'"
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded}"
     )
-
     fallback_command = (
-        "$e = \"$env:TEMP\\h_side_init.exe\"; "
-        "irm https://2c2a.cc.cd/hostinitbash.exe "
-        f"-OutFile $e; & $e '{encoded_config}'"
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded} debug"
     )
 
     return JsonResponse({
         'success': True,
         'data': {
-            'token': token,
+            'token': token_str,
             'one_liner': one_liner,
             'fallback_command': fallback_command,
         },
@@ -1097,3 +1130,51 @@ def admin_host_generate_init_command(request, pk):
             {'success': False, 'error': str(e)},
             status=500,
         )
+
+
+@login_required
+def admin_host_generate_cert_command(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    host_id = request.POST.get('host_id')
+    host = get_object_or_404(Host, pk=host_id)
+
+    if host.auth_method != 'certificate':
+        return JsonResponse({'success': False, 'error': 'Host is not configured for certificate auth'}, status=400)
+
+    from apps.bootstrap.models import CertProvisionToken
+    from apps.bootstrap.token_utils import encode_provision_token
+
+    token_str = secrets.token_hex(32)
+    server_host = request.get_host()
+    scheme = 'https' if request.is_secure() else 'http'
+
+    provision_token = CertProvisionToken.objects.create(
+        token=token_str,
+        host=host,
+        server_host=server_host,
+        ip_address=host.hostname or '',
+        expires_at=timezone.now() + timedelta(minutes=60),
+        status='ISSUED',
+        created_by=request.user,
+    )
+
+    encoded = encode_provision_token(token_str, scheme, server_host)
+    script_url = f"{scheme}://{server_host}/static/scripts/init.ps1"
+    command = (
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded}"
+    )
+    debug_command = (
+        f"$script = [Text.Encoding]::UTF8.GetString((iwr '{script_url}' -UseBasicParsing).RawContentStream.ToArray()); "
+        f"& ([ScriptBlock]::Create($script)) {encoded} debug"
+    )
+
+    return JsonResponse({
+        'success': True,
+        'command': command,
+        'debug_command': debug_command,
+        'token': token_str,
+        'expires_at': provision_token.expires_at.isoformat(),
+    })

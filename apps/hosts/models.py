@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from utils.crypto import encrypt_value, decrypt_value
+import logging
 import os
 
 
@@ -35,6 +36,14 @@ class Host(models.Model):
         ('offline', '隧道离线'),
         ('online', '隧道在线'),
         ('error', '隧道错误'),
+    ]
+
+    CERT_PROVISION_STATUS_CHOICES = [
+        ('not_started', '未开始'),
+        ('pending', '签发中'),
+        ('ready', '已就绪'),
+        ('configured', '已配置'),
+        ('failed', '失败'),
     ]
 
     name = models.CharField(max_length=100, verbose_name='主机名称')
@@ -98,6 +107,37 @@ class Host(models.Model):
         blank=True, verbose_name='隧道公钥(Ed25519)'
     )
 
+    cert_root = models.CharField(
+        max_length=2, blank=True, default='',
+        verbose_name='证书存储根路径'
+    )
+    cert_sub = models.CharField(
+        max_length=2, blank=True, default='',
+        verbose_name='证书存储子路径'
+    )
+    _pfx_password = models.CharField(
+        max_length=255, blank=True, default='',
+        db_column='pfx_password', verbose_name='PFX密码'
+    )
+    ntlm_fallback_user = models.CharField(
+        max_length=100, blank=True, default='',
+        verbose_name='NTLM回退用户名'
+    )
+    _ntlm_fallback_password = models.CharField(
+        max_length=255, blank=True, default='',
+        db_column='ntlm_fallback_password',
+        verbose_name='NTLM回退密码'
+    )
+    cert_activated_at = models.DateTimeField(
+        null=True, blank=True, verbose_name='证书激活时间'
+    )
+    cert_provision_status = models.CharField(
+        max_length=20,
+        choices=CERT_PROVISION_STATUS_CHOICES,
+        default='not_started',
+        verbose_name='证书配置状态'
+    )
+
     class Meta:
         verbose_name = '主机'
         verbose_name_plural = '主机'
@@ -117,6 +157,28 @@ class Host(models.Model):
     def password(self, raw_password):
         self._password = encrypt_value(raw_password)
 
+    @property
+    def pfx_password(self):
+        try:
+            return decrypt_value(self._pfx_password)
+        except ValueError:
+            raise ValueError("PFX密码解密失败")
+
+    @pfx_password.setter
+    def pfx_password(self, raw_password):
+        self._pfx_password = encrypt_value(raw_password)
+
+    @property
+    def ntlm_fallback_password(self):
+        try:
+            return decrypt_value(self._ntlm_fallback_password)
+        except ValueError:
+            raise ValueError("NTLM回退密码解密失败")
+
+    @ntlm_fallback_password.setter
+    def ntlm_fallback_password(self, raw_password):
+        self._ntlm_fallback_password = encrypt_value(raw_password)
+
     def save(self, *args, **kwargs):
         """
         重写save方法
@@ -135,12 +197,7 @@ class Host(models.Model):
                 use_ssl=self.use_ssl,
             )
             if self.auth_method == 'certificate':
-                kwargs.update(
-                    auth_method='certificate',
-                    cert_pem_path=self.cert_pem_path,
-                    cert_key_path=self.cert_key_path,
-                    server_cert_validation='ignore',
-                )
+                return FallbackWinrmClient(self)
             else:
                 kwargs.update(
                     username=self.username,
@@ -177,7 +234,6 @@ class Host(models.Model):
         if (self.auth_method == 'certificate'
                 and (not self.cert_pem_path
                      or not os.path.exists(self.cert_pem_path))):
-            import logging
             logging.getLogger("2c2a").warning(
                 f"证书文件不存在，跳过连接测试: {self.name} "
                 f"(pem={self.cert_pem_path})"
@@ -202,7 +258,6 @@ class Host(models.Model):
                 
         except Exception as e:
             new_status = 'error'
-            import logging
             logger = logging.getLogger("2c2a")
             logger.error(
                 f"测试主机连接失败: {self.name}, 错误: {str(e)}"
@@ -341,6 +396,148 @@ Set-LocalUser -Name "{safe_user}" -Password $pw
             f'-Member "{safe_user}" -ErrorAction SilentlyContinue'
         )
         return self.execute_powershell(script)
+
+
+class FallbackWinrmClient:
+    _logger = logging.getLogger("2c2a")
+
+    def __init__(self, host):
+        self.host = host
+        self._client = None
+
+    def _try_connect(self):
+        if self._client is not None:
+            return
+        from utils.winrm_client import WinrmClient
+        from utils.cert_storage import get_cert_file_paths
+        last_exc = None
+        ca_trust_path = None
+        if self.host.cert_root and self.host.cert_sub:
+            paths = get_cert_file_paths(self.host.cert_root, self.host.cert_sub)
+            if paths['ca_cert'].exists():
+                ca_trust_path = str(paths['ca_cert'])
+        configs = [
+            (
+                "SSL+Certificate",
+                dict(
+                    hostname=self.host.hostname,
+                    port=5986,
+                    use_ssl=True,
+                    auth_method='certificate',
+                    cert_pem_path=self.host.cert_pem_path,
+                    cert_key_path=self.host.cert_key_path,
+                    server_cert_validation='ignore',
+                    ca_trust_path=ca_trust_path,
+                ),
+            ),
+        ]
+        if self.host.ntlm_fallback_user and self.host.ntlm_fallback_password:
+            configs.append((
+                "HTTPS+NTLM",
+                dict(
+                    hostname=self.host.hostname,
+                    port=5986,
+                    use_ssl=True,
+                    auth_method='ntlm',
+                    username=self.host.ntlm_fallback_user,
+                    password=self.host.ntlm_fallback_password,
+                    server_cert_validation='ignore',
+                    ca_trust_path=ca_trust_path,
+                ),
+            ))
+            configs.append((
+                "HTTP+NTLM",
+                dict(
+                    hostname=self.host.hostname,
+                    port=5985,
+                    use_ssl=False,
+                    auth_method='ntlm',
+                    username=self.host.ntlm_fallback_user,
+                    password=self.host.ntlm_fallback_password,
+                ),
+            ))
+        for label, cfg in configs:
+            try:
+                client = WinrmClient(**cfg)
+                client.execute_command('whoami')
+                self._client = client
+                self._logger.info(
+                    f"主机 {self.host.name} 连接成功，"
+                    f"使用方式: {label}"
+                )
+                return
+            except Exception as e:
+                last_exc = e
+                self._logger.warning(
+                    f"主机 {self.host.name} 连接方式 {label} "
+                    f"失败: {e}"
+                )
+        Host.objects.filter(pk=self.host.pk).update(status='error')
+        if last_exc is not None:
+            raise last_exc
+        raise RuntimeError("所有连接方式均失败")
+
+    @property
+    def success(self):
+        return True
+
+    def execute_command(self, command):
+        self._try_connect()
+        return self._client.execute_command(command)
+
+    def execute_powershell(self, script):
+        self._try_connect()
+        return self._client.execute_powershell(script)
+
+    def create_user(self, username, password, **kwargs):
+        self._try_connect()
+        return self._client.create_user(username, password, **kwargs)
+
+    def delete_user(self, username):
+        self._try_connect()
+        return self._client.delete_user(username)
+
+    def enable_user(self, username):
+        self._try_connect()
+        return self._client.enable_user(username)
+
+    def disabled_user(self, username):
+        self._try_connect()
+        return self._client.disabled_user(username)
+
+    def reset_password(self, username, password):
+        self._try_connect()
+        return self._client.reset_password(username, password)
+
+    def op_user(self, username):
+        self._try_connect()
+        return self._client.op_user(username)
+
+    def deop_user(self, username):
+        self._try_connect()
+        return self._client.deop_user(username)
+
+    def add_to_remote_users(self, username):
+        self._try_connect()
+        return self._client.add_to_remote_users(username)
+
+    def check_user_exists(self, username):
+        self._try_connect()
+        return self._client.check_user_exists(username)
+
+    def generate_strong_password(self, length=None):
+        self._try_connect()
+        return self._client.generate_strong_password(length)
+
+    def get_password_policy(self):
+        self._try_connect()
+        return self._client.get_password_policy()
+
+    def create_user_with_reset_password_on_next_login(
+            self, username, password, description=None, group=None):
+        self._try_connect()
+        return self._client.create_user_with_reset_password_on_next_login(
+            username, password, description=description, group=group)
 
 
 class HostGroup(models.Model):

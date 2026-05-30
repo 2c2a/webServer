@@ -132,6 +132,8 @@ INSTALLED_APPS = [
     'django_cotton',
 
     # 本地应用
+    'django_tianai_captcha',
+
     'apps.accounts',
     'apps.hosts',
     'apps.operations',
@@ -553,3 +555,27 @@ if not DEBUG and not BOOTSTRAP_SHARED_SALT:
     _bootstrap_logging.getLogger('2c2a').warning(
         'BOOTSTRAP_SHARED_SALT 未设置，建议在生产环境中配置此值以增强引导认证安全性'
     )
+
+CAPTCHA = {
+    "PREFIX": "captcha",
+    "EXPIRE": {
+        "default": 120,
+        "WORD_IMAGE_CLICK": 180,
+    },
+    "INIT_DEFAULT_RESOURCE": True,
+    "CACHE_BACKEND": "redis" if REDIS_ENABLED else "local",
+    "REDIS_URL": REDIS_URL if REDIS_ENABLED else "",
+    "DEFAULT_TYPE": "SLIDER",
+    "TOLERANT": 0.02,
+    "TRACK_VALIDATION_ENABLED": True,
+    "SECONDARY": {
+        "ENABLED": True,
+        "EXPIRE": 120,
+        "KEY_PREFIX": "captcha:secondary",
+    },
+    "RATE_LIMIT": {
+        "ENABLED": True,
+        "RATE": 10,
+        "PERIOD": 60,
+    },
+}

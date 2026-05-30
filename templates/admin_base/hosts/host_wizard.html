@@ -373,7 +373,7 @@
                                 <div class="space-y-4">
                                     <div>
                                         <div class="flex items-center justify-between mb-2">
-                                            <label class="text-sm font-medium text-white">一行命令（推荐）</label>
+                                            <label class="text-sm font-medium text-white">快捷部署</label>
                                             <button type="button" @click="copyText(initData.one_liner, 'initOneLiner')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
                                                 <span class="material-symbols-rounded text-sm" x-text="copiedInitOneLiner ? 'check' : 'content_copy'"></span>
                                                 <span x-text="copiedInitOneLiner ? '已复制' : '复制'"></span>
@@ -392,7 +392,7 @@
 
                                     <div>
                                         <div class="flex items-center justify-between mb-2">
-                                            <label class="text-sm font-medium text-white/70">备用命令</label>
+                                            <label class="text-sm font-medium text-white/70">调试部署</label>
                                             <button type="button" @click="copyText(initData.fallback_command, 'initFallback')" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-3 py-1.5 rounded-md transition font-medium">
                                                 <span class="material-symbols-rounded text-sm" x-text="copiedInitFallback ? 'check' : 'content_copy'"></span>
                                                 <span x-text="copiedInitFallback ? '已复制' : '复制'"></span>
@@ -648,14 +648,24 @@
                             </template>
                             <template x-if="authMethod === 'certificate'">
                                 <div>
-                                    <div class="flex justify-between">
-                                        <span class="text-white/70">证书</span>
-                                        <span class="text-white font-medium" x-text="certPemFileName || '未上传'"></span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-white/70">私钥</span>
-                                        <span class="text-white font-medium" x-text="certKeyFileName || '未上传'"></span>
-                                    </div>
+                                    <template x-if="certConfigMethod === 'quick'">
+                                        <div class="flex justify-between">
+                                            <span class="text-white/70">配置方式</span>
+                                            <span class="text-white font-medium" x-text="initData ? '已生成指令' : '快速配置'"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="certConfigMethod === 'manual'">
+                                        <div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white/70">证书</span>
+                                                <span class="text-white font-medium" x-text="certPemFileName || '未上传'"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-white/70">私钥</span>
+                                                <span class="text-white font-medium" x-text="certKeyFileName || '未上传'"></span>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                             <div class="flex justify-between">
@@ -854,6 +864,7 @@ function hostWizard() {
                     'X-CSRFToken': csrfToken,
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ ip_address: this.hostname }),
             })
             .then(resp => resp.json())
             .then(data => {
@@ -873,33 +884,27 @@ function hostWizard() {
         },
 
         startInitStatusSSE(token) {
-            const url = '{% url "bootstrap:sse_init_status" %}?token=' + encodeURIComponent(token);
+            const url = '/bootstrap/api/cert-provision/status-stream/?token=' + encodeURIComponent(token);
             const es = new EventSource(url);
             this.initEventSource = es;
 
             es.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    if (data.host_status === 'online') {
-                        this.initStatus = 'connected';
-                        es.close();
-                        this.initEventSource = null;
-                    } else if (data.cert_uploaded) {
+                    if (data.status === 'ready') {
                         this.initStatus = 'cert_uploaded';
                         es.close();
                         this.initEventSource = null;
-                    } else if (data.status === 'CONSUMED') {
-                        this.initStatus = 'cert_uploading';
-                    } else if (data.status === 'NOT_FOUND') {
+                    } else if (data.status === 'configured') {
+                        this.initStatus = 'connected';
+                        es.close();
+                        this.initEventSource = null;
+                    } else if (data.status === 'failed') {
                         this.initStatus = 'error';
-                        this.initStatusError = '令牌不存在或已过期';
+                        this.initStatusError = data.error || '证书签发失败';
                         es.close();
                         this.initEventSource = null;
-                    } else if (data.status === 'TIMEOUT') {
-                        this.initStatus = 'timeout';
-                        es.close();
-                        this.initEventSource = null;
-                    } else {
+                    } else if (data.status === 'pending') {
                         this.initStatus = 'waiting';
                     }
                 } catch (e) {}

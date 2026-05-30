@@ -19,6 +19,7 @@ urlpatterns = [
     path('audit/', include('apps.audit.urls')),
     path('tunnel/', include('apps.tunnel.urls')),
     path('tickets/', include('apps.tickets.urls')),
+    path('captcha/', include('django_tianai_captcha.urls')),
     path('docs/', views.docs_index, name='docs_index'),
     path('', include('apps.dashboard.urls')),
     path('404/', TemplateView.as_view(template_name='errors/404.html'), name='404'),

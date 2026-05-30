@@ -123,7 +123,7 @@
                 <span class="material-symbols-rounded text-cyan-400">verified_user</span>
                 验证码设置
             </h3>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {% with field=form.captcha_provider %}
                 <x-admin-input label="验证码提供器" type="select">
                     {% for value, label in form.fields.captcha_provider.choices %}
@@ -131,11 +131,39 @@
                     {% endfor %}
                 </x-admin-input>
                 {% endwith %}
-                {% with field=form.captcha_id %}
-                <x-admin-input label="验证码 ID" placeholder="验证码服务的公共ID"></x-admin-input>
+                {% with field=form.captcha_type %}
+                <x-admin-input label="默认验证码类型" type="select">
+                    {% for value, label in form.fields.captcha_type.choices %}
+                    <option value="{{ value }}" {% if form.captcha_type.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </x-admin-input>
                 {% endwith %}
-                {% with field=form.captcha_key %}
-                <x-admin-input label="验证码密钥" type="password" placeholder="留空则保持原值不变"></x-admin-input>
+            </div>
+            <p class="text-sm text-white/50 mt-2 mb-4">场景级别类型留空则使用默认类型</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {% with field=form.login_captcha_type %}
+                <x-admin-input label="登录验证码类型" type="select">
+                    <option value="">使用默认类型</option>
+                    {% for value, label in form.fields.login_captcha_type.choices %}
+                    <option value="{{ value }}" {% if form.login_captcha_type.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </x-admin-input>
+                {% endwith %}
+                {% with field=form.register_captcha_type %}
+                <x-admin-input label="注册验证码类型" type="select">
+                    <option value="">使用默认类型</option>
+                    {% for value, label in form.fields.register_captcha_type.choices %}
+                    <option value="{{ value }}" {% if form.register_captcha_type.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </x-admin-input>
+                {% endwith %}
+                {% with field=form.email_captcha_type %}
+                <x-admin-input label="邮箱验证码类型" type="select">
+                    <option value="">使用默认类型</option>
+                    {% for value, label in form.fields.email_captcha_type.choices %}
+                    <option value="{{ value }}" {% if form.email_captcha_type.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </x-admin-input>
                 {% endwith %}
             </div>
         </div>

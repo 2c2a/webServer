@@ -118,108 +118,53 @@ class SystemConfig(models.Model):
         help_text='系统发送邮件时使用的发件人地址'
     )
 
-    # 统一的验证码配置 - 适用于Geetest和Turnstile
-    captcha_id = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='验证码 ID',
-        help_text='验证码服务的公共ID（Geetest的captcha_id 或 Turnstile的site key）'
-    )
-    captcha_key = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='验证码密钥',
-        help_text='验证码服务的密钥（Geetest的private_key 或 Turnstile的secret key）'
+    CAPTCHA_TYPES = (
+        ('SLIDER', '滑块验证'),
+        ('ROTATE', '旋转验证'),
+        ('CONCAT', '滑动还原'),
+        ('WORD_IMAGE_CLICK', '文字点选'),
     )
 
-    # 选择验证码提供器：geetest / turnstile / local
-    CAPTCHA_PROVIDERS = (
-        ('none', '无'),
-        ('geetest', 'Geetest (极验 v4)'),
-        ('turnstile', 'Cloudflare Turnstile'),
-        ('local', '本地图片验证码'),
-    )
     captcha_provider = models.CharField(
         max_length=32,
-        choices=CAPTCHA_PROVIDERS,
+        choices=(
+            ('none', '无'),
+            ('tianai', '天爱验证码'),
+        ),
         default='none',
         verbose_name='验证码提供器',
-        help_text='选择要启用的验证码提供器（只能选择其一）'
+        help_text='选择要启用的验证码提供器'
     )
-
-    # 场景验证码配置 - 可覆盖全局配置
-    # 邮箱验证码配置
-    email_captcha_provider = models.CharField(
+    captcha_type = models.CharField(
         max_length=32,
-        choices=CAPTCHA_PROVIDERS,
-        blank=True,
-        null=True,
-        verbose_name='邮箱验证码提供器',
-        help_text='邮箱场景的验证码提供器（留空则使用全局配置）'
+        choices=CAPTCHA_TYPES,
+        default='SLIDER',
+        verbose_name='默认验证码类型',
+        help_text='全局默认的验证码类型'
     )
-    email_captcha_id = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='邮箱验证码 ID',
-        help_text='邮箱场景验证码服务的公共ID（如果为空，则使用全局配置）'
-    )
-    email_captcha_key = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='邮箱验证码密钥',
-        help_text='邮箱场景验证码服务的密钥（如果为空，则使用全局配置）'
-    )
-
-    # 登录验证码配置
-    login_captcha_provider = models.CharField(
+    login_captcha_type = models.CharField(
         max_length=32,
-        choices=CAPTCHA_PROVIDERS,
+        choices=CAPTCHA_TYPES,
         blank=True,
         null=True,
-        verbose_name='登录验证码提供器',
-        help_text='登录场景的验证码提供器（留空则使用全局配置）'
+        verbose_name='登录验证码类型',
+        help_text='登录场景的验证码类型（留空则使用默认类型）'
     )
-    login_captcha_id = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='登录验证码 ID',
-        help_text='登录场景验证码服务的公共ID（如果为空，则使用全局配置）'
-    )
-    login_captcha_key = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='登录验证码密钥',
-        help_text='登录场景验证码服务的密钥（如果为空，则使用全局配置）'
-    )
-
-    # 注册验证码配置
-    register_captcha_provider = models.CharField(
+    register_captcha_type = models.CharField(
         max_length=32,
-        choices=CAPTCHA_PROVIDERS,
+        choices=CAPTCHA_TYPES,
         blank=True,
         null=True,
-        verbose_name='注册验证码提供器',
-        help_text='注册场景的验证码提供器（留空则使用全局配置）'
+        verbose_name='注册验证码类型',
+        help_text='注册场景的验证码类型（留空则使用默认类型）'
     )
-    register_captcha_id = models.CharField(
-        max_length=255,
+    email_captcha_type = models.CharField(
+        max_length=32,
+        choices=CAPTCHA_TYPES,
         blank=True,
         null=True,
-        verbose_name='注册验证码 ID',
-        help_text='注册场景验证码服务的公共ID（如果为空，则使用全局配置）'
-    )
-    register_captcha_key = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='注册验证码密钥',
-        help_text='注册场景验证码服务的密钥（如果为空，则使用全局配置）'
+        verbose_name='邮箱验证码类型',
+        help_text='邮箱发送验证码场景的验证码类型（留空则使用默认类型）'
     )
 
     # 其他配置
@@ -299,36 +244,7 @@ class SystemConfig(models.Model):
         return f'{self.site_name} 配置'
 
     def clean(self):
-        """
-        Model-level validation: Validate that when a provider is enabled,
-        its required keys are present.
-        """
-        from django.core.exceptions import ValidationError
-
-        errors = {}
-        provider = getattr(self, 'captcha_provider', 'none')
-        if provider in ['geetest', 'turnstile']:
-            captcha_id = self.captcha_id
-            captcha_key = self.captcha_key
-            if self.pk and not (captcha_id and captcha_key):
-                try:
-                    existing = SystemConfig.objects.get(pk=self.pk)
-                    if not captcha_id:
-                        captcha_id = existing.captcha_id
-                    if not captcha_key:
-                        captcha_key = existing.captcha_key
-                except SystemConfig.DoesNotExist:
-                    pass
-            if not (captcha_id and captcha_key):
-                msg = (
-                    f'启用 {self.get_captcha_provider_display()} 时 '
-                    f'必须填写验证码 ID 和密钥。'
-                )
-                errors['captcha_id'] = msg
-                errors['captcha_key'] = msg
-
-        if errors:
-            raise ValidationError(errors)
+        pass
 
     @classmethod
     def get_config(cls):
@@ -355,27 +271,13 @@ class SystemConfig(models.Model):
         return result
 
     def get_captcha_config(self, scene=None):
-        """
-        获取指定场景的验证码配置，如果没有为场景单独配置，则使用全局配置
-        :param scene: 场景标识符 ('login', 'register', 'email', None)
-        :return: (provider, captcha_id, captcha_key)
-        """
+        provider = self.captcha_provider
         if scene == 'login':
-            provider = self.login_captcha_provider or self.captcha_provider
-            captcha_id = self.login_captcha_id or self.captcha_id
-            captcha_key = self.login_captcha_key or self.captcha_key
+            captcha_type = self.login_captcha_type or self.captcha_type
         elif scene == 'register':
-            provider = self.register_captcha_provider or self.captcha_provider
-            captcha_id = self.register_captcha_id or self.captcha_id
-            captcha_key = self.register_captcha_key or self.captcha_key
+            captcha_type = self.register_captcha_type or self.captcha_type
         elif scene == 'email':
-            provider = self.email_captcha_provider or self.captcha_provider
-            captcha_id = self.email_captcha_id or self.captcha_id
-            captcha_key = self.email_captcha_key or self.captcha_key
+            captcha_type = self.email_captcha_type or self.captcha_type
         else:
-            # 全局配置
-            provider = self.captcha_provider
-            captcha_id = self.captcha_id
-            captcha_key = self.captcha_key
-
-        return provider, captcha_id, captcha_key
+            captcha_type = self.captcha_type
+        return provider, captcha_type

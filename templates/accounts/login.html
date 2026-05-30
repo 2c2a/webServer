@@ -79,18 +79,8 @@
                 </div>
 
                 <div>
-                    {% if CAPTCHA_PROVIDER == 'geetest' %}
-                    <button type="submit" class="inline-flex items-center justify-center gap-2 bg-md-primary text-md-on-primary rounded-md px-6 py-3 hover:bg-md-primary/90 transition font-medium w-full focus:outline-none focus:ring-2 focus:ring-md-primary disabled:opacity-50 disabled:cursor-not-allowed" data-geetest-trigger="true">
-                        <span class="material-icons text-xl">login</span>
-                        <span>登录</span>
-                    </button>
-                    {% elif CAPTCHA_PROVIDER == 'turnstile' %}
-                    <button type="submit" class="inline-flex items-center justify-center gap-2 bg-md-primary text-md-on-primary rounded-md px-6 py-3 hover:bg-md-primary/90 transition font-medium w-full focus:outline-none focus:ring-2 focus:ring-md-primary disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-icons text-xl">login</span>
-                        <span>登录</span>
-                    </button>
-                    {% elif CAPTCHA_PROVIDER == 'local' %}
-                    <button type="button" class="inline-flex items-center justify-center gap-2 bg-md-primary text-md-on-primary rounded-md px-6 py-3 hover:bg-md-primary/90 transition font-medium w-full focus:outline-none focus:ring-2 focus:ring-md-primary disabled:opacity-50 disabled:cursor-not-allowed" id="login-button" data-local-captcha-trigger data-action="submit">
+                    {% if CAPTCHA_PROVIDER == 'tianai' %}
+                    <button type="button" class="inline-flex items-center justify-center gap-2 bg-md-primary text-md-on-primary rounded-md px-6 py-3 hover:bg-md-primary/90 transition font-medium w-full focus:outline-none focus:ring-2 focus:ring-md-primary disabled:opacity-50 disabled:cursor-not-allowed" data-tianai-captcha-trigger data-action="submit">
                         <span class="material-icons text-xl">login</span>
                         <span>登录</span>
                     </button>
@@ -102,11 +92,7 @@
                     {% endif %}
                 </div>
 
-                <input type="hidden" name="lot_number" id="lot_number_login">
-                <input type="hidden" name="captcha_output" id="captcha_output_login">
-                <input type="hidden" name="pass_token" id="pass_token_login">
-                <input type="hidden" name="gen_time" id="gen_time_login">
-                <input type="hidden" name="captcha_id" id="captcha_id_login" value="{{ GEETEST_ID }}">
+                <input type="hidden" name="captcha_token" id="captcha_token_login">
             </form>
 
             <div class="text-center pt-5 border-t border-md-outline-variant mt-6">
@@ -119,23 +105,19 @@
     <script src="/static/vendor/jquery-3.6.0/jquery.min.js"></script>
     <script src="/static/js/base.js"></script>
     <script src="/static/js/accounts.js"></script>
-    <script src="/static/js/gt4.js"></script>
 
     <script>
         window.CAPTCHA_PROVIDER = '{{ CAPTCHA_PROVIDER|escapejs }}';
-        {% if CAPTCHA_PROVIDER == 'geetest' %}
-        window.GEETEST_CAPTCHA_ID = '{{ GEETEST_ID|escapejs }}';
-        {% elif CAPTCHA_PROVIDER == 'turnstile' %}
-        window.TURNSTILE_SITE_KEY = '{{ TURNSTILE_SITE_KEY|escapejs }}';
+        {% if CAPTCHA_TYPE %}
+        window.CAPTCHA_TYPE = '{{ CAPTCHA_TYPE|escapejs }}';
         {% endif %}
     </script>
 
-    {% if CAPTCHA_PROVIDER == 'geetest' %}
-    <script src="/static/js/geetest_v4_adapter.js"></script>
-    {% elif CAPTCHA_PROVIDER == 'local' %}
-    <script src="/static/js/local_captcha_adapter.js"></script>
-    {% elif CAPTCHA_PROVIDER == 'turnstile' %}
-    <script src="/static/js/turnstile_adapter.js"></script>
+    {% if CAPTCHA_PROVIDER == 'tianai' %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'django_tianai_captcha/tac/css/tac.css' %}">
+    <script src="{% static 'django_tianai_captcha/tac/js/tac.min.js' %}"></script>
+    <script src="/static/js/tianai_adapter.js"></script>
     {% endif %}
     <script src="/static/js/email_code.js"></script>
 
