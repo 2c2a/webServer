@@ -236,8 +236,10 @@ class Command(BaseCommand):
                     plugin_name = inst.name
                     plugin_version = inst.version
                     plugin_desc = inst.description
-                except Exception:
-                    pass
+                except Exception as exc:
+                    self.stderr.write(
+                        f"Warning: failed to read metadata from plugin '{entry}': {exc}"
+                    )
 
             discovered.append({
                 'dir_name': entry,
