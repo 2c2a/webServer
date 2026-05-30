@@ -1,6 +1,3 @@
-from django.conf import settings
-
-
 class SecurityHeadersMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -11,7 +8,7 @@ class SecurityHeadersMiddleware:
         if not settings.DEBUG:
             csp_parts = [
                 "default-src 'self'",
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' "，
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
                 "https://static.2c2a.cc.cd",
                 "style-src 'self' 'unsafe-inline' "
                 "https://static.2c2a.cc.cd",
