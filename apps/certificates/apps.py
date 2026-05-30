@@ -1,4 +1,9 @@
+import logging
+
 from django.apps import AppConfig
+
+
+logger = logging.getLogger(__name__)
 
 
 class CertificatesConfig(AppConfig):
@@ -41,4 +46,6 @@ class CertificatesConfig(AppConfig):
                 )
                 ca.save()
         except Exception:
-            pass
+            logger.exception(
+                'Failed to ensure default certificate authority exists during app startup.'
+            )
