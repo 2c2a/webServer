@@ -186,7 +186,7 @@ def test_winrm_connection(self, host_id, use_certificate_auth=False):
             from utils.winrm_client import WinrmClient
             client = WinrmClient(
                 hostname=host.hostname,
-                port=5986,
+                port=host.port,
                 username='',
                 password='',
                 use_ssl=True,
