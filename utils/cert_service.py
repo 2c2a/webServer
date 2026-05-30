@@ -96,6 +96,7 @@ def issue_server_cert(
                 x509.IPAddress(ipaddress.ip_address(ip_address))
             )
         except ValueError:
+            # Invalid IP input is intentionally ignored; DNS SAN is still used.
             pass
     san = x509.SubjectAlternativeName(san_entries)
     builder = (
