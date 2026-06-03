@@ -17,7 +17,7 @@ def reglink_list(request):
 
     status_filter = request.GET.get('status', '').strip()
     if status_filter == 'unused':
-        queryset = queryset.filter(used=False, expires_at__isnull=True) | queryset.filter(used=False, expires_at__gt=timezone.now())
+        queryset = queryset.filter(used=False)
     elif status_filter == 'used':
         queryset = queryset.filter(used=True)
     elif status_filter == 'expired':
@@ -57,6 +57,7 @@ def reglink_create(request):
     if request.method == 'POST':
         group_id = request.POST.get('group', '').strip()
         expires_at_str = request.POST.get('expires_at', '').strip()
+        max_uses_str = request.POST.get('max_uses', '').strip()
         note = request.POST.get('note', '').strip()
 
         if not group_id:
@@ -77,6 +78,22 @@ def reglink_create(request):
             }
             return render(request, 'admin_base/reglinks/reglink_form.html', context)
 
+        max_uses = 1
+        if max_uses_str:
+            try:
+                max_uses = int(max_uses_str)
+                if max_uses < 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                messages.error(request, '最大使用次数必须为非负整数')
+                context = {
+                    'all_groups': all_groups,
+                    'active_nav': 'reglinks',
+                }
+                return render(
+                    request, 'admin_base/reglinks/reglink_form.html', context
+                )
+
         expires_at = None
         if expires_at_str:
             try:
@@ -89,11 +106,14 @@ def reglink_create(request):
                     'all_groups': all_groups,
                     'active_nav': 'reglinks',
                 }
-                return render(request, 'admin_base/reglinks/reglink_form.html', context)
+                return render(
+                    request, 'admin_base/reglinks/reglink_form.html', context
+                )
 
         reglink = RegistrationLink.objects.create(
             group=group,
             created_by=request.user,
+            max_uses=max_uses,
             expires_at=expires_at,
             note=note,
         )
@@ -112,8 +132,8 @@ def reglink_create(request):
 def reglink_delete(request, pk):
     reglink = get_object_or_404(RegistrationLink, pk=pk)
 
-    if reglink.used:
-        messages.error(request, '已使用的注册链接不可删除')
+    if reglink.is_exhausted:
+        messages.error(request, '已用完的注册链接不可删除')
         return redirect('admin:admin_reglinks:reglink_list')
 
     if request.method == 'POST':
