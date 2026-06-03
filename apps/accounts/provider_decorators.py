@@ -125,6 +125,42 @@ def superadmin_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME,
     return decorator
 
 
+def is_site_group_admin(user, site_group=None):
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    if site_group is None:
+        return False
+    return site_group.admins.filter(pk=user.pk).exists()
+
+
+def site_group_admin_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME,
+                               login_url=None):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                from django.contrib.auth.views import redirect_to_login
+                path = request.get_full_path()
+                return redirect_to_login(
+                    path,
+                    login_url=login_url,
+                    redirect_field_name=redirect_field_name,
+                )
+            site_group = getattr(request, 'site_group', None)
+            if not (request.user.is_superuser or is_site_group_admin(request.user, site_group)):
+                return HttpResponseForbidden(
+                    '您没有站点组管理员权限，无法访问此页面。'
+                )
+            return func(request, *args, **kwargs)
+        return wrapper
+
+    if view_func:
+        return decorator(view_func)
+    return decorator
+
+
 def admin_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME,
                    login_url=None):
     """
@@ -158,7 +194,8 @@ def admin_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME,
                     redirect_field_name=redirect_field_name,
                 )
             user = request.user
-            if not (user.is_staff or is_provider(user)):
+            site_group = getattr(request, 'site_group', None)
+            if not (user.is_staff or is_provider(user) or is_site_group_admin(user, site_group)):
                 return HttpResponseForbidden(
                     '您没有后台访问权限。'
                 )

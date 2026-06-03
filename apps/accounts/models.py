@@ -56,6 +56,14 @@ class User(AbstractUser):
         help_text=_('用户信息最后更新时间')
     )
 
+    site_groups = models.ManyToManyField(
+        'dashboard.SiteGroup',
+        blank=True,
+        related_name='members',
+        verbose_name=_('所属站点组'),
+        help_text=_('用户所属的站点组，决定用户可见的数据范围'),
+    )
+
     class Meta:
         verbose_name = _('用户')
         verbose_name_plural = verbose_name
@@ -74,6 +82,19 @@ class User(AbstractUser):
         """获取用户全名"""
         full_name = super().get_full_name()
         return full_name if full_name else self.username
+
+    def is_site_group_admin(self, site_group=None):
+        if self.is_superuser:
+            return True
+        if site_group is None:
+            return False
+        return site_group.admins.filter(pk=self.pk).exists()
+
+    def get_adminable_site_groups(self):
+        if self.is_superuser:
+            from apps.dashboard.models import SiteGroup
+            return SiteGroup.objects.all()
+        return self.admin_site_groups.all()
 
     def sync_staff_status(self):
         if self.is_superuser:
@@ -333,6 +354,15 @@ class RegistrationLink(models.Model):
         auto_now_add=True,
         verbose_name=_('创建时间')
     )
+    max_uses = models.IntegerField(
+        default=1,
+        verbose_name=_('最大使用次数'),
+        help_text=_('设置为0表示不限制使用次数')
+    )
+    used_count = models.IntegerField(
+        default=0,
+        verbose_name=_('已使用次数')
+    )
     used = models.BooleanField(
         default=False,
         verbose_name=_('已使用'),
@@ -344,13 +374,13 @@ class RegistrationLink(models.Model):
         null=True,
         blank=True,
         related_name='used_registration_link',
-        verbose_name=_('使用者'),
-        help_text=_('使用此链接注册的用户')
+        verbose_name=_('最后使用者'),
+        help_text=_('最后使用此链接注册的用户')
     )
     used_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name=_('使用时间')
+        verbose_name=_('最后使用时间')
     )
     expires_at = models.DateTimeField(
         null=True,
@@ -371,8 +401,11 @@ class RegistrationLink(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        status = '已使用' if self.used else '未使用'
-        return f'注册链接({self.group.name}) - {status}'
+        if self.max_uses == 0:
+            usage = f'已用{self.used_count}次/不限'
+        else:
+            usage = f'已用{self.used_count}/{self.max_uses}次'
+        return f'注册链接({self.group.name}) - {usage}'
 
     @property
     def is_expired(self):
@@ -381,5 +414,26 @@ class RegistrationLink(models.Model):
         return timezone.now() > self.expires_at
 
     @property
+    def is_exhausted(self):
+        if self.max_uses == 0:
+            return False
+        return self.used_count >= self.max_uses
+
+    @property
     def is_valid(self):
-        return not self.used and not self.is_expired
+        return not self.is_exhausted and not self.is_expired
+
+    def increment_usage(self, user):
+        from django.db.models import F
+        RegistrationLink.objects.filter(pk=self.pk).update(
+            used_count=F('used_count') + 1,
+            used_by=user,
+            used_at=timezone.now(),
+        )
+        self.refresh_from_db()
+        if self.max_uses > 0 and self.used_count >= self.max_uses:
+            RegistrationLink.objects.filter(pk=self.pk).update(used=True)
+            self.used = True
+        else:
+            RegistrationLink.objects.filter(pk=self.pk).update(used=False)
+            self.used = False

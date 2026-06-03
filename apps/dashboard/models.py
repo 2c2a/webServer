@@ -2,6 +2,7 @@
 仪表盘数据模型
 """
 from django.db import models
+from django.conf import settings
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -227,6 +228,17 @@ class SystemConfig(models.Model):
         help_text='启用后将禁止来自 localhost/127.0.0.1 的访问'
     )
 
+    hostname_branding = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='主机名品牌绑定',
+        help_text=(
+            '按主机名绑定专用站点名和图标，格式：\n'
+            '{"host.example.com": {"site_name": "站点名", "site_icon": "/media/branding/icon.svg"}}\n'
+            '未配置的主机名使用全局默认值'
+        )
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='创建时间'
@@ -281,3 +293,60 @@ class SystemConfig(models.Model):
         else:
             captcha_type = self.captcha_type
         return provider, captcha_type
+
+    def get_branding_for_hostname(self, hostname):
+        if self.hostname_branding and hostname in self.hostname_branding:
+            return self.hostname_branding[hostname]
+        return {}
+
+    def get_site_name_for_hostname(self, hostname):
+        branding = self.get_branding_for_hostname(hostname)
+        return branding.get('site_name') or self.site_name
+
+    def get_site_icon_for_hostname(self, hostname):
+        branding = self.get_branding_for_hostname(hostname)
+        return branding.get('site_icon') or '/static/img/favicon.svg'
+
+
+class SiteGroup(models.Model):
+    name = models.CharField('站点组名称', max_length=100, help_text='站点组的显示名称')
+    slug = models.SlugField('标识符', max_length=100, unique=True, help_text='唯一标识符，用于URL和内部引用')
+    description = models.TextField('描述', blank=True, help_text='站点组的描述信息')
+    site_name = models.CharField('站点名称', max_length=100, blank=True, help_text='该站点组的站点名称，留空则使用全局默认值')
+    site_icon = models.CharField('站点图标', max_length=500, blank=True, help_text='该站点组的站点图标路径，留空则使用全局默认值')
+    is_active = models.BooleanField('是否启用', default=True, help_text='禁用后该站点组的所有功能将不可用')
+    admins = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='admin_site_groups',
+        verbose_name='站点组管理员',
+        help_text='该站点组的管理员，在当前站点组内拥有类似超级管理员的权限',
+    )
+    created_at = models.DateTimeField('创建时间', auto_now_add=True)
+    updated_at = models.DateTimeField('更新时间', auto_now=True)
+
+    class Meta:
+        verbose_name = '站点组'
+        verbose_name_plural = '站点组'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class SiteGroupHostname(models.Model):
+    hostname = models.CharField('主机名', max_length=255, unique=True, help_text='HTTP Host头中的主机名（不含端口），如 demo.example.com')
+    site_group = models.ForeignKey(
+        SiteGroup,
+        on_delete=models.CASCADE,
+        related_name='hostnames',
+        verbose_name='所属站点组',
+        help_text='该主机名所属的站点组',
+    )
+
+    class Meta:
+        verbose_name = '站点组主机名'
+        verbose_name_plural = '站点组主机名'
+
+    def __str__(self):
+        return f'{self.hostname} -> {self.site_group.name}'

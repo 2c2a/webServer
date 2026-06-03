@@ -1,7 +1,7 @@
 {% extends "admin_base/base.html" %}
 {% load plugin_extensions %}
 
-{% block title %}2c2a 超级管理员 - 系统配置{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - 系统配置{% endblock %}
 
 {% block breadcrumb %}
 <span class="text-cyan-400 font-medium">系统配置</span>
@@ -247,6 +247,33 @@
                 </div>
                 {% if form.local_access_locked.help_text %}
                 <p class="mt-1 text-sm text-white/70">{{ form.local_access_locked.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Hostname Branding -->
+        <div>
+            <h3 class="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-rounded text-cyan-400">language</span>
+                主机名品牌绑定
+            </h3>
+            <p class="text-sm text-white/50 mb-4">
+                为不同的访问主机名绑定专用的站点名称和图标。未配置的主机名将使用上方"站点名称"的全局默认值和默认图标。
+            </p>
+            <div class="mb-4">
+                <label for="{{ form.hostname_branding.id_for_label }}" class="block text-sm font-medium text-white mb-2">
+                    {{ form.hostname_branding.label }}
+                </label>
+                {{ form.hostname_branding }}
+                {% if form.hostname_branding.help_text %}
+                <p class="mt-1 text-sm text-white/70">{{ form.hostname_branding.help_text }}</p>
+                {% endif %}
+                {% if form.hostname_branding.errors %}
+                <div class="mt-1">
+                    {% for error in form.hostname_branding.errors %}
+                    <p class="text-sm text-red-400">{{ error }}</p>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
         </div>

@@ -32,8 +32,8 @@ from apps.operations.models import (
     ProductInvitationToken,
     ProductAccessGrant,
     RdpDomainRoute,
-    SystemTask,
 )
+from apps.tasks.models import AsyncTask
 
 from .forms_admin import (
     AdminProductForm,
@@ -56,19 +56,19 @@ def _get_selected_ids(request):
     1. 表单字段: selected_ids=1&selected_ids=2
     2. JSON 字符串: selected_ids=[1,2,3]
     """
-    ids = request.POST.getlist('selected_ids')
+    ids = request.POST.getlist("selected_ids")
     if ids:
         return [int(i) for i in ids if i.strip().isdigit()]
 
-    raw = request.POST.get('selected_ids', '')
+    raw = request.POST.get("selected_ids", "")
     if raw:
         try:
             parsed = json.loads(raw)
             if isinstance(parsed, list):
                 return [
-                    int(i) for i in parsed
-                    if isinstance(i, (int, str))
-                    and str(i).isdigit()
+                    int(i)
+                    for i in parsed
+                    if isinstance(i, (int, str)) and str(i).isdigit()
                 ]
         except (json.JSONDecodeError, ValueError):
             pass
@@ -81,7 +81,7 @@ def _get_selected_ids(request):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductListView(TemplateView):
     """
     超管产品列表视图
@@ -91,25 +91,38 @@ class AdminProductListView(TemplateView):
     - 显示创建者信息
     """
 
-    template_name = 'admin_base/operations/product_list.html'
+    template_name = "admin_base/operations/product_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 数据隔离：超管查看所有产品，提供商仅查看自己创建的
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
             queryset = Product.objects.select_related(
-                'host', 'product_group', 'created_by',
+                "host",
+                "product_group",
+                "created_by",
             )
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                queryset = Product.objects.filter(site_group=site_group).select_related(
+                    "host",
+                    "product_group",
+                    "created_by",
+                )
+            else:
+                queryset = Product.objects.none()
         else:
             queryset = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             ).select_related(
-                'host', 'product_group', 'created_by',
+                "host",
+                "product_group",
+                "created_by",
             )
 
         # 搜索
-        search = self.request.GET.get('search', '').strip()
+        search = self.request.GET.get("search", "").strip()
         if search:
             queryset = queryset.filter(
                 Q(display_name__icontains=search)
@@ -118,37 +131,39 @@ class AdminProductListView(TemplateView):
             )
 
         # 可用状态筛选
-        available_filter = self.request.GET.get('is_available', '').strip()
+        available_filter = self.request.GET.get("is_available", "").strip()
         if available_filter:
-            queryset = queryset.filter(is_available=available_filter == 'true')
+            queryset = queryset.filter(is_available=available_filter == "true")
 
         # 可见性筛选
-        visibility_filter = self.request.GET.get('visibility', '').strip()
+        visibility_filter = self.request.GET.get("visibility", "").strip()
         if visibility_filter:
             queryset = queryset.filter(visibility=visibility_filter)
 
         # 排序
-        queryset = queryset.order_by('-created_at')
+        queryset = queryset.order_by("-created_at")
 
         # 分页
         paginator = Paginator(queryset, 20)
-        page_number = self.request.GET.get('page', 1)
+        page_number = self.request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
 
-        context.update({
-            'page_obj': page_obj,
-            'products': page_obj,
-            'search': search,
-            'available_filter': available_filter,
-            'visibility_filter': visibility_filter,
-            'visibility_choices': Product._meta.get_field('visibility').choices,
-            'page_title': '产品管理',
-            'active_nav': 'operations_products',
-        })
+        context.update(
+            {
+                "page_obj": page_obj,
+                "products": page_obj,
+                "search": search,
+                "available_filter": available_filter,
+                "visibility_filter": visibility_filter,
+                "visibility_choices": Product._meta.get_field("visibility").choices,
+                "page_title": "产品管理",
+                "active_nav": "products",
+            }
+        )
         return context
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductCreateView(TemplateView):
     """
     超管产品创建视图
@@ -156,56 +171,53 @@ class AdminProductCreateView(TemplateView):
     处理 GET 和 POST 请求，创建新产品。
     """
 
-    template_name = 'admin_base/operations/product_form.html'
+    template_name = "admin_base/operations/product_form.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'form': kwargs.get('form', AdminProductForm()),
-            'page_title': '创建产品',
-            'active_nav': 'operations_products',
-            'is_create': True,
-            'existing_disk_quota': kwargs.get(
-                'existing_disk_quota', '{}'
-            ),
-            'existing_extra_disks': kwargs.get(
-                'existing_extra_disks', '[]'
-            ),
-            'initial_host_id': kwargs.get(
-                'initial_host_id', '""'
-            ),
-            'enable_disk_quota_initial': kwargs.get(
-                'enable_disk_quota_initial', 'false'
-            ),
-        })
+        site_group = getattr(self.request, "site_group", None)
+        context.update(
+            {
+                "form": kwargs.get(
+                    "form",
+                    AdminProductForm(user=self.request.user, site_group=site_group),
+                ),
+                "page_title": "创建产品",
+                "active_nav": "products",
+                "is_create": True,
+                "existing_disk_quota": kwargs.get("existing_disk_quota", "{}"),
+                "existing_extra_disks": kwargs.get("existing_extra_disks", "[]"),
+                "initial_host_id": kwargs.get("initial_host_id", '""'),
+                "enable_disk_quota_initial": kwargs.get(
+                    "enable_disk_quota_initial", "false"
+                ),
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
-        form = AdminProductForm(request.POST)
+        site_group = getattr(request, "site_group", None)
+        form = AdminProductForm(request.POST, user=request.user, site_group=site_group)
         if form.is_valid():
             product = form.save(commit=False)
             product.created_by = request.user
+            if site_group:
+                product.site_group = site_group
             product.save()
             messages.success(
                 request,
-                f'产品 {product.display_name} 创建成功',
+                f"产品 {product.display_name} 创建成功",
             )
-            return redirect('admin:admin_operations:product_list')
+            return redirect("admin:admin_operations:product_list")
 
         return self.render_to_response(
             self.get_context_data(
                 form=form,
-                existing_disk_quota=request.POST.get(
-                    'default_disk_quota', '{}'
-                ),
-                existing_extra_disks=request.POST.get(
-                    'allow_extra_quota_disks', '[]'
-                ),
-                initial_host_id=json.dumps(
-                    request.POST.get('host', '')
-                ),
+                existing_disk_quota=request.POST.get("default_disk_quota", "{}"),
+                existing_extra_disks=request.POST.get("allow_extra_quota_disks", "[]"),
+                initial_host_id=json.dumps(request.POST.get("host", "")),
                 enable_disk_quota_initial=json.dumps(
-                    'enable_disk_quota' in request.POST
+                    "enable_disk_quota" in request.POST
                 ),
             )
         )
@@ -229,44 +241,46 @@ def admin_product_wizard(request):
     """
     from .forms_wizard import ProductWizardForm
 
-    if request.method == 'POST':
-        form = ProductWizardForm(request.POST)
+    site_group = getattr(request, "site_group", None)
+
+    if request.method == "POST":
+        form = ProductWizardForm(request.POST, user=request.user, site_group=site_group)
         if form.is_valid():
             product = form.save(commit=False)
             product.created_by = request.user
+            if site_group:
+                product.site_group = site_group
             product.save()
 
             messages.success(
                 request,
-                f'产品 {product.display_name} 创建成功',
+                f"产品 {product.display_name} 创建成功",
             )
             return redirect(
-                'admin:admin_operations:product_edit',
+                "admin:admin_operations:product_edit",
                 pk=product.pk,
             )
     else:
-        form = ProductWizardForm()
+        form = ProductWizardForm(user=request.user, site_group=site_group)
 
     hosts_info = form.get_hosts_info()
 
     context = {
-        'form': form,
-        'hosts_info': json.dumps(hosts_info),
-        'visibility_choices': Product._meta.get_field(
-            'visibility'
-        ).choices,
-        'page_title': '创建产品',
-        'active_nav': 'operations_products',
+        "form": form,
+        "hosts_info": json.dumps(hosts_info),
+        "visibility_choices": Product._meta.get_field("visibility").choices,
+        "page_title": "创建产品",
+        "active_nav": "products",
     }
 
     return render(
         request,
-        'admin_base/operations/product_wizard.html',
+        "admin_base/operations/product_wizard.html",
         context,
     )
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductUpdateView(TemplateView):
     """
     超管产品编辑视图
@@ -274,87 +288,99 @@ class AdminProductUpdateView(TemplateView):
     处理 GET 和 POST 请求，编辑产品信息。
     """
 
-    template_name = 'admin_base/operations/product_form.html'
+    template_name = "admin_base/operations/product_form.html"
 
     def get_product(self):
-        """获取当前编辑的产品，提供商仅可编辑自己创建的"""
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
             return get_object_or_404(
-                Product.objects.select_related(
-                    'host', 'product_group', 'created_by'
-                ),
-                pk=self.kwargs['pk'],
+                Product.objects.select_related("host", "product_group", "created_by"),
+                pk=self.kwargs["pk"],
+            )
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(
+                    Product.objects.filter(site_group=site_group).select_related(
+                        "host", "product_group", "created_by"
+                    ),
+                    pk=self.kwargs["pk"],
+                )
+            return get_object_or_404(
+                Product.objects.none(),
+                pk=self.kwargs["pk"],
             )
         return get_object_or_404(
-            get_provider_products(self.request.user).select_related(
-                'host', 'product_group', 'created_by'
-            ),
-            pk=self.kwargs['pk'],
+            get_provider_products(
+                self.request.user, site_group=site_group
+            ).select_related("host", "product_group", "created_by"),
+            pk=self.kwargs["pk"],
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         product = self.get_product()
+        site_group = getattr(self.request, "site_group", None)
         form = kwargs.get(
-            'form',
-            AdminProductForm(instance=product),
+            "form",
+            AdminProductForm(
+                instance=product, user=self.request.user, site_group=site_group
+            ),
         )
-        context.update({
-            'form': form,
-            'product': product,
-            'page_title': f'编辑产品 - {product.display_name}',
-            'active_nav': 'operations_products',
-            'is_create': False,
-            'existing_disk_quota': kwargs.get(
-                'existing_disk_quota',
-                json.dumps(product.default_disk_quota or {}),
-            ),
-            'existing_extra_disks': kwargs.get(
-                'existing_extra_disks',
-                json.dumps(product.allow_extra_quota_disks or []),
-            ),
-            'initial_host_id': kwargs.get(
-                'initial_host_id',
-                json.dumps(product.host_id),
-            ),
-            'enable_disk_quota_initial': kwargs.get(
-                'enable_disk_quota_initial',
-                json.dumps(product.enable_disk_quota),
-            ),
-        })
+        context.update(
+            {
+                "form": form,
+                "product": product,
+                "page_title": f"编辑产品 - {product.display_name}",
+                "active_nav": "products",
+                "is_create": False,
+                "existing_disk_quota": kwargs.get(
+                    "existing_disk_quota",
+                    json.dumps(product.default_disk_quota or {}),
+                ),
+                "existing_extra_disks": kwargs.get(
+                    "existing_extra_disks",
+                    json.dumps(product.allow_extra_quota_disks or []),
+                ),
+                "initial_host_id": kwargs.get(
+                    "initial_host_id",
+                    json.dumps(product.host_id),
+                ),
+                "enable_disk_quota_initial": kwargs.get(
+                    "enable_disk_quota_initial",
+                    json.dumps(product.enable_disk_quota),
+                ),
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
         product = self.get_product()
-        form = AdminProductForm(request.POST, instance=product)
+        site_group = getattr(request, "site_group", None)
+        form = AdminProductForm(
+            request.POST, instance=product, user=request.user, site_group=site_group
+        )
         if form.is_valid():
             product = form.save()
             messages.success(
                 request,
-                f'产品 {product.display_name} 更新成功',
+                f"产品 {product.display_name} 更新成功",
             )
-            return redirect('admin:admin_operations:product_list')
+            return redirect("admin:admin_operations:product_list")
 
         return self.render_to_response(
             self.get_context_data(
                 form=form,
-                existing_disk_quota=request.POST.get(
-                    'default_disk_quota', '{}'
-                ),
-                existing_extra_disks=request.POST.get(
-                    'allow_extra_quota_disks', '[]'
-                ),
-                initial_host_id=json.dumps(
-                    request.POST.get('host', '')
-                ),
+                existing_disk_quota=request.POST.get("default_disk_quota", "{}"),
+                existing_extra_disks=request.POST.get("allow_extra_quota_disks", "[]"),
+                initial_host_id=json.dumps(request.POST.get("host", "")),
                 enable_disk_quota_initial=json.dumps(
-                    'enable_disk_quota' in request.POST
+                    "enable_disk_quota" in request.POST
                 ),
             )
         )
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductDeleteView(TemplateView):
     """
     超管产品删除视图
@@ -362,15 +388,25 @@ class AdminProductDeleteView(TemplateView):
     显示确认页面，处理删除请求。
     """
 
-    template_name = 'admin_base/operations/product_confirm_delete.html'
+    template_name = "admin_base/operations/product_confirm_delete.html"
 
     def get_product(self):
-        """获取当前删除的产品，提供商仅可删除自己创建的"""
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
-            return get_object_or_404(Product, pk=self.kwargs['pk'])
+            return get_object_or_404(Product, pk=self.kwargs["pk"])
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(
+                    Product.objects.filter(site_group=site_group),
+                    pk=self.kwargs["pk"],
+                )
+            return get_object_or_404(
+                Product.objects.none(),
+                pk=self.kwargs["pk"],
+            )
         return get_object_or_404(
-            get_provider_products(self.request.user),
-            pk=self.kwargs['pk'],
+            get_provider_products(self.request.user, site_group=site_group),
+            pk=self.kwargs["pk"],
         )
 
     def get_context_data(self, **kwargs):
@@ -378,16 +414,16 @@ class AdminProductDeleteView(TemplateView):
         product = self.get_product()
 
         # 获取关联用户数
-        user_count = CloudComputerUser.objects.filter(
-            product=product
-        ).count()
+        user_count = CloudComputerUser.objects.filter(product=product).count()
 
-        context.update({
-            'product': product,
-            'user_count': user_count,
-            'page_title': f'删除产品 - {product.display_name}',
-            'active_nav': 'operations_products',
-        })
+        context.update(
+            {
+                "product": product,
+                "user_count": user_count,
+                "page_title": f"删除产品 - {product.display_name}",
+                "active_nav": "products",
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -397,9 +433,9 @@ class AdminProductDeleteView(TemplateView):
 
         messages.success(
             request,
-            f'产品 {product_name} 已删除',
+            f"产品 {product_name} 已删除",
         )
-        return redirect('admin:admin_operations:product_list')
+        return redirect("admin:admin_operations:product_list")
 
 
 # ===========================================================================
@@ -407,7 +443,7 @@ class AdminProductDeleteView(TemplateView):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductGroupListView(TemplateView):
     """
     超管产品组列表视图
@@ -416,48 +452,56 @@ class AdminProductGroupListView(TemplateView):
     - 搜索、分页
     """
 
-    template_name = 'admin_base/operations/productgroup_list.html'
+    template_name = "admin_base/operations/productgroup_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 数据隔离：超管查看所有产品组，提供商仅查看自己创建的
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
             queryset = ProductGroup.objects.select_related(
-                'created_by',
+                "created_by",
             )
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                queryset = ProductGroup.objects.filter(
+                    site_group=site_group
+                ).select_related("created_by")
+            else:
+                queryset = ProductGroup.objects.none()
         else:
             queryset = ProductGroup.objects.filter(
                 created_by=self.request.user
-            ).select_related('created_by')
+            ).select_related("created_by")
 
         # 搜索
-        search = self.request.GET.get('search', '').strip()
+        search = self.request.GET.get("search", "").strip()
         if search:
             queryset = queryset.filter(
-                Q(name__icontains=search)
-                | Q(description__icontains=search)
+                Q(name__icontains=search) | Q(description__icontains=search)
             )
 
         # 排序
-        queryset = queryset.order_by('display_order', 'name')
+        queryset = queryset.order_by("display_order", "name")
 
         # 分页
         paginator = Paginator(queryset, 20)
-        page_number = self.request.GET.get('page', 1)
+        page_number = self.request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
 
-        context.update({
-            'page_obj': page_obj,
-            'productgroups': page_obj,
-            'search': search,
-            'page_title': '产品组管理',
-            'active_nav': 'operations_product_groups',
-        })
+        context.update(
+            {
+                "page_obj": page_obj,
+                "productgroups": page_obj,
+                "search": search,
+                "page_title": "产品组管理",
+                "active_nav": "productgroups",
+            }
+        )
         return context
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductGroupCreateView(TemplateView):
     """
     超管产品组创建视图
@@ -465,16 +509,18 @@ class AdminProductGroupCreateView(TemplateView):
     处理 GET 和 POST 请求，创建新产品组。
     """
 
-    template_name = 'admin_base/operations/productgroup_form.html'
+    template_name = "admin_base/operations/productgroup_form.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update({
-            'form': kwargs.get('form', AdminProductGroupForm()),
-            'page_title': '创建产品组',
-            'active_nav': 'operations_product_groups',
-            'is_create': True,
-        })
+        context.update(
+            {
+                "form": kwargs.get("form", AdminProductGroupForm()),
+                "page_title": "创建产品组",
+                "active_nav": "productgroups",
+                "is_create": True,
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -482,19 +528,20 @@ class AdminProductGroupCreateView(TemplateView):
         if form.is_valid():
             productgroup = form.save(commit=False)
             productgroup.created_by = request.user
+            site_group = getattr(request, 'site_group', None)
+            if site_group:
+                productgroup.site_group = site_group
             productgroup.save()
             messages.success(
                 request,
-                f'产品组 {productgroup.name} 创建成功',
+                f"产品组 {productgroup.name} 创建成功",
             )
-            return redirect('admin:admin_operations:productgroup_list')
+            return redirect("admin:admin_operations:productgroup_list")
 
-        return self.render_to_response(
-            self.get_context_data(form=form)
-        )
+        return self.render_to_response(self.get_context_data(form=form))
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductGroupUpdateView(TemplateView):
     """
     超管产品组编辑视图
@@ -502,14 +549,25 @@ class AdminProductGroupUpdateView(TemplateView):
     处理 GET 和 POST 请求，编辑产品组信息。
     """
 
-    template_name = 'admin_base/operations/productgroup_form.html'
+    template_name = "admin_base/operations/productgroup_form.html"
 
     def get_productgroup(self):
-        """获取当前编辑的产品组，提供商仅可编辑自己创建的"""
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
-            return get_object_or_404(ProductGroup, pk=self.kwargs['pk'])
+            return get_object_or_404(ProductGroup, pk=self.kwargs["pk"])
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(
+                    ProductGroup.objects.filter(site_group=site_group),
+                    pk=self.kwargs["pk"],
+                )
+            return get_object_or_404(
+                ProductGroup.objects.none(),
+                pk=self.kwargs["pk"],
+            )
         return get_object_or_404(
-            ProductGroup, pk=self.kwargs['pk'],
+            ProductGroup,
+            pk=self.kwargs["pk"],
             created_by=self.request.user,
         )
 
@@ -517,16 +575,18 @@ class AdminProductGroupUpdateView(TemplateView):
         context = super().get_context_data(**kwargs)
         productgroup = self.get_productgroup()
         form = kwargs.get(
-            'form',
+            "form",
             AdminProductGroupForm(instance=productgroup),
         )
-        context.update({
-            'form': form,
-            'productgroup': productgroup,
-            'page_title': f'编辑产品组 - {productgroup.name}',
-            'active_nav': 'operations_product_groups',
-            'is_create': False,
-        })
+        context.update(
+            {
+                "form": form,
+                "productgroup": productgroup,
+                "page_title": f"编辑产品组 - {productgroup.name}",
+                "active_nav": "productgroups",
+                "is_create": False,
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -536,16 +596,14 @@ class AdminProductGroupUpdateView(TemplateView):
             productgroup = form.save()
             messages.success(
                 request,
-                f'产品组 {productgroup.name} 更新成功',
+                f"产品组 {productgroup.name} 更新成功",
             )
-            return redirect('admin:admin_operations:productgroup_list')
+            return redirect("admin:admin_operations:productgroup_list")
 
-        return self.render_to_response(
-            self.get_context_data(form=form)
-        )
+        return self.render_to_response(self.get_context_data(form=form))
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminProductGroupDeleteView(TemplateView):
     """
     超管产品组删除视图
@@ -553,14 +611,25 @@ class AdminProductGroupDeleteView(TemplateView):
     显示确认页面，处理删除请求。
     """
 
-    template_name = 'admin_base/operations/productgroup_confirm_delete.html'
+    template_name = "admin_base/operations/productgroup_confirm_delete.html"
 
     def get_productgroup(self):
-        """获取当前删除的产品组，提供商仅可删除自己创建的"""
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
-            return get_object_or_404(ProductGroup, pk=self.kwargs['pk'])
+            return get_object_or_404(ProductGroup, pk=self.kwargs["pk"])
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(
+                    ProductGroup.objects.filter(site_group=site_group),
+                    pk=self.kwargs["pk"],
+                )
+            return get_object_or_404(
+                ProductGroup.objects.none(),
+                pk=self.kwargs["pk"],
+            )
         return get_object_or_404(
-            ProductGroup, pk=self.kwargs['pk'],
+            ProductGroup,
+            pk=self.kwargs["pk"],
             created_by=self.request.user,
         )
 
@@ -569,16 +638,16 @@ class AdminProductGroupDeleteView(TemplateView):
         productgroup = self.get_productgroup()
 
         # 获取关联产品数
-        product_count = Product.objects.filter(
-            product_group=productgroup
-        ).count()
+        product_count = Product.objects.filter(product_group=productgroup).count()
 
-        context.update({
-            'productgroup': productgroup,
-            'product_count': product_count,
-            'page_title': f'删除产品组 - {productgroup.name}',
-            'active_nav': 'operations_product_groups',
-        })
+        context.update(
+            {
+                "productgroup": productgroup,
+                "product_count": product_count,
+                "page_title": f"删除产品组 - {productgroup.name}",
+                "active_nav": "productgroups",
+            }
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -588,9 +657,9 @@ class AdminProductGroupDeleteView(TemplateView):
 
         messages.success(
             request,
-            f'产品组 {productgroup_name} 已删除',
+            f"产品组 {productgroup_name} 已删除",
         )
-        return redirect('admin:admin_operations:productgroup_list')
+        return redirect("admin:admin_operations:productgroup_list")
 
 
 # ===========================================================================
@@ -598,7 +667,7 @@ class AdminProductGroupDeleteView(TemplateView):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminRequestListView(ListView):
     """
     超管开户申请列表视图
@@ -608,30 +677,39 @@ class AdminRequestListView(ListView):
     """
 
     model = AccountOpeningRequest
-    template_name = 'admin_base/operations/request_list.html'
-    context_object_name = 'requests'
+    template_name = "admin_base/operations/request_list.html"
+    context_object_name = "requests"
     paginate_by = 20
 
     def get_queryset(self):
         qs = AccountOpeningRequest.objects.select_related(
-            'applicant', 'target_product',
-            'target_product__host', 'approved_by',
+            "applicant",
+            "target_product",
+            "target_product__host",
+            "approved_by",
         )
 
-        # 数据隔离：提供商仅查看自己产品的开户申请
-        if not self.request.user.is_superuser:
+        site_group = getattr(self.request, "site_group", None)
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(target_product__site_group=site_group)
+            else:
+                qs = qs.none()
+        else:
             provider_products = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             )
             qs = qs.filter(target_product__in=provider_products)
 
         # 状态筛选
-        status = self.request.GET.get('status', '').strip()
+        status = self.request.GET.get("status", "").strip()
         if status:
             qs = qs.filter(status=status)
 
         # 搜索
-        search = self.request.GET.get('search', '').strip()
+        search = self.request.GET.get("search", "").strip()
         if search:
             qs = qs.filter(
                 Q(username__icontains=search[:50])
@@ -640,45 +718,51 @@ class AdminRequestListView(ListView):
                 | Q(applicant__username__icontains=search[:50])
             )
 
-        return qs.order_by('-created_at')
+        return qs.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['status_choices'] = (
-            AccountOpeningRequest._meta.get_field('status').choices
-        )
-        context['current_status'] = self.request.GET.get('status', '')
-        context['current_search'] = self.request.GET.get('search', '')
+        context["status_choices"] = AccountOpeningRequest._meta.get_field(
+            "status"
+        ).choices
+        context["current_status"] = self.request.GET.get("status", "")
+        context["current_search"] = self.request.GET.get("search", "")
 
-        # 数据隔离：提供商仅统计自己产品的申请
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
             base_qs = AccountOpeningRequest.objects.all()
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                base_qs = AccountOpeningRequest.objects.filter(
+                    target_product__site_group=site_group
+                )
+            else:
+                base_qs = AccountOpeningRequest.objects.none()
         else:
             provider_products = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             )
             base_qs = AccountOpeningRequest.objects.filter(
                 target_product__in=provider_products
             )
         counts = {
-            'pending': base_qs.filter(status='pending').count(),
-            'approved': base_qs.filter(status='approved').count(),
-            'rejected': base_qs.filter(status='rejected').count(),
-            'processing': base_qs.filter(status='processing').count(),
-            'completed': base_qs.filter(status='completed').count(),
-            'failed': base_qs.filter(status='failed').count(),
+            "pending": base_qs.filter(status="pending").count(),
+            "approved": base_qs.filter(status="approved").count(),
+            "rejected": base_qs.filter(status="rejected").count(),
+            "processing": base_qs.filter(status="processing").count(),
+            "completed": base_qs.filter(status="completed").count(),
+            "failed": base_qs.filter(status="failed").count(),
         }
-        context['status_choices_with_counts'] = [
-            (v, l, counts.get(v, 0))
-            for v, l in context['status_choices']
+        context["status_choices_with_counts"] = [
+            (v, l, counts.get(v, 0)) for v, l in context["status_choices"]
         ]
-        context['total_count'] = base_qs.count()
-        context['page_title'] = '开户申请'
-        context['active_nav'] = 'operations_requests'
+        context["total_count"] = base_qs.count()
+        context["page_title"] = "开户申请"
+        context["active_nav"] = "requests"
         return context
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminRequestDetailView(DetailView):
     """
     超管开户申请详情视图
@@ -687,18 +771,27 @@ class AdminRequestDetailView(DetailView):
     """
 
     model = AccountOpeningRequest
-    template_name = 'admin_base/operations/request_detail.html'
-    context_object_name = 'request_obj'
+    template_name = "admin_base/operations/request_detail.html"
+    context_object_name = "request_obj"
 
     def get_queryset(self):
-        """数据隔离：提供商仅可查看自己产品的申请"""
         qs = AccountOpeningRequest.objects.select_related(
-            'applicant', 'target_product',
-            'target_product__host', 'approved_by',
+            "applicant",
+            "target_product",
+            "target_product__host",
+            "approved_by",
         )
-        if not self.request.user.is_superuser:
+        site_group = getattr(self.request, "site_group", None)
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(target_product__site_group=site_group)
+            else:
+                qs = qs.none()
+        else:
             provider_products = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             )
             qs = qs.filter(target_product__in=provider_products)
         return qs
@@ -709,78 +802,88 @@ class AdminRequestDetailView(DetailView):
 
         # 构建状态时间线
         timeline = []
-        timeline.append({
-            'label': '提交申请',
-            'time': obj.created_at,
-            'done': True,
-        })
+        timeline.append(
+            {
+                "label": "提交申请",
+                "time": obj.created_at,
+                "done": True,
+            }
+        )
         if obj.status in (
-            'approved', 'rejected', 'processing',
-            'completed', 'failed',
+            "approved",
+            "rejected",
+            "processing",
+            "completed",
+            "failed",
         ):
-            timeline.append({
-                'label': '审核完成',
-                'time': obj.approval_date,
-                'done': (
-                    obj.status != 'failed'
-                    or obj.approval_date is not None
-                ),
-                'detail': (
-                    '批准'
-                    if obj.status != 'rejected'
-                    else '驳回'
-                ),
-            })
-        if obj.status in ('processing', 'completed', 'failed'):
-            timeline.append({
-                'label': '执行开户',
-                'time': (
-                    obj.updated_at
-                    if obj.status == 'completed'
-                    else None
-                ),
-                'done': obj.status in ('completed',),
-                'detail': (
-                    obj.result_message
-                    if obj.result_message
-                    else None
-                ),
-            })
-        context['timeline'] = timeline
-        context['reject_form'] = AdminRequestRejectForm()
-        context['page_title'] = '申请详情'
-        context['active_nav'] = 'operations_requests'
+            timeline.append(
+                {
+                    "label": "审核完成",
+                    "time": obj.approval_date,
+                    "done": (obj.status != "failed" or obj.approval_date is not None),
+                    "detail": ("批准" if obj.status != "rejected" else "驳回"),
+                }
+            )
+        if obj.status in ("processing", "completed", "failed"):
+            timeline.append(
+                {
+                    "label": "执行开户",
+                    "time": (obj.updated_at if obj.status == "completed" else None),
+                    "done": obj.status in ("completed",),
+                    "detail": (obj.result_message if obj.result_message else None),
+                }
+            )
+        context["timeline"] = timeline
+        context["reject_form"] = AdminRequestRejectForm()
+        context["page_title"] = "申请详情"
+        context["active_nav"] = "requests"
         return context
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminRequestApproveView(View):
     """超管批准单条开户申请 (POST)"""
 
     def post(self, request, pk):
-        # 数据隔离：提供商仅可批准自己产品的申请
+        site_group = getattr(request, "site_group", None)
         if request.user.is_superuser:
             obj = get_object_or_404(AccountOpeningRequest, pk=pk)
+        elif request.user.is_site_group_admin(site_group):
+            if site_group:
+                obj = get_object_or_404(
+                    AccountOpeningRequest.objects.filter(
+                        target_product__site_group=site_group
+                    ),
+                    pk=pk,
+                )
+            else:
+                obj = get_object_or_404(
+                    AccountOpeningRequest.objects.none(),
+                    pk=pk,
+                )
         else:
-            provider_products = get_provider_products(request.user)
+            provider_products = get_provider_products(
+                request.user, site_group=site_group
+            )
             obj = get_object_or_404(
-                AccountOpeningRequest, pk=pk,
+                AccountOpeningRequest,
+                pk=pk,
                 target_product__in=provider_products,
             )
-        if obj.status != 'pending':
+        if obj.status != "pending":
             messages.warning(
                 request,
-                f'申请 {obj.username} 当前状态为'
-                f' {obj.get_status_display()}，无法批准。',
+                f"申请 {obj.username} 当前状态为"
+                f" {obj.get_status_display()}，无法批准。",
             )
-            return redirect('admin:admin_operations:request_detail', pk=obj.pk)
+            return redirect("admin:admin_operations:request_detail", pk=obj.pk)
 
-        obj.approve(approver=request.user, notes='')
-        messages.success(request, f'已批准申请 {obj.username}。')
-        return redirect('admin:admin_operations:request_detail', pk=obj.pk)
+        obj.approve(approver=request.user, notes="")
+        messages.success(request, f"已批准申请 {obj.username}。")
+        return redirect("admin:admin_operations:request_detail", pk=obj.pk)
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminRequestRejectView(View):
     """
     超管驳回单条开户申请
@@ -789,35 +892,114 @@ class AdminRequestRejectView(View):
     """
 
     def post(self, request, pk):
-        # 数据隔离：提供商仅可驳回自己产品的申请
+        site_group = getattr(request, "site_group", None)
         if request.user.is_superuser:
             obj = get_object_or_404(AccountOpeningRequest, pk=pk)
+        elif request.user.is_site_group_admin(site_group):
+            if site_group:
+                obj = get_object_or_404(
+                    AccountOpeningRequest.objects.filter(
+                        target_product__site_group=site_group
+                    ),
+                    pk=pk,
+                )
+            else:
+                obj = get_object_or_404(
+                    AccountOpeningRequest.objects.none(),
+                    pk=pk,
+                )
         else:
-            provider_products = get_provider_products(request.user)
+            provider_products = get_provider_products(
+                request.user, site_group=site_group
+            )
             obj = get_object_or_404(
-                AccountOpeningRequest, pk=pk,
+                AccountOpeningRequest,
+                pk=pk,
                 target_product__in=provider_products,
             )
-        if obj.status != 'pending':
+        if obj.status != "pending":
             messages.warning(
                 request,
-                f'申请 {obj.username} 当前状态为'
-                f' {obj.get_status_display()}，无法驳回。',
+                f"申请 {obj.username} 当前状态为"
+                f" {obj.get_status_display()}，无法驳回。",
             )
-            return redirect('admin:admin_operations:request_detail', pk=obj.pk)
+            return redirect("admin:admin_operations:request_detail", pk=obj.pk)
 
         form = AdminRequestRejectForm(request.POST)
         if form.is_valid():
-            reason = form.cleaned_data['rejection_reason']
+            reason = form.cleaned_data["rejection_reason"]
             obj.reject(approver=request.user, notes=reason)
-            messages.success(request, f'已驳回申请 {obj.username}。')
-            return redirect('admin:admin_operations:request_detail', pk=obj.pk)
+            messages.success(request, f"已驳回申请 {obj.username}。")
+            return redirect("admin:admin_operations:request_detail", pk=obj.pk)
 
-        messages.error(request, '请输入驳回原因。')
-        return redirect('admin:admin_operations:request_detail', pk=obj.pk)
+        messages.error(request, "请输入驳回原因。")
+        return redirect("admin:admin_operations:request_detail", pk=obj.pk)
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
+class AdminRequestRetryView(View):
+    """
+    超管重试失败的开户申请
+
+    POST: 将失败状态的申请重新触发开户流程。
+    """
+
+    def post(self, request, pk):
+        site_group = getattr(request, "site_group", None)
+        if request.user.is_superuser:
+            obj = get_object_or_404(AccountOpeningRequest, pk=pk)
+        elif request.user.is_site_group_admin(site_group):
+            if site_group:
+                obj = get_object_or_404(
+                    AccountOpeningRequest.objects.filter(
+                        target_product__site_group=site_group
+                    ),
+                    pk=pk,
+                )
+            else:
+                obj = get_object_or_404(
+                    AccountOpeningRequest.objects.none(),
+                    pk=pk,
+                )
+        else:
+            provider_products = get_provider_products(
+                request.user, site_group=site_group
+            )
+            obj = get_object_or_404(
+                AccountOpeningRequest,
+                pk=pk,
+                target_product__in=provider_products,
+            )
+        if obj.status != "failed":
+            messages.warning(
+                request,
+                f"申请 {obj.username} 当前状态为"
+                f" {obj.get_status_display()}，无法重试。",
+            )
+            return redirect(
+                "admin:admin_operations:request_detail",
+                pk=obj.pk,
+            )
+
+        success = obj.retry(operator=request.user)
+        if success:
+            messages.success(
+                request,
+                f"申请 {obj.username} 已重新提交处理"
+                f"（第{obj.retry_count}次重试）。",
+            )
+        else:
+            messages.error(
+                request,
+                f"申请 {obj.username} 重试失败，请稍后再试。",
+            )
+        return redirect(
+            "admin:admin_operations:request_detail",
+            pk=obj.pk,
+        )
+
+
+@method_decorator(admin_required, name="dispatch")
 class AdminRequestBatchApproveView(View):
     """
     超管批量批准开户申请 (POST)
@@ -828,36 +1010,46 @@ class AdminRequestBatchApproveView(View):
     def post(self, request):
         selected_ids = _get_selected_ids(request)
         if not selected_ids:
-            messages.warning(request, '未选择任何申请。')
-            return redirect('admin:admin_operations:request_list')
+            messages.warning(request, "未选择任何申请。")
+            return redirect("admin:admin_operations:request_list")
 
         qs = AccountOpeningRequest.objects.filter(
-            pk__in=selected_ids, status='pending',
+            pk__in=selected_ids,
+            status="pending",
         )
-        # 数据隔离：提供商仅可批准自己产品的申请
-        if not request.user.is_superuser:
-            provider_products = get_provider_products(request.user)
+        site_group = getattr(request, "site_group", None)
+        if request.user.is_superuser:
+            pass
+        elif request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(target_product__site_group=site_group)
+            else:
+                qs = qs.none()
+        else:
+            provider_products = get_provider_products(
+                request.user, site_group=site_group
+            )
             qs = qs.filter(target_product__in=provider_products)
         updated_count = 0
         for obj in qs:
-            obj.approve(approver=request.user, notes='')
+            obj.approve(approver=request.user, notes="")
             updated_count += 1
 
         if updated_count > 0:
             messages.success(
                 request,
-                f'成功批准了 {updated_count} 个开户申请。',
+                f"成功批准了 {updated_count} 个开户申请。",
             )
         else:
             messages.warning(
                 request,
-                '没有符合条件的待审核申请需要批准。',
+                "没有符合条件的待审核申请需要批准。",
             )
 
-        return redirect('admin:admin_operations:request_list')
+        return redirect("admin:admin_operations:request_list")
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminRequestBatchRejectView(View):
     """
     超管批量驳回开户申请 (POST)
@@ -868,19 +1060,30 @@ class AdminRequestBatchRejectView(View):
     def post(self, request):
         selected_ids = _get_selected_ids(request)
         if not selected_ids:
-            messages.warning(request, '未选择任何申请。')
-            return redirect('admin:admin_operations:request_list')
+            messages.warning(request, "未选择任何申请。")
+            return redirect("admin:admin_operations:request_list")
 
         rejection_reason = request.POST.get(
-            'rejection_reason', '批量驳回',
+            "rejection_reason",
+            "批量驳回",
         )
 
         qs = AccountOpeningRequest.objects.filter(
-            pk__in=selected_ids, status='pending',
+            pk__in=selected_ids,
+            status="pending",
         )
-        # 数据隔离：提供商仅可驳回自己产品的申请
-        if not request.user.is_superuser:
-            provider_products = get_provider_products(request.user)
+        site_group = getattr(request, "site_group", None)
+        if request.user.is_superuser:
+            pass
+        elif request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(target_product__site_group=site_group)
+            else:
+                qs = qs.none()
+        else:
+            provider_products = get_provider_products(
+                request.user, site_group=site_group
+            )
             qs = qs.filter(target_product__in=provider_products)
         updated_count = 0
         for obj in qs:
@@ -890,15 +1093,15 @@ class AdminRequestBatchRejectView(View):
         if updated_count > 0:
             messages.success(
                 request,
-                f'成功驳回了 {updated_count} 个开户申请。',
+                f"成功驳回了 {updated_count} 个开户申请。",
             )
         else:
             messages.warning(
                 request,
-                '没有符合条件的待审核申请需要驳回。',
+                "没有符合条件的待审核申请需要驳回。",
             )
 
-        return redirect('admin:admin_operations:request_list')
+        return redirect("admin:admin_operations:request_list")
 
 
 # ===========================================================================
@@ -906,7 +1109,7 @@ class AdminRequestBatchRejectView(View):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminCloudUserListView(TemplateView):
     """
     超管云电脑用户列表视图
@@ -915,36 +1118,49 @@ class AdminCloudUserListView(TemplateView):
     - 搜索、状态筛选、产品筛选
     """
 
-    template_name = 'admin_base/operations/user_list.html'
+    template_name = "admin_base/operations/user_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 数据隔离：超管查看所有用户，提供商仅查看自己产品的用户
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
             queryset = CloudComputerUser.objects.select_related(
-                'product',
-                'product__host',
-                'created_from_request',
-                'created_from_request__applicant',
-                'owner',
+                "product",
+                "product__host",
+                "created_from_request",
+                "created_from_request__applicant",
+                "owner",
             )
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                queryset = CloudComputerUser.objects.filter(
+                    product__site_group=site_group
+                ).select_related(
+                    "product",
+                    "product__host",
+                    "created_from_request",
+                    "created_from_request__applicant",
+                    "owner",
+                )
+            else:
+                queryset = CloudComputerUser.objects.none()
         else:
             provider_products = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             )
             queryset = CloudComputerUser.objects.filter(
                 product__in=provider_products
             ).select_related(
-                'product',
-                'product__host',
-                'created_from_request',
-                'created_from_request__applicant',
-                'owner',
+                "product",
+                "product__host",
+                "created_from_request",
+                "created_from_request__applicant",
+                "owner",
             )
 
         # 搜索
-        search = self.request.GET.get('search', '').strip()
+        search = self.request.GET.get("search", "").strip()
         if search:
             q_filter = (
                 Q(username__icontains=search)
@@ -955,52 +1171,59 @@ class AdminCloudUserListView(TemplateView):
             queryset = queryset.filter(q_filter).distinct()
 
         # 状态筛选
-        status_filter = self.request.GET.get('status', '').strip()
+        status_filter = self.request.GET.get("status", "").strip()
         if status_filter:
             queryset = queryset.filter(status=status_filter)
 
         # 产品筛选
-        product_filter = self.request.GET.get('product', '').strip()
+        product_filter = self.request.GET.get("product", "").strip()
         if product_filter:
             queryset = queryset.filter(product_id=product_filter)
 
         # 排序
-        queryset = queryset.order_by('-created_at')
+        queryset = queryset.order_by("-created_at")
 
         # 分页
         paginator = Paginator(queryset, 20)
-        page_number = self.request.GET.get('page', 1)
+        page_number = self.request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
 
         # 状态选项
-        status_choices = CloudComputerUser._meta.get_field('status').choices
+        status_choices = CloudComputerUser._meta.get_field("status").choices
 
-        # 数据隔离：产品下拉列表
+        site_group = getattr(self.request, "site_group", None)
         if self.request.user.is_superuser:
-            products_for_filter = Product.objects.all().order_by(
-                'display_name'
-            )
+            products_for_filter = Product.objects.all().order_by("display_name")
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                products_for_filter = Product.objects.filter(
+                    site_group=site_group
+                ).order_by("display_name")
+            else:
+                products_for_filter = Product.objects.none()
         else:
             products_for_filter = get_provider_products(
-                self.request.user
-            ).order_by('display_name')
+                self.request.user, site_group=site_group
+            ).order_by("display_name")
 
-        context.update({
-            'page_obj': page_obj,
-            'users': page_obj,
-            'search': search,
-            'status_filter': status_filter,
-            'product_filter': product_filter,
-            'status_choices': status_choices,
-            'products': products_for_filter,
-            'page_title': '云电脑用户',
-            'active_nav': 'operations_users',
-        })
+        context.update(
+            {
+                "page_obj": page_obj,
+                "users": page_obj,
+                "search": search,
+                "status_filter": status_filter,
+                "product_filter": product_filter,
+                "status_choices": status_choices,
+                "products": products_for_filter,
+                "page_title": "云电脑用户",
+                "active_nav": "cloud_users",
+            }
+        )
 
         return context
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminCloudUserDetailView(DetailView):
     """
     超管云电脑用户详情视图
@@ -1009,21 +1232,28 @@ class AdminCloudUserDetailView(DetailView):
     """
 
     model = CloudComputerUser
-    template_name = 'admin_base/operations/user_detail.html'
-    context_object_name = 'cloud_user'
+    template_name = "admin_base/operations/user_detail.html"
+    context_object_name = "cloud_user"
 
     def get_queryset(self):
         qs = CloudComputerUser.objects.select_related(
-            'product',
-            'product__host',
-            'created_from_request',
-            'created_from_request__applicant',
-            'owner',
+            "product",
+            "product__host",
+            "created_from_request",
+            "created_from_request__applicant",
+            "owner",
         )
-        # 数据隔离：提供商仅可查看自己产品的用户
-        if not self.request.user.is_superuser:
+        site_group = getattr(self.request, "site_group", None)
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(product__site_group=site_group)
+            else:
+                qs = qs.none()
+        else:
             provider_products = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             )
             qs = qs.filter(product__in=provider_products)
         return qs
@@ -1032,172 +1262,217 @@ class AdminCloudUserDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         cloud_user = self.object
 
-        context.update({
-            'page_title': f'用户详情 - {cloud_user.username}',
-            'active_nav': 'operations_users',
-            'disk_quota_json': json.dumps(
-                cloud_user.disk_quota, ensure_ascii=False
-            ) if cloud_user.disk_quota else '{}',
-        })
+        context.update(
+            {
+                "page_title": f"用户详情 - {cloud_user.username}",
+                "active_nav": "cloud_users",
+                "disk_quota_json": (
+                    json.dumps(cloud_user.disk_quota, ensure_ascii=False)
+                    if cloud_user.disk_quota
+                    else "{}"
+                ),
+            }
+        )
 
         return context
 
 
 @admin_required
 def admin_cloud_user_action(request, pk):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "message": "仅支持 POST 请求"}, status=405
+        )
 
-    qs = CloudComputerUser.objects.select_related('product', 'product__host')
-    if not request.user.is_superuser:
-        provider_products = get_provider_products(request.user)
+    qs = CloudComputerUser.objects.select_related("product", "product__host")
+    site_group = getattr(request, "site_group", None)
+    if request.user.is_superuser:
+        pass
+    elif request.user.is_site_group_admin(site_group):
+        if site_group:
+            qs = qs.filter(product__site_group=site_group)
+        else:
+            qs = qs.none()
+    else:
+        provider_products = get_provider_products(request.user, site_group=site_group)
         qs = qs.filter(product__in=provider_products)
 
     cloud_user = get_object_or_404(qs, pk=pk)
 
-    if cloud_user.status == 'deleted':
-        return JsonResponse({'success': False, 'message': '已删除的用户无法执行操作'})
+    if cloud_user.status == "deleted":
+        return JsonResponse({"success": False, "message": "已删除的用户无法执行操作"})
 
-    action = request.POST.get('action', '')
+    action = request.POST.get("action", "")
 
-    if action == 'disable':
+    if action == "disable":
         cloud_user.disable()
         cloud_user.refresh_from_db()
-        return JsonResponse({
-            'success': True,
-            'message': f'用户 {cloud_user.username} 已封禁',
-            'status': cloud_user.status,
-        })
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"用户 {cloud_user.username} 已封禁",
+                "status": cloud_user.status,
+            }
+        )
 
-    elif action == 'enable':
-        if cloud_user.status != 'disabled':
-            return JsonResponse({'success': False, 'message': '仅已封禁的用户可以解封'})
+    elif action == "enable":
+        if cloud_user.status != "disabled":
+            return JsonResponse({"success": False, "message": "仅已封禁的用户可以解封"})
         cloud_user.activate()
         cloud_user.refresh_from_db()
-        return JsonResponse({
-            'success': True,
-            'message': f'用户 {cloud_user.username} 已解封',
-            'status': cloud_user.status,
-        })
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"用户 {cloud_user.username} 已解封",
+                "status": cloud_user.status,
+            }
+        )
 
-    elif action == 'delete':
+    elif action == "delete":
         cloud_user.delete_user()
         cloud_user.refresh_from_db()
-        return JsonResponse({
-            'success': True,
-            'message': f'用户 {cloud_user.username} 已删除',
-            'status': cloud_user.status,
-        })
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"用户 {cloud_user.username} 已删除",
+                "status": cloud_user.status,
+            }
+        )
 
-    elif action == 'set_admin':
+    elif action == "set_admin":
         if cloud_user.is_admin:
-            return JsonResponse({'success': False, 'message': '该用户已是管理员'})
+            return JsonResponse({"success": False, "message": "该用户已是管理员"})
         cloud_user.is_admin = True
-        cloud_user.save(update_fields=['is_admin', 'updated_at'])
-        try:
-            host = cloud_user.product.host
-            client = host.get_connection_client()
-            client.op_user(cloud_user.username)
-        except Exception as e:
-            logger.error(f'远程设置管理员失败: {e}')
-        return JsonResponse({
-            'success': True,
-            'message': f'用户 {cloud_user.username} 已设为管理员',
-            'is_admin': True,
-        })
+        cloud_user.save(update_fields=["is_admin", "updated_at"])
+        from apps.operations.tasks import remote_set_admin
 
-    elif action == 'remove_admin':
+        remote_set_admin.delay(cloud_user.pk, operator_id=request.user.pk)
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"用户 {cloud_user.username} 已设为管理员",
+                "is_admin": True,
+            }
+        )
+
+    elif action == "remove_admin":
         if not cloud_user.is_admin:
-            return JsonResponse({'success': False, 'message': '该用户不是管理员'})
+            return JsonResponse({"success": False, "message": "该用户不是管理员"})
         cloud_user.is_admin = False
-        cloud_user.save(update_fields=['is_admin', 'updated_at'])
-        try:
-            host = cloud_user.product.host
-            client = host.get_connection_client()
-            client.deop_user(cloud_user.username)
-        except Exception as e:
-            logger.error(f'远程取消管理员失败: {e}')
-        return JsonResponse({
-            'success': True,
-            'message': f'用户 {cloud_user.username} 已取消管理员',
-            'is_admin': False,
-        })
+        cloud_user.save(update_fields=["is_admin", "updated_at"])
+        from apps.operations.tasks import remote_remove_admin
 
-    elif action == 'reset_password':
+        remote_remove_admin.delay(cloud_user.pk, operator_id=request.user.pk)
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"用户 {cloud_user.username} 已取消管理员",
+                "is_admin": False,
+            }
+        )
+
+    elif action == "reset_password":
         new_password = CloudComputerUser.generate_complex_password()
         cloud_user.initial_password = new_password
         cloud_user.password_viewed = False
         cloud_user.password_viewed_at = None
-        cloud_user.save(update_fields=['initial_password', 'password_viewed', 'password_viewed_at', 'updated_at'])
-        try:
-            cloud_user.reset_windows_password(new_password)
-        except Exception as e:
-            logger.error(f'远程重置密码失败: {e}')
-        return JsonResponse({
-            'success': True,
-            'message': f'用户 {cloud_user.username} 密码已重置',
-            'new_password': new_password,
-        })
+        cloud_user.save(
+            update_fields=[
+                "initial_password",
+                "password_viewed",
+                "password_viewed_at",
+                "updated_at",
+            ]
+        )
+        from apps.operations.tasks import remote_reset_windows_password
+
+        remote_reset_windows_password.delay(
+            cloud_user.pk,
+            new_password,
+            operator_id=request.user.pk,
+        )
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"用户 {cloud_user.username} 密码已重置",
+                "new_password": new_password,
+            }
+        )
 
     else:
-        return JsonResponse({'success': False, 'message': '无效的操作类型'}, status=400)
+        return JsonResponse({"success": False, "message": "无效的操作类型"}, status=400)
 
 
 @admin_required
 def admin_cloud_user_set_quota(request, pk):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': '仅支持 POST 请求'}, status=405)
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "message": "仅支持 POST 请求"}, status=405
+        )
 
-    qs = CloudComputerUser.objects.select_related('product', 'product__host')
-    if not request.user.is_superuser:
-        provider_products = get_provider_products(request.user)
+    qs = CloudComputerUser.objects.select_related("product", "product__host")
+    site_group = getattr(request, "site_group", None)
+    if request.user.is_superuser:
+        pass
+    elif request.user.is_site_group_admin(site_group):
+        if site_group:
+            qs = qs.filter(product__site_group=site_group)
+        else:
+            qs = qs.none()
+    else:
+        provider_products = get_provider_products(request.user, site_group=site_group)
         qs = qs.filter(product__in=provider_products)
 
     cloud_user = get_object_or_404(qs, pk=pk)
 
     if not cloud_user.product.enable_disk_quota:
-        return JsonResponse({'success': False, 'message': '该产品未启用磁盘配额管理'})
+        return JsonResponse({"success": False, "message": "该产品未启用磁盘配额管理"})
 
-    disk = request.POST.get('disk', '').strip().upper()
-    quota_str = request.POST.get('quota', '').strip()
+    disk = request.POST.get("disk", "").strip().upper()
+    quota_str = request.POST.get("quota", "").strip()
 
     if not disk or not quota_str:
-        return JsonResponse({'success': False, 'message': '磁盘盘符和配额值不能为空'})
+        return JsonResponse({"success": False, "message": "磁盘盘符和配额值不能为空"})
 
     try:
         quota_mb = int(quota_str)
         if quota_mb < 0:
-            return JsonResponse({'success': False, 'message': '配额值不能为负数'})
+            return JsonResponse({"success": False, "message": "配额值不能为负数"})
     except (ValueError, TypeError):
-        return JsonResponse({'success': False, 'message': '配额值必须为数字'})
+        return JsonResponse({"success": False, "message": "配额值必须为数字"})
 
     import re
-    if not re.match(r'^[A-Za-z]:\\?$', disk):
-        return JsonResponse({'success': False, 'message': f'无效的磁盘盘符: {disk}'})
-    disk = disk.rstrip('\\')
+
+    if not re.match(r"^[A-Za-z]:\\?$", disk):
+        return JsonResponse({"success": False, "message": f"无效的磁盘盘符: {disk}"})
+    disk = disk.rstrip("\\")
 
     new_quota = dict(cloud_user.disk_quota) if cloud_user.disk_quota else {}
     new_quota[disk] = quota_mb
     cloud_user.disk_quota = new_quota
-    cloud_user.save(update_fields=['disk_quota', 'updated_at'])
+    cloud_user.save(update_fields=["disk_quota", "updated_at"])
 
     try:
-        from utils.disk_quota import set_disk_quota_via_client
-        host = cloud_user.product.host
-        client = host.get_connection_client()
-        result = set_disk_quota_via_client(client, cloud_user.username, disk, quota_mb)
-        if not result['success']:
-            return JsonResponse({'success': False, 'message': f'远程设置配额失败: {result["message"]}'})
-    except Exception as e:
-        logger.error(f'远程设置磁盘配额失败: {e}', exc_info=True)
-        return JsonResponse({'success': False, 'message': '远程设置配额失败'})
+        from apps.operations.tasks import remote_set_disk_quota
 
-    return JsonResponse({
-        'success': True,
-        'message': f'磁盘 {disk} 配额已设置为 {quota_mb} MB',
-        'disk': disk,
-        'quota': quota_mb,
-    })
+        remote_set_disk_quota.delay(
+            cloud_user.pk,
+            disk,
+            quota_mb,
+            operator_id=request.user.pk,
+        )
+    except Exception as e:
+        logger.error(f"远程设置磁盘配额失败: {e}", exc_info=True)
+        return JsonResponse({"success": False, "message": "远程设置配额任务已提交"})
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": f"磁盘 {disk} 配额已设置为 {quota_mb} MB",
+            "disk": disk,
+            "quota": quota_mb,
+        }
+    )
 
 
 # ===========================================================================
@@ -1205,7 +1480,7 @@ def admin_cloud_user_set_quota(request, pk):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminTokenListView(ListView):
     """
     超管邀请令牌列表视图
@@ -1215,35 +1490,42 @@ class AdminTokenListView(ListView):
     """
 
     model = ProductInvitationToken
-    template_name = 'admin_base/operations/token_list.html'
-    context_object_name = 'tokens'
+    template_name = "admin_base/operations/token_list.html"
+    context_object_name = "tokens"
     paginate_by = 20
 
     def get_queryset(self):
         qs = ProductInvitationToken.objects.select_related(
-            'product', 'product_group', 'created_by',
+            "product",
+            "product_group",
+            "created_by",
         )
-        # 数据隔离：提供商仅可查看自己创建的令牌
-        if not self.request.user.is_superuser:
+        site_group = getattr(self.request, "site_group", None)
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(product__in=Product.objects.filter(site_group=site_group))
+            else:
+                qs = qs.none()
+        else:
             qs = qs.filter(created_by=self.request.user)
-        return qs.order_by('-created_at')
+        return qs.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['active_nav'] = 'operations_tokens'
-        context['page_title'] = '邀请令牌'
+        context["active_nav"] = "operations_tokens"
+        context["page_title"] = "邀请令牌"
 
-        # 生成邀请链接
         from django.conf import settings
-        site_url = getattr(settings, 'SITE_URL', '')
-        for token in context['tokens']:
-            token.invite_link = (
-                f'{site_url}/operations/invite/{token.token}/'
-            )
+
+        site_url = getattr(settings, "SITE_URL", "")
+        for token in context["tokens"]:
+            token.invite_link = f"{site_url}/operations/invite/{token.token}/"
         return context
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminTokenDetailView(DetailView):
     """
     超管邀请令牌详情视图
@@ -1253,46 +1535,66 @@ class AdminTokenDetailView(DetailView):
     """
 
     model = ProductInvitationToken
-    template_name = 'admin_base/operations/token_detail.html'
-    context_object_name = 'token_obj'
+    template_name = "admin_base/operations/token_detail.html"
+    context_object_name = "token_obj"
 
     def get_queryset(self):
         qs = ProductInvitationToken.objects.select_related(
-            'product', 'product_group', 'created_by',
+            "product",
+            "product_group",
+            "created_by",
         )
-        # 数据隔离：提供商仅可查看自己创建的令牌
-        if not self.request.user.is_superuser:
+        site_group = getattr(self.request, "site_group", None)
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(product__in=Product.objects.filter(site_group=site_group))
+            else:
+                qs = qs.none()
+        else:
             qs = qs.filter(created_by=self.request.user)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        token_obj = context['token_obj']
-        context['active_nav'] = 'operations_tokens'
-        context['page_title'] = '邀请令牌详情'
+        token_obj = context["token_obj"]
+        context["active_nav"] = "operations_tokens"
+        context["page_title"] = "邀请令牌详情"
 
         from django.conf import settings
-        site_url = getattr(settings, 'SITE_URL', '')
-        token_obj.invite_link = (
-            f'{site_url}/operations/invite/{token_obj.token}/'
+
+        site_url = getattr(settings, "SITE_URL", "")
+        token_obj.invite_link = f"{site_url}/operations/invite/{token_obj.token}/"
+
+        grants = (
+            ProductAccessGrant.objects.filter(
+                granted_by_token=token_obj,
+            )
+            .select_related(
+                "user",
+                "product",
+                "product_group",
+            )
+            .order_by("-granted_at")
         )
 
-        grants = ProductAccessGrant.objects.filter(
-            granted_by_token=token_obj,
-        ).select_related(
-            'user', 'product', 'product_group',
-        ).order_by('-granted_at')
-
         paginator = Paginator(grants, 20)
-        page_number = self.request.GET.get('page', 1)
+        page_number = self.request.GET.get("page", 1)
         page_obj = paginator.get_page(page_number)
-        context['grants'] = page_obj
-        context['grant_count'] = grants.count()
-        context['effective_grant_count'] = grants.filter(
-            is_revoked=False,
-        ).exclude(
-            expires_at__lt=timezone.now(),
-        ).count() if grants.exists() else 0
+        context["grants"] = page_obj
+        context["grant_count"] = grants.count()
+        context["effective_grant_count"] = (
+            grants.filter(
+                is_revoked=False,
+            )
+            .exclude(
+                expires_at__lt=timezone.now(),
+            )
+            .count()
+            if grants.exists()
+            else 0
+        )
         return context
 
 
@@ -1301,7 +1603,7 @@ class AdminTokenDetailView(DetailView):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminGrantListView(ListView):
     """
     超管访问授权列表视图
@@ -1310,27 +1612,36 @@ class AdminGrantListView(ListView):
     """
 
     model = ProductAccessGrant
-    template_name = 'admin_base/operations/grant_list.html'
-    context_object_name = 'grants'
+    template_name = "admin_base/operations/grant_list.html"
+    context_object_name = "grants"
     paginate_by = 20
 
     def get_queryset(self):
         qs = ProductAccessGrant.objects.select_related(
-            'user', 'product', 'product_group',
-            'granted_by_token',
+            "user",
+            "product",
+            "product_group",
+            "granted_by_token",
         )
-        # 数据隔离：提供商仅可查看自己产品的授权
-        if not self.request.user.is_superuser:
+        site_group = getattr(self.request, "site_group", None)
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(product__site_group=site_group)
+            else:
+                qs = qs.none()
+        else:
             provider_products = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             )
             qs = qs.filter(product__in=provider_products)
-        return qs.order_by('-granted_at')
+        return qs.order_by("-granted_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['active_nav'] = 'operations_grants'
-        context['page_title'] = '访问授权'
+        context["active_nav"] = "grants"
+        context["page_title"] = "访问授权"
         return context
 
 
@@ -1339,7 +1650,7 @@ class AdminGrantListView(ListView):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminRouteListView(ListView):
     """
     超管RDP域名路由列表视图
@@ -1349,26 +1660,34 @@ class AdminRouteListView(ListView):
     """
 
     model = RdpDomainRoute
-    template_name = 'admin_base/operations/route_list.html'
-    context_object_name = 'routes'
+    template_name = "admin_base/operations/route_list.html"
+    context_object_name = "routes"
     paginate_by = 20
 
     def get_queryset(self):
         qs = RdpDomainRoute.objects.select_related(
-            'product', 'assigned_to',
+            "product",
+            "assigned_to",
         )
-        # 数据隔离：提供商仅可查看自己产品的路由
-        if not self.request.user.is_superuser:
+        site_group = getattr(self.request, "site_group", None)
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                qs = qs.filter(product__site_group=site_group)
+            else:
+                qs = qs.none()
+        else:
             provider_products = get_provider_products(
-                self.request.user
+                self.request.user, site_group=site_group
             )
             qs = qs.filter(product__in=provider_products)
-        return qs.order_by('-created_at')
+        return qs.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['active_nav'] = 'operations_routes'
-        context['page_title'] = '域名路由'
+        context["active_nav"] = "operations_routes"
+        context["page_title"] = "域名路由"
         return context
 
 
@@ -1377,31 +1696,74 @@ class AdminRouteListView(ListView):
 # ===========================================================================
 
 
-@method_decorator(admin_required, name='dispatch')
+@method_decorator(admin_required, name="dispatch")
 class AdminTaskListView(ListView):
     """
     超管系统任务列表视图
 
-    - 查看所有系统任务（无数据隔离）
+    - 查看所有 Celery 异步任务（无数据隔离）
     - 只读参考视图
     """
 
-    model = SystemTask
-    template_name = 'admin_base/operations/task_list.html'
-    context_object_name = 'tasks'
+    model = AsyncTask
+    template_name = "admin_base/operations/task_list.html"
+    context_object_name = "tasks"
     paginate_by = 20
 
     def get_queryset(self):
-        qs = SystemTask.objects.select_related(
-            'created_by',
-        )
-        # 数据隔离：提供商仅可查看自己创建的任务
-        if not self.request.user.is_superuser:
+        qs = AsyncTask.objects.select_related(
+            "created_by",
+        ).prefetch_related("progress_updates")
+        site_group = getattr(self.request, "site_group", None)
+        search = self.request.GET.get("search", "").strip()
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search)
+                | Q(target_content_type__icontains=search)
+                | Q(task_id__icontains=search)
+            )
+        if self.request.user.is_superuser:
+            pass
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                from apps.hosts.models import Host
+                from apps.operations.models import Product
+
+                sg_host_ids = set(
+                    Host.objects.filter(
+                        site_group=site_group
+                    ).values_list("pk", flat=True)
+                )
+                sg_product_ids = set(
+                    Product.objects.filter(
+                        site_group=site_group
+                    ).values_list("pk", flat=True)
+                )
+                qs = qs.filter(
+                    Q(
+                        target_content_type="hosts.Host",
+                        target_object_id__in=sg_host_ids,
+                    )
+                    | Q(
+                        target_content_type="operations.Product",
+                        target_object_id__in=sg_product_ids,
+                    )
+                    | Q(
+                        target_content_type="operations.AccountOpeningRequest",
+                        target_object_id__in=AccountOpeningRequest.objects.filter(
+                            target_product__site_group=site_group
+                        ).values_list("pk", flat=True),
+                    )
+                )
+            else:
+                qs = qs.filter(created_by=self.request.user)
+        else:
             qs = qs.filter(created_by=self.request.user)
-        return qs.order_by('-created_at')
+        return qs.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['active_nav'] = 'operations_tasks'
-        context['page_title'] = '系统任务'
+        context["active_nav"] = "tasks"
+        context["page_title"] = "系统任务"
+        context["search"] = self.request.GET.get("search", "")
         return context
