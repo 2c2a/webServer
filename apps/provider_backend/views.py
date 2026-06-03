@@ -33,9 +33,13 @@ class HostListView(ProviderBaseView, ListView):
     context_object_name = 'hosts'
 
     def get_queryset(self):
-        return Host.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Host.objects.filter(
             providers=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -58,7 +62,11 @@ class HostDetailView(ProviderBaseView, DetailView):
     context_object_name = 'host'
 
     def get_queryset(self):
-        return Host.objects.filter(providers=self.request.user)
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Host.objects.filter(providers=self.request.user)
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -72,9 +80,13 @@ class HostUpdateView(ProviderBaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '编辑主机'
-        context['host'] = Host.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Host.objects.filter(
             pk=kwargs['pk'], providers=self.request.user
-        ).first()
+        )
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        context['host'] = qs.first()
         return context
 
 
@@ -84,9 +96,13 @@ class HostDeployView(ProviderBaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '部署主机'
-        context['host'] = Host.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Host.objects.filter(
             pk=kwargs['pk'], providers=self.request.user
-        ).first()
+        )
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        context['host'] = qs.first()
         return context
 
 
@@ -98,9 +114,13 @@ class HostGroupListView(ProviderBaseView, ListView):
     context_object_name = 'hostgroups'
 
     def get_queryset(self):
-        return HostGroup.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = HostGroup.objects.filter(
             providers=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -123,9 +143,13 @@ class HostGroupUpdateView(ProviderBaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '编辑主机组'
-        context['hostgroup'] = HostGroup.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = HostGroup.objects.filter(
             pk=kwargs['pk'], providers=self.request.user
-        ).first()
+        )
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        context['hostgroup'] = qs.first()
         return context
 
 
@@ -144,9 +168,13 @@ class ProductListView(ProviderBaseView, ListView):
     context_object_name = 'products'
 
     def get_queryset(self):
-        return Product.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Product.objects.filter(
             created_by=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -169,7 +197,11 @@ class ProductDetailView(ProviderBaseView, DetailView):
     context_object_name = 'product'
 
     def get_queryset(self):
-        return Product.objects.filter(created_by=self.request.user)
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Product.objects.filter(created_by=self.request.user)
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -183,9 +215,13 @@ class ProductUpdateView(ProviderBaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '编辑产品'
-        context['product'] = Product.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Product.objects.filter(
             pk=kwargs['pk'], created_by=self.request.user
-        ).first()
+        )
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        context['product'] = qs.first()
         return context
 
 
@@ -197,9 +233,13 @@ class ProductGroupListView(ProviderBaseView, ListView):
     context_object_name = 'productgroups'
 
     def get_queryset(self):
-        return ProductGroup.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = ProductGroup.objects.filter(
             created_by=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -222,9 +262,13 @@ class ProductGroupUpdateView(ProviderBaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '编辑产品组'
-        context['productgroup'] = ProductGroup.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = ProductGroup.objects.filter(
             pk=kwargs['pk'], created_by=self.request.user
-        ).first()
+        )
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        context['productgroup'] = qs.first()
         return context
 
 
@@ -236,9 +280,13 @@ class AccountRequestListView(ProviderBaseView, ListView):
     context_object_name = 'account_requests'
 
     def get_queryset(self):
-        return AccountOpeningRequest.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = AccountOpeningRequest.objects.filter(
             target_product__created_by=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(target_product__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -252,9 +300,13 @@ class AccountRequestDetailView(ProviderBaseView, DetailView):
     context_object_name = 'account_request'
 
     def get_queryset(self):
-        return AccountOpeningRequest.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = AccountOpeningRequest.objects.filter(
             target_product__created_by=self.request.user
         )
+        if site_group is not None:
+            qs = qs.filter(target_product__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -270,9 +322,13 @@ class CloudUserListView(ProviderBaseView, ListView):
     context_object_name = 'cloud_users'
 
     def get_queryset(self):
-        return CloudComputerUser.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = CloudComputerUser.objects.filter(
             product__created_by=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(product__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -286,9 +342,13 @@ class CloudUserDetailView(ProviderBaseView, DetailView):
     context_object_name = 'cloud_user'
 
     def get_queryset(self):
-        return CloudComputerUser.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = CloudComputerUser.objects.filter(
             product__created_by=self.request.user
         )
+        if site_group is not None:
+            qs = qs.filter(product__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -304,9 +364,13 @@ class InvitationTokenListView(ProviderBaseView, ListView):
     context_object_name = 'invitation_tokens'
 
     def get_queryset(self):
-        return ProductInvitationToken.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = ProductInvitationToken.objects.filter(
             created_by=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -331,9 +395,13 @@ class AccessGrantListView(ProviderBaseView, ListView):
     context_object_name = 'access_grants'
 
     def get_queryset(self):
-        return ProductAccessGrant.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = ProductAccessGrant.objects.filter(
             product__created_by=self.request.user
         ).order_by('-granted_at')
+        if site_group is not None:
+            qs = qs.filter(product__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -352,9 +420,13 @@ class TicketListView(ProviderBaseView, ListView):
     context_object_name = 'tickets'
 
     def get_queryset(self):
-        return Ticket.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Ticket.objects.filter(
             assignee=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -377,9 +449,13 @@ class TicketDetailView(ProviderBaseView, DetailView):
     context_object_name = 'ticket'
 
     def get_queryset(self):
-        return Ticket.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = Ticket.objects.filter(
             assignee=self.request.user
         )
+        if site_group is not None:
+            qs = qs.filter(site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -413,9 +489,13 @@ class TicketActivityListView(ProviderBaseView, ListView):
     context_object_name = 'ticket_activities'
 
     def get_queryset(self):
-        return TicketActivity.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = TicketActivity.objects.filter(
             ticket__assignee=self.request.user
         ).order_by('-created_at')[:50]
+        if site_group is not None:
+            qs = qs.filter(ticket__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -431,9 +511,13 @@ class RdpRouteListView(ProviderBaseView, ListView):
     context_object_name = 'rdp_routes'
 
     def get_queryset(self):
-        return RdpDomainRoute.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = RdpDomainRoute.objects.filter(
             product__created_by=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(product__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -452,9 +536,13 @@ class QQConfigListView(ProviderBaseView, ListView):
     context_object_name = 'qq_configs'
 
     def get_queryset(self):
-        return QQVerificationConfig.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = QQVerificationConfig.objects.filter(
             product__created_by=self.request.user
         ).order_by('-created_at')
+        if site_group is not None:
+            qs = qs.filter(product__site_group=site_group)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -477,7 +565,11 @@ class QQConfigUpdateView(ProviderBaseView, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '编辑QQ验证配置'
-        context['qq_config'] = QQVerificationConfig.objects.filter(
+        site_group = getattr(self.request, 'site_group', None)
+        qs = QQVerificationConfig.objects.filter(
             pk=kwargs['pk'], product__created_by=self.request.user
-        ).first()
+        )
+        if site_group is not None:
+            qs = qs.filter(product__site_group=site_group)
+        context['qq_config'] = qs.first()
         return context

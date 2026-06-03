@@ -18,8 +18,14 @@ class HostDeployAPI(APIView):
 
     def post(self, request, pk):
         from apps.hosts.models import Host
+        site_group = getattr(request, 'site_group', None)
+        host_qs = Host.objects.filter(pk=pk, providers=request.user)
+        if site_group:
+            host_qs = host_qs.filter(site_group=site_group)
+        else:
+            host_qs = host_qs.filter(site_group__isnull=True)
         try:
-            host = Host.objects.get(pk=pk, providers=request.user)
+            host = host_qs.get()
         except Host.DoesNotExist:
             return Response(
                 {'error': '主机不存在'},
@@ -84,11 +90,17 @@ class CloudUserActionAPI(APIView):
 
     def post(self, request, pk):
         from apps.operations.models import CloudComputerUser
+        site_group = getattr(request, 'site_group', None)
+        qs = CloudComputerUser.objects.filter(
+            pk=pk,
+            product__created_by=request.user
+        )
+        if site_group:
+            qs = qs.filter(product__site_group=site_group)
+        else:
+            qs = qs.filter(product__site_group__isnull=True)
         try:
-            cloud_user = CloudComputerUser.objects.get(
-                pk=pk,
-                product__created_by=request.user
-            )
+            cloud_user = qs.get()
         except CloudComputerUser.DoesNotExist:
             return Response(
                 {'error': '云电脑用户不存在'},
@@ -171,12 +183,18 @@ class ProductShareLinkAPI(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         from apps.operations.models import Product, ProductInvitationToken
+        site_group = getattr(request, 'site_group', None)
+        product_qs = Product.objects.filter(
+            pk=pk,
+            created_by=request.user,
+            visibility='invite_only',
+        )
+        if site_group:
+            product_qs = product_qs.filter(site_group=site_group)
+        else:
+            product_qs = product_qs.filter(site_group__isnull=True)
         try:
-            product = Product.objects.get(
-                pk=pk,
-                created_by=request.user,
-                visibility='invite_only',
-            )
+            product = product_qs.get()
         except Product.DoesNotExist:
             return Response(
                 {'error': '产品不存在或非邀请访问产品'},
@@ -215,12 +233,18 @@ class ProductShareLinkAPI(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         from apps.operations.models import Product, ProductInvitationToken
+        site_group = getattr(request, 'site_group', None)
+        product_qs = Product.objects.filter(
+            pk=pk,
+            created_by=request.user,
+            visibility='invite_only',
+        )
+        if site_group:
+            product_qs = product_qs.filter(site_group=site_group)
+        else:
+            product_qs = product_qs.filter(site_group__isnull=True)
         try:
-            product = Product.objects.get(
-                pk=pk,
-                created_by=request.user,
-                visibility='invite_only',
-            )
+            product = product_qs.get()
         except Product.DoesNotExist:
             return Response(
                 {'error': '产品不存在或非邀请访问产品'},

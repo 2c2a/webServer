@@ -14,6 +14,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import models
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -48,7 +49,7 @@ class HostListView(ProviderContextMixin, TemplateView):
         user = self.request.user
 
         # 获取提供商可见的主机
-        hosts_qs = get_provider_hosts(user).order_by('-created_at')
+        hosts_qs = get_provider_hosts(user, site_group=getattr(self.request, 'site_group', None)).order_by('-created_at')
 
         # 搜索过滤
         search = self.request.GET.get('search', '').strip()
@@ -104,7 +105,7 @@ class HostDetailView(ProviderContextMixin, DetailView):
 
     def get_queryset(self):
         """确保提供商只能查看自己的主机"""
-        return get_provider_hosts(self.request.user)
+        return get_provider_hosts(self.request.user, site_group=getattr(self.request, 'site_group', None))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -174,22 +175,14 @@ class HostCreateView(ProviderContextMixin, TemplateView):
             # 将创建者添加到管理员列表
             host.administrators.add(request.user)
 
-            # 测试连接
-            try:
-                host.test_connection()
-                status_display = dict(Host.STATUS_CHOICES).get(
-                    host.status, host.status
-                )
-                messages.success(
-                    request,
-                    f'主机 {host.name} 创建成功，状态: {status_display}'
-                )
-            except Exception as e:
-                messages.warning(
-                    request,
-                    f'主机 {host.name} 创建成功，'
-                    f'但连接测试失败: {str(e)}'
-                )
+            # 测试连接（异步）
+            from apps.hosts.tasks import test_winrm_connection
+            test_winrm_connection.delay(host.pk)
+            messages.success(
+                request,
+                f'主机 {host.name} 创建成功，'
+                f'连接测试正在后台执行'
+            )
 
             # 如果自动生成了密码，提示用户
             if form.generated_password:
@@ -223,9 +216,8 @@ class HostUpdateView(ProviderContextMixin, TemplateView):
     provider_url_namespace = 'provider:provider_hosts'
 
     def get_host(self):
-        """获取当前编辑的主机，确保数据隔离"""
         return get_object_or_404(
-            get_provider_hosts(self.request.user),
+            get_provider_hosts(self.request.user, site_group=getattr(self.request, 'site_group', None)),
             pk=self.kwargs['pk']
         )
 
@@ -248,27 +240,18 @@ class HostUpdateView(ProviderContextMixin, TemplateView):
         if form.is_valid():
             host = form.save()
 
-            # 如果密码被修改，测试连接
+            # 如果密码被修改，异步测试连接
             if (
                 'password' in form.changed_data
                 and form.cleaned_data.get('password')
             ):
-                try:
-                    host.test_connection()
-                    status_display = dict(Host.STATUS_CHOICES).get(
-                        host.status, host.status
-                    )
-                    messages.success(
-                        request,
-                        f'主机 {host.name} 更新成功，'
-                        f'状态: {status_display}'
-                    )
-                except Exception as e:
-                    messages.warning(
-                        request,
-                        f'主机 {host.name} 更新成功，'
-                        f'但连接测试失败: {str(e)}'
-                    )
+                from apps.hosts.tasks import test_winrm_connection
+                test_winrm_connection.delay(host.pk)
+                messages.success(
+                    request,
+                    f'主机 {host.name} 更新成功，'
+                    f'连接测试正在后台执行'
+                )
             else:
                 messages.success(
                     request, f'主机 {host.name} 更新成功'
@@ -295,7 +278,7 @@ class HostDeleteView(ProviderContextMixin, TemplateView):
 
     def get_host(self):
         return get_object_or_404(
-            get_provider_hosts(self.request.user),
+            get_provider_hosts(self.request.user, site_group=getattr(self.request, 'site_group', None)),
             pk=self.kwargs['pk']
         )
 
@@ -303,7 +286,6 @@ class HostDeleteView(ProviderContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         host = self.get_host()
 
-        # 获取关联信息用于确认页面
         from apps.operations.models import Product
         products = Product.objects.filter(host=host)
 
@@ -341,7 +323,7 @@ class HostDeployCommandView(View):
 
     def get_host(self):
         return get_object_or_404(
-            get_provider_hosts(self.request.user),
+            get_provider_hosts(self.request.user, site_group=getattr(self.request, 'site_group', None)),
             pk=self.kwargs['pk']
         )
 
@@ -435,25 +417,20 @@ class HostToggleActiveView(View):
 
     def get_host(self):
         return get_object_or_404(
-            get_provider_hosts(self.request.user),
+            get_provider_hosts(self.request.user, site_group=getattr(self.request, 'site_group', None)),
             pk=self.kwargs['pk']
         )
 
     def post(self, request, *args, **kwargs):
         host = self.get_host()
 
-        # 切换状态：在线 <-> 离线
         if host.status == 'online':
             new_status = 'offline'
+            Host.objects.filter(pk=host.pk).update(status=new_status)
         else:
-            # 尝试测试连接
-            try:
-                host.test_connection()
-                new_status = host.status
-            except Exception:
-                new_status = 'error'
-
-        Host.objects.filter(pk=host.pk).update(status=new_status)
+            from apps.hosts.tasks import test_winrm_connection
+            test_winrm_connection.delay(host.pk)
+            new_status = 'pending'
 
         status_display = dict(Host.STATUS_CHOICES).get(
             new_status, new_status
@@ -468,23 +445,13 @@ class HostToggleActiveView(View):
 # ========== 主机组管理 ==========
 
 
-def get_provider_hostgroups(user):
-    """
-    获取提供商可见的主机组
-
-    提供商可以看到:
-    - 自己创建的主机组 (created_by=user)
-    - 分配给自己的主机组 (providers=user)
-
-    Args:
-        user: 提供商用户对象
-
-    Returns:
-        QuerySet: 该提供商可见的主机组查询集
-    """
-    return HostGroup.objects.filter(
+def get_provider_hostgroups(user, site_group=None):
+    qs = HostGroup.objects.filter(
         Q(created_by=user) | Q(providers=user)
     ).distinct()
+    if site_group is not None:
+        qs = qs.filter(site_group=site_group)
+    return qs
 
 
 @method_decorator(provider_required, name='dispatch')
@@ -503,7 +470,7 @@ class HostGroupListView(ProviderContextMixin, TemplateView):
         user = self.request.user
 
         # 获取提供商可见的主机组
-        hostgroups_qs = get_provider_hostgroups(user).order_by(
+        hostgroups_qs = get_provider_hostgroups(user, site_group=getattr(self.request, 'site_group', None)).order_by(
             '-created_at'
         )
 
@@ -588,9 +555,8 @@ class HostGroupUpdateView(ProviderContextMixin, TemplateView):
     provider_url_namespace = 'provider:provider_hosts'
 
     def get_hostgroup(self):
-        """获取当前编辑的主机组，确保数据隔离"""
         return get_object_or_404(
-            get_provider_hostgroups(self.request.user),
+            get_provider_hostgroups(self.request.user, site_group=getattr(self.request, 'site_group', None)),
             pk=self.kwargs['pk']
         )
 
@@ -646,7 +612,7 @@ class HostGroupDeleteView(ProviderContextMixin, TemplateView):
 
     def get_hostgroup(self):
         return get_object_or_404(
-            get_provider_hostgroups(self.request.user),
+            get_provider_hostgroups(self.request.user, site_group=getattr(self.request, 'site_group', None)),
             pk=self.kwargs['pk']
         )
 

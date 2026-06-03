@@ -320,14 +320,29 @@ def _gen_code(length=6):
 @rate_limit.email_code_rate_limit
 def send_register_email_code(request):
     """Send a one-time code to the supplied email for registration."""
-    # 检查是否启用了注册功能
-    from apps.dashboard.models import SystemConfig
-    cfg = SystemConfig.get_config()
-    if not cfg.enable_registration:
-        return JsonResponse(
-            {'status': 'error', 'message': '注册功能已被管理员禁用'},
-            status=400
-        )
+    reglink_token = request.POST.get('reglink_token', '').strip()
+
+    if reglink_token:
+        try:
+            reglink = RegistrationLink.objects.get(token=reglink_token)
+            if not reglink.is_valid:
+                return JsonResponse(
+                    {'status': 'error', 'message': '邀请链接无效或已失效'},
+                    status=400
+                )
+        except RegistrationLink.DoesNotExist:
+            return JsonResponse(
+                {'status': 'error', 'message': '邀请链接不存在'},
+                status=400
+            )
+    else:
+        from apps.dashboard.models import SystemConfig
+        cfg = SystemConfig.get_config()
+        if not cfg.enable_registration:
+            return JsonResponse(
+                {'status': 'error', 'message': '注册功能已被管理员禁用'},
+                status=400
+            )
 
     email = request.POST.get('email')
 
@@ -452,7 +467,7 @@ def send_register_email_code(request):
 
     from .email_service import EmailService
     try:
-        email_service = EmailService.from_system_config(cfg)
+        email_service = EmailService.from_system_config(config)
         email_service.send_email(
             to_emails=[email],
             subject=subject,
@@ -489,8 +504,8 @@ class RegisterByLinkView(CreateView):
             messages.error(request, '注册链接不存在')
             return redirect('accounts:register')
 
-        if self.reglink.used:
-            messages.error(request, '此注册链接已被使用')
+        if self.reglink.is_exhausted:
+            messages.error(request, '此注册链接可用次数已用完')
             return redirect('accounts:register')
 
         if self.reglink.is_expired:
@@ -531,11 +546,7 @@ class RegisterByLinkView(CreateView):
         user.groups.set([self.reglink.group])
         user.sync_staff_status()
 
-        from django.utils import timezone
-        self.reglink.used = True
-        self.reglink.used_by = user
-        self.reglink.used_at = timezone.now()
-        self.reglink.save(update_fields=['used', 'used_by', 'used_at'])
+        self.reglink.increment_usage(user)
 
         messages.success(
             self.request,

@@ -1,7 +1,7 @@
 {% extends "admin_base/base.html" %}
 {% load plugin_extensions %}
 
-{% block title %}2c2a 超级管理员 - 添加主机向导{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - 添加主机向导{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_hosts:host_list' %}" class="text-white/70 hover:text-cyan-400 transition">主机管理</a>
@@ -1022,13 +1022,19 @@ function hostWizard() {
             })
             .then(resp => resp.json())
             .then(data => {
-                this.testingConnection = false;
-                if (data.success) {
-                    this.testResult = data.message || '连接成功';
+                if (data.task_id) {
+                    this.testResult = '连接测试已提交，正在后台执行...';
                     this.testSuccess = true;
+                    this.pollTaskStatus(data.task_id);
                 } else {
-                    this.testResult = data.error || '连接失败';
-                    this.testSuccess = false;
+                    this.testingConnection = false;
+                    if (data.success) {
+                        this.testResult = data.message || '连接成功';
+                        this.testSuccess = true;
+                    } else {
+                        this.testResult = data.error || '连接失败';
+                        this.testSuccess = false;
+                    }
                 }
             })
             .catch(err => {
@@ -1036,6 +1042,43 @@ function hostWizard() {
                 this.testResult = '请求失败: ' + err.message;
                 this.testSuccess = false;
             });
+        },
+
+        pollTaskStatus(taskId) {
+            if (this._pollTimer) clearInterval(this._pollTimer);
+            let attempts = 0;
+            const maxAttempts = 60;
+            this._pollTimer = setInterval(() => {
+                attempts++;
+                if (attempts > maxAttempts) {
+                    clearInterval(this._pollTimer);
+                    this.testResult = '连接测试超时';
+                    this.testSuccess = false;
+                    this.testingConnection = false;
+                    return;
+                }
+                fetch('/tasks/' + taskId + '/')
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        clearInterval(this._pollTimer);
+                        this.testResult = data.message || '连接成功';
+                        this.testSuccess = true;
+                        this.testingConnection = false;
+                    } else if (data.status === 'failed') {
+                        clearInterval(this._pollTimer);
+                        this.testResult = data.error_message || '连接失败';
+                        this.testSuccess = false;
+                        this.testingConnection = false;
+                    }
+                })
+                .catch(() => {
+                    clearInterval(this._pollTimer);
+                    this.testResult = '轮询任务状态失败';
+                    this.testSuccess = false;
+                    this.testingConnection = false;
+                });
+            }, 2000);
         },
 
         onSubmit() {

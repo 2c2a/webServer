@@ -17,6 +17,7 @@ urlpatterns = [
     path('certificates/', include('apps.certificates.urls')),
     path('bootstrap/', include('apps.bootstrap.urls')),
     path('audit/', include('apps.audit.urls')),
+    path('tasks/', include('apps.tasks.urls')),
     path('tunnel/', include('apps.tunnel.urls')),
     path('tickets/', include('apps.tickets.urls')),
     path('captcha/', include('django_tianai_captcha.urls')),

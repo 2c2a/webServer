@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=10)
-def push_to_beta(self, user_id, sync_log_id):
+def push_to_beta(self, user_id, sync_log_id, site_group_id=None):
     from .models import SyncLog
     from .services import BetaPushService
 
@@ -23,7 +23,11 @@ def push_to_beta(self, user_id, sync_log_id):
     sync_log.save(update_fields=['status', 'started_at', 'task_id'])
 
     try:
-        service = BetaPushService(user_id=user_id, task_id=self.request.id)
+        service = BetaPushService(
+            user_id=user_id,
+            task_id=self.request.id,
+            site_group_id=site_group_id,
+        )
         stats = service.push_all()
 
         sync_log.status = 'success'

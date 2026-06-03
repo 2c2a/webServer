@@ -22,7 +22,7 @@
     {% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% static "admin/css/responsive_rtl.css" %}">{% endif %}
 {% endblock %}
 {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE">{% endblock %}
-{% block page-icon %}<link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">{% endblock %}
+{% block page-icon %}<link rel="icon" type="image/svg+xml" href="{{ site_icon }}">{% endblock %}
 </head>
 
 <body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}"

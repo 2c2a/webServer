@@ -35,6 +35,30 @@ from .models import (
 User = get_user_model()
 
 
+def _ticket_filter_for_user(user, site_group):
+    if user.is_superuser:
+        return Q()
+    if site_group and user.is_site_group_admin(site_group):
+        return (
+            Q(related_product__site_group=site_group)
+            | Q(related_host__site_group=site_group)
+            | Q(creator=user)
+        )
+    provider_products = get_provider_products(user)
+    return (
+        Q(related_product__in=provider_products)
+        | Q(creator=user)
+    )
+
+
+def _category_filter_for_user(user, site_group):
+    if user.is_superuser:
+        return Q()
+    if site_group and user.is_site_group_admin(site_group):
+        return Q()
+    return Q(created_by=user)
+
+
 # ===========================================================================
 # 工单管理
 # ===========================================================================
@@ -53,13 +77,10 @@ def admin_ticket_list(request):
         'related_product', 'related_host',
     )
 
-    # 数据隔离：提供商仅可查看自己产品的工单
-    if not request.user.is_superuser:
-        provider_products = get_provider_products(request.user)
-        queryset = queryset.filter(
-            Q(related_product__in=provider_products)
-            | Q(creator=request.user)
-        ).distinct()
+    site_group = getattr(request, 'site_group', None)
+    ticket_filter = _ticket_filter_for_user(request.user, site_group)
+    if ticket_filter:
+        queryset = queryset.filter(ticket_filter).distinct()
 
     # 状态筛选
     status_filter = request.GET.get('status', '').strip()
@@ -93,11 +114,7 @@ def admin_ticket_list(request):
     if request.user.is_superuser:
         base_qs = Ticket.objects.all()
     else:
-        provider_products = get_provider_products(request.user)
-        base_qs = Ticket.objects.filter(
-            Q(related_product__in=provider_products)
-            | Q(creator=request.user)
-        ).distinct()
+        base_qs = Ticket.objects.filter(ticket_filter).distinct()
     status_counts = {
         'pending': base_qs.filter(status='pending').count(),
         'processing': base_qs.filter(status='processing').count(),
@@ -132,24 +149,21 @@ def admin_ticket_detail(request, pk):
 
     显示工单信息、评论列表（含内部备注）、附件列表、活动记录。
     """
-    # 数据隔离：提供商仅可查看自己产品的工单
-    if request.user.is_superuser:
+    site_group = getattr(request, 'site_group', None)
+    ticket_filter = _ticket_filter_for_user(request.user, site_group)
+    if ticket_filter:
         ticket = get_object_or_404(
             Ticket.objects.select_related(
                 'category', 'creator', 'assignee', 'assigned_group',
                 'related_product', 'related_host',
-            ),
+            ).filter(ticket_filter),
             pk=pk,
         )
     else:
-        provider_products = get_provider_products(request.user)
         ticket = get_object_or_404(
             Ticket.objects.select_related(
                 'category', 'creator', 'assignee', 'assigned_group',
                 'related_product', 'related_host',
-            ).filter(
-                Q(related_product__in=provider_products)
-                | Q(creator=request.user)
             ),
             pk=pk,
         )
@@ -190,18 +204,14 @@ def admin_ticket_comment_create(request, pk):
 
     超管添加的评论自动标记作者为当前用户。
     """
-    # 数据隔离：提供商仅可评论自己产品的工单
-    if request.user.is_superuser:
-        ticket = get_object_or_404(Ticket, pk=pk)
-    else:
-        provider_products = get_provider_products(request.user)
+    site_group = getattr(request, 'site_group', None)
+    ticket_filter = _ticket_filter_for_user(request.user, site_group)
+    if ticket_filter:
         ticket = get_object_or_404(
-            Ticket.objects.filter(
-                Q(related_product__in=provider_products)
-                | Q(creator=request.user)
-            ),
-            pk=pk,
+            Ticket.objects.filter(ticket_filter), pk=pk,
         )
+    else:
+        ticket = get_object_or_404(Ticket, pk=pk)
 
     form = AdminTicketCommentForm(request.POST)
     if form.is_valid():
@@ -243,13 +253,10 @@ def admin_ticket_batch_processing(request):
         pk__in=selected_ids,
         status='pending',
     )
-    # 数据隔离：提供商仅可操作自己产品的工单
-    if not request.user.is_superuser:
-        provider_products = get_provider_products(request.user)
-        qs = qs.filter(
-            Q(related_product__in=provider_products)
-            | Q(creator=request.user)
-        ).distinct()
+    site_group = getattr(request, 'site_group', None)
+    ticket_filter = _ticket_filter_for_user(request.user, site_group)
+    if ticket_filter:
+        qs = qs.filter(ticket_filter).distinct()
 
     updated_count = 0
     for ticket in qs:
@@ -283,13 +290,10 @@ def admin_ticket_batch_resolved(request):
         pk__in=selected_ids,
         status__in=['pending', 'processing', 'waiting_feedback'],
     )
-    # 数据隔离：提供商仅可操作自己产品的工单
-    if not request.user.is_superuser:
-        provider_products = get_provider_products(request.user)
-        qs = qs.filter(
-            Q(related_product__in=provider_products)
-            | Q(creator=request.user)
-        ).distinct()
+    site_group = getattr(request, 'site_group', None)
+    ticket_filter = _ticket_filter_for_user(request.user, site_group)
+    if ticket_filter:
+        qs = qs.filter(ticket_filter).distinct()
 
     updated_count = 0
     now = timezone.now()
@@ -325,13 +329,10 @@ def admin_ticket_batch_closed(request):
     qs = Ticket.objects.filter(
         pk__in=selected_ids,
     ).exclude(status='closed')
-    # 数据隔离：提供商仅可操作自己产品的工单
-    if not request.user.is_superuser:
-        provider_products = get_provider_products(request.user)
-        qs = qs.filter(
-            Q(related_product__in=provider_products)
-            | Q(creator=request.user)
-        ).distinct()
+    site_group = getattr(request, 'site_group', None)
+    ticket_filter = _ticket_filter_for_user(request.user, site_group)
+    if ticket_filter:
+        qs = qs.filter(ticket_filter).distinct()
 
     updated_count = 0
     now = timezone.now()
@@ -368,14 +369,11 @@ def admin_category_list(request):
     - 无数据隔离，查看所有分类
     - 支持搜索、分页
     """
-    if request.user.is_superuser:
-        queryset = TicketCategory.objects.order_by(
-            'display_order', 'name'
-        )
-    else:
-        queryset = TicketCategory.objects.filter(
-            created_by=request.user
-        ).order_by('display_order', 'name')
+    site_group = getattr(request, 'site_group', None)
+    category_filter = _category_filter_for_user(request.user, site_group)
+    queryset = TicketCategory.objects.filter(category_filter).order_by(
+        'display_order', 'name'
+    )
 
     # 搜索
     search = request.GET.get('search', '').strip()
@@ -395,7 +393,7 @@ def admin_category_list(request):
         'categories': page_obj,
         'search': search,
         'page_title': '工单分类',
-        'active_nav': 'admin_ticket_categories',
+        'active_nav': 'ticket_categories',
     }
 
     return render(request, 'admin_base/tickets/category_list.html', context)
@@ -426,7 +424,7 @@ def admin_category_create(request):
     context = {
         'form': form,
         'page_title': '创建工单分类',
-        'active_nav': 'admin_ticket_categories',
+        'active_nav': 'ticket_categories',
         'is_create': True,
     }
 
@@ -440,13 +438,14 @@ def admin_category_update(request, pk):
 
     无数据隔离，可编辑所有分类。
     """
-    # 数据隔离：提供商仅可编辑自己创建的分类
-    if request.user.is_superuser:
-        category = get_object_or_404(TicketCategory, pk=pk)
-    else:
+    site_group = getattr(request, 'site_group', None)
+    category_filter = _category_filter_for_user(request.user, site_group)
+    if category_filter:
         category = get_object_or_404(
-            TicketCategory, pk=pk, created_by=request.user,
+            TicketCategory.objects.filter(category_filter), pk=pk,
         )
+    else:
+        category = get_object_or_404(TicketCategory, pk=pk)
 
     if request.method == 'POST':
         form = AdminTicketCategoryForm(request.POST, instance=category)
@@ -464,7 +463,7 @@ def admin_category_update(request, pk):
         'form': form,
         'category': category,
         'page_title': f'编辑分类 - {category.name}',
-        'active_nav': 'admin_ticket_categories',
+        'active_nav': 'ticket_categories',
         'is_create': False,
     }
 
@@ -478,13 +477,14 @@ def admin_category_delete(request, pk):
 
     无数据隔离，可删除所有分类。
     """
-    # 数据隔离：提供商仅可删除自己创建的分类
-    if request.user.is_superuser:
-        category = get_object_or_404(TicketCategory, pk=pk)
-    else:
+    site_group = getattr(request, 'site_group', None)
+    category_filter = _category_filter_for_user(request.user, site_group)
+    if category_filter:
         category = get_object_or_404(
-            TicketCategory, pk=pk, created_by=request.user,
+            TicketCategory.objects.filter(category_filter), pk=pk,
         )
+    else:
+        category = get_object_or_404(TicketCategory, pk=pk)
 
     if request.method == 'POST':
         category_name = category.name
@@ -503,7 +503,7 @@ def admin_category_delete(request, pk):
         'category': category,
         'ticket_count': ticket_count,
         'page_title': f'删除分类 - {category.name}',
-        'active_nav': 'admin_ticket_categories',
+        'active_nav': 'ticket_categories',
     }
 
     return render(
@@ -524,18 +524,18 @@ def admin_activity_list(request):
     - 无数据隔离，查看所有活动记录
     - 支持按操作类型筛选、搜索
     """
-    if request.user.is_superuser:
-        queryset = TicketActivity.objects.select_related(
-            'ticket', 'actor',
-        ).order_by('-created_at')
-    else:
-        provider_products = get_provider_products(request.user)
+    site_group = getattr(request, 'site_group', None)
+    ticket_filter = _ticket_filter_for_user(request.user, site_group)
+    if ticket_filter:
         queryset = TicketActivity.objects.filter(
-            Q(ticket__related_product__in=provider_products)
-            | Q(ticket__creator=request.user)
+            ticket_filter
         ).select_related(
             'ticket', 'actor',
         ).order_by('-created_at').distinct()
+    else:
+        queryset = TicketActivity.objects.select_related(
+            'ticket', 'actor',
+        ).order_by('-created_at')
 
     # 操作类型筛选
     action_filter = request.GET.get('action', '').strip()
@@ -563,7 +563,7 @@ def admin_activity_list(request):
         'action_filter': action_filter,
         'action_choices': TicketActivity.ACTION_CHOICES,
         'page_title': '活动日志',
-        'active_nav': 'admin_ticket_activities',
+        'active_nav': 'ticket_activities',
     }
 
     return render(request, 'admin_base/tickets/activity_list.html', context)

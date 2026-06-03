@@ -30,6 +30,7 @@ urlpatterns = [
     path('requests/<int:pk>/', views_admin.AdminRequestDetailView.as_view(), name='request_detail'),
     path('requests/<int:pk>/approve/', views_admin.AdminRequestApproveView.as_view(), name='request_approve'),
     path('requests/<int:pk>/reject/', views_admin.AdminRequestRejectView.as_view(), name='request_reject'),
+    path('requests/<int:pk>/retry/', views_admin.AdminRequestRetryView.as_view(), name='request_retry'),
     path('requests/batch-approve/', views_admin.AdminRequestBatchApproveView.as_view(), name='request_batch_approve'),
     path('requests/batch-reject/', views_admin.AdminRequestBatchRejectView.as_view(), name='request_batch_reject'),
 

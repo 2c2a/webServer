@@ -18,7 +18,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -186,11 +186,16 @@ class AdminHostListView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 数据隔离：超管查看所有主机，提供商仅查看自己的主机
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_superuser:
             hosts_qs = Host.objects.all().order_by('-created_at')
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                hosts_qs = Host.objects.filter(site_group=site_group).order_by('-created_at')
+            else:
+                hosts_qs = Host.objects.none()
         else:
-            hosts_qs = get_provider_hosts(self.request.user).order_by(
+            hosts_qs = get_provider_hosts(self.request.user, site_group=site_group).order_by(
                 '-created_at'
             )
 
@@ -248,10 +253,14 @@ class AdminHostDetailView(DetailView):
     pk_url_kwarg = 'pk'
 
     def get_queryset(self):
-        """超管可查看所有主机，提供商仅可查看自己的主机"""
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_superuser:
             return Host.objects.all()
-        return get_provider_hosts(self.request.user)
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return Host.objects.filter(site_group=site_group)
+            return Host.objects.none()
+        return get_provider_hosts(self.request.user, site_group=site_group)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -352,6 +361,9 @@ class AdminHostCreateView(TemplateView):
             else:
                 host = form.save(commit=False)
                 host.created_by = request.user
+                site_group = getattr(request, 'site_group', None)
+                if site_group:
+                    host.site_group = site_group
                 host.save()
                 form.save_m2m()
                 # 保存证书文件
@@ -378,23 +390,14 @@ class AdminHostCreateView(TemplateView):
                     cert_token_obj.cert_data = None
                 cert_token_obj.save()
 
-            # 测试连接
-            try:
-                host.test_connection()
-                status_display = dict(Host.STATUS_CHOICES).get(
-                    host.status, host.status
-                )
-                messages.success(
-                    request,
-                    f'主机 {host.name} 创建成功，状态: '
-                    f'{status_display}'
-                )
-            except Exception as e:
-                messages.warning(
-                    request,
-                    f'主机 {host.name} 创建成功，'
-                    f'但连接测试失败: {str(e)}'
-                )
+            # 测试连接（异步）
+            from apps.hosts.tasks import test_winrm_connection
+            test_winrm_connection.delay(host.pk)
+            messages.success(
+                request,
+                f'主机 {host.name} 创建成功，'
+                f'连接测试正在后台执行'
+            )
 
             # 如果自动生成了密码，提示用户
             if hasattr(form, 'generated_password') and \
@@ -442,11 +445,15 @@ class AdminHostUpdateView(TemplateView):
     template_name = 'admin_base/hosts/host_form.html'
 
     def get_host(self):
-        """获取当前编辑的主机，提供商仅可编辑自己的主机"""
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_superuser:
             return get_object_or_404(Host, pk=self.kwargs['pk'])
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(Host.objects.filter(site_group=site_group), pk=self.kwargs['pk'])
+            raise Http404
         return get_object_or_404(
-            get_provider_hosts(self.request.user), pk=self.kwargs['pk']
+            get_provider_hosts(self.request.user, site_group=site_group), pk=self.kwargs['pk']
         )
 
     def get_context_data(self, **kwargs):
@@ -474,27 +481,18 @@ class AdminHostUpdateView(TemplateView):
         if form.is_valid():
             host = form.save()
 
-            # 如果密码被修改，测试连接
+            # 如果密码被修改，异步测试连接
             if (
                 'password' in form.changed_data
                 and form.cleaned_data.get('password')
             ):
-                try:
-                    host.test_connection()
-                    status_display = dict(
-                        Host.STATUS_CHOICES
-                    ).get(host.status, host.status)
-                    messages.success(
-                        request,
-                        f'主机 {host.name} 更新成功，'
-                        f'状态: {status_display}'
-                    )
-                except Exception as e:
-                    messages.warning(
-                        request,
-                        f'主机 {host.name} 更新成功，'
-                        f'但连接测试失败: {str(e)}'
-                    )
+                from apps.hosts.tasks import test_winrm_connection
+                test_winrm_connection.delay(host.pk)
+                messages.success(
+                    request,
+                    f'主机 {host.name} 更新成功，'
+                    f'连接测试正在后台执行'
+                )
             else:
                 messages.success(
                     request, f'主机 {host.name} 更新成功'
@@ -521,18 +519,21 @@ class AdminHostDeleteView(TemplateView):
     template_name = 'admin_base/hosts/host_confirm_delete.html'
 
     def get_host(self):
-        """获取当前删除的主机，提供商仅可删除自己的主机"""
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_superuser:
             return get_object_or_404(Host, pk=self.kwargs['pk'])
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(Host.objects.filter(site_group=site_group), pk=self.kwargs['pk'])
+            raise Http404
         return get_object_or_404(
-            get_provider_hosts(self.request.user), pk=self.kwargs['pk']
+            get_provider_hosts(self.request.user, site_group=site_group), pk=self.kwargs['pk']
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         host = self.get_host()
 
-        # 获取关联信息用于确认页面
         from apps.operations.models import Product
         products = Product.objects.filter(host=host)
 
@@ -563,60 +564,27 @@ class AdminHostDeleteView(TemplateView):
 
 @admin_required
 def admin_host_test_connection(request, pk):
-    """
-    测试主机连接 AJAX 端点
-
-    调用 Host.test_connection() 测试连接，
-    返回 JSON 格式的测试结果。
-    """
+    site_group = getattr(request, 'site_group', None)
     if request.user.is_superuser:
         host = get_object_or_404(Host, pk=pk)
+    elif request.user.is_site_group_admin(site_group):
+        if site_group:
+            host = get_object_or_404(Host.objects.filter(site_group=site_group), pk=pk)
+        else:
+            raise Http404
     else:
         host = get_object_or_404(
-            get_provider_hosts(request.user), pk=pk
+            get_provider_hosts(request.user, site_group=site_group), pk=pk
         )
 
-    old_status = host.status
-    error_message = None
+    from apps.hosts.tasks import test_winrm_connection
+    result = test_winrm_connection.delay(host.pk)
 
-    try:
-        host.test_connection()
-    except Exception as e:
-        error_message = str(e)
-        logger.error(
-            f"测试主机连接异常: {host.name}, 错误: {error_message}"
-        )
-
-    host.refresh_from_db()
-    new_status = host.status
-    status_display = dict(Host.STATUS_CHOICES).get(
-        new_status, new_status
-    )
-
-    success = new_status == 'online'
-
-    result = {
-        'success': success,
-        'status': new_status,
-        'status_display': status_display,
-        'old_status': old_status,
-    }
-
-    if error_message:
-        result['error'] = error_message
-
-    if success:
-        result['message'] = f'连接成功，主机状态: {status_display}'
-    elif new_status == 'error':
-        result['message'] = (
-            f'连接失败，主机状态: {status_display}'
-        )
-        if error_message:
-            result['message'] += f'（{error_message}）'
-    else:
-        result['message'] = f'主机状态: {status_display}'
-
-    return JsonResponse(result)
+    return JsonResponse({
+        'success': True,
+        'task_id': result.id,
+        'message': '连接测试已提交，正在后台执行',
+    })
 
 
 # ========== 主机组管理 ==========
@@ -636,11 +604,16 @@ class AdminHostGroupListView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 数据隔离：超管查看所有主机组，提供商仅查看自己创建的
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_superuser:
             hostgroups_qs = HostGroup.objects.all().order_by(
                 '-created_at'
             )
+        elif self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                hostgroups_qs = HostGroup.objects.filter(site_group=site_group).order_by('-created_at')
+            else:
+                hostgroups_qs = HostGroup.objects.none()
         else:
             hostgroups_qs = HostGroup.objects.filter(
                 created_by=self.request.user
@@ -664,7 +637,7 @@ class AdminHostGroupListView(TemplateView):
             'hostgroups': page_obj,
             'search': search,
             'page_title': '主机组管理',
-            'active_nav': 'hosts',
+            'active_nav': 'hostgroups',
         })
         return context
 
@@ -687,7 +660,7 @@ class AdminHostGroupCreateView(TemplateView):
                 'form', AdminHostGroupForm()
             ),
             'page_title': '创建主机组',
-            'active_nav': 'hosts',
+            'active_nav': 'hostgroups',
             'is_create': True,
         })
         return context
@@ -697,6 +670,9 @@ class AdminHostGroupCreateView(TemplateView):
         if form.is_valid():
             hostgroup = form.save(commit=False)
             hostgroup.created_by = request.user
+            site_group = getattr(request, 'site_group', None)
+            if site_group:
+                hostgroup.site_group = site_group
             hostgroup.save()
             form.save_m2m()
 
@@ -722,9 +698,13 @@ class AdminHostGroupUpdateView(TemplateView):
     template_name = 'admin_base/hosts/hostgroup_form.html'
 
     def get_hostgroup(self):
-        """获取当前编辑的主机组，提供商仅可编辑自己创建的"""
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_superuser:
             return get_object_or_404(HostGroup, pk=self.kwargs['pk'])
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(HostGroup.objects.filter(site_group=site_group), pk=self.kwargs['pk'])
+            raise Http404
         return get_object_or_404(
             HostGroup, pk=self.kwargs['pk'],
             created_by=self.request.user,
@@ -741,7 +721,7 @@ class AdminHostGroupUpdateView(TemplateView):
             'form': form,
             'hostgroup': hostgroup,
             'page_title': f'编辑主机组 - {hostgroup.name}',
-            'active_nav': 'hosts',
+            'active_nav': 'hostgroups',
             'is_create': False,
         })
         return context
@@ -777,9 +757,13 @@ class AdminHostGroupDeleteView(TemplateView):
     )
 
     def get_hostgroup(self):
-        """获取当前删除的主机组，提供商仅可删除自己创建的"""
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_superuser:
             return get_object_or_404(HostGroup, pk=self.kwargs['pk'])
+        if self.request.user.is_site_group_admin(site_group):
+            if site_group:
+                return get_object_or_404(HostGroup.objects.filter(site_group=site_group), pk=self.kwargs['pk'])
+            raise Http404
         return get_object_or_404(
             HostGroup, pk=self.kwargs['pk'],
             created_by=self.request.user,
@@ -793,7 +777,7 @@ class AdminHostGroupDeleteView(TemplateView):
             'hostgroup': hostgroup,
             'host_count': hostgroup.hosts.count(),
             'page_title': f'删除主机组 - {hostgroup.name}',
-            'active_nav': 'hosts',
+            'active_nav': 'hostgroups',
         })
         return context
 
@@ -832,6 +816,9 @@ def admin_host_wizard(request):
         if form.is_valid():
             host = form.save(commit=False)
             host.created_by = request.user
+            site_group = getattr(request, 'site_group', None)
+            if site_group:
+                host.site_group = site_group
             host.save()
             form.save_m2m()
             # 保存证书文件
@@ -866,31 +853,13 @@ def admin_host_wizard(request):
                 except CertProvisionToken.DoesNotExist:
                     pass
 
-            try:
-                if host.auth_method == 'certificate':
-                    from apps.hosts.tasks import test_winrm_connection
-                    test_winrm_connection.delay(host.pk, use_certificate_auth=True)
-                    messages.success(
-                        request,
-                        f'主机 {host.name} 创建成功，'
-                        f'证书连接测试正在后台执行'
-                    )
-                else:
-                    host.test_connection()
-                    status_display = dict(Host.STATUS_CHOICES).get(
-                        host.status, host.status
-                    )
-                    messages.success(
-                        request,
-                        f'主机 {host.name} 创建成功，'
-                        f'状态: {status_display}'
-                    )
-            except Exception as e:
-                messages.warning(
-                    request,
-                    f'主机 {host.name} 创建成功，'
-                    f'但连接测试失败: {str(e)}'
-                )
+            from apps.hosts.tasks import test_winrm_connection
+            test_winrm_connection.delay(host.pk)
+            messages.success(
+                request,
+                f'主机 {host.name} 创建成功，'
+                f'连接测试正在后台执行'
+            )
 
             # 如果自动生成了密码，提示用户
             if hasattr(form, 'generated_password') and \
@@ -1060,61 +1029,39 @@ def admin_host_wizard_test_connection(request):
         if not password:
             return JsonResponse({'success': False, 'error': '密码不能为空'}, status=400)
 
-    try:
-        if connection_type == 'localwinserver':
-            from utils.local_winserver_client import LocalWinServerClient
-            client = LocalWinServerClient(
-                username=username,
-                password=password,
-            )
-            result = client.execute_command('echo Connection Test OK')
-        elif connection_type == 'winrm' and auth_method == 'ntlm':
-            from utils.winrm_client import WinrmClient
-            client = WinrmClient(
-                hostname=hostname,
-                port=int(port),
-                username=username,
-                password=password,
-                use_ssl=bool(use_ssl),
-                auth_method='ntlm',
-            )
-            result = client.execute_command('whoami')
-        elif connection_type == 'winrm' and auth_method == 'certificate':
-            return JsonResponse({
-                'success': False,
-                'error': '证书认证方式请先保存主机后再测试连接',
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': f'不支持的连接类型: {connection_type}',
-            })
-
-        if result.success:
-            output = result.std_out.strip() if result.std_out else ''
-            return JsonResponse({
-                'success': True,
-                'message': f'连接成功{f" ({output})" if output else ""}',
-            })
-        else:
-            error_detail = result.std_err.strip() if result.std_err else f'命令执行返回非零状态码: {result.status_code}'
-            return JsonResponse({
-                'success': False,
-                'error': f'连接失败: {error_detail}',
-            })
-
-    except Exception as e:
-        error_message = str(e)
-        logger.error(f"向导即时连接测试失败: {hostname}, 错误: {error_message}")
+    if auth_method == 'certificate':
         return JsonResponse({
             'success': False,
-            'error': f'连接测试失败: {error_message}',
+            'error': '证书认证方式请先保存主机后再测试连接',
         })
+
+    from apps.hosts.tasks import test_winrm_connection_raw
+    result = test_winrm_connection_raw.delay(
+        connection_type, hostname, port, use_ssl,
+        auth_method, username, password,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'task_id': result.id,
+        'message': '连接测试已提交，正在后台执行',
+    })
 
 
 @admin_required
 def admin_host_generate_init_command(request, pk):
-    host = get_object_or_404(Host, pk=pk)
+    site_group = getattr(request, 'site_group', None)
+    if request.user.is_superuser:
+        host = get_object_or_404(Host, pk=pk)
+    elif request.user.is_site_group_admin(site_group):
+        if site_group:
+            host = get_object_or_404(Host.objects.filter(site_group=site_group), pk=pk)
+        else:
+            raise Http404
+    else:
+        host = get_object_or_404(
+            get_provider_hosts(request.user, site_group=site_group), pk=pk
+        )
 
     if request.method != 'POST':
         return JsonResponse(
@@ -1138,7 +1085,18 @@ def admin_host_generate_cert_command(request):
         return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
     host_id = request.POST.get('host_id')
-    host = get_object_or_404(Host, pk=host_id)
+    site_group = getattr(request, 'site_group', None)
+    if request.user.is_superuser:
+        host = get_object_or_404(Host, pk=host_id)
+    elif request.user.is_site_group_admin(site_group):
+        if site_group:
+            host = get_object_or_404(Host.objects.filter(site_group=site_group), pk=host_id)
+        else:
+            raise Http404
+    else:
+        host = get_object_or_404(
+            get_provider_hosts(request.user, site_group=site_group), pk=host_id
+        )
 
     if host.auth_method != 'certificate':
         return JsonResponse({'success': False, 'error': 'Host is not configured for certificate auth'}, status=400)
