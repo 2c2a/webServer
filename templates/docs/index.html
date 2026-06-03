@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ doc_title }} - 2c2a</title>
+    <title>{{ doc_title }} - {{ site_name }}</title>
     <link rel="stylesheet" href="{% static 'vendor/material-symbols-rounded/material-symbols-rounded.css' %}">
     <link href="{% static 'css/provider.css' %}" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="{{ site_icon }}">
     <style>
         .md-body {
             color: #CAC4D0;
@@ -204,7 +204,7 @@
     <nav class="bg-md-surface-container/80 backdrop-blur-xl border-b border-white/10 shadow-sm sticky top-0 z-30">
         <div class="flex items-center justify-between h-14 max-w-[1400px] mx-auto px-4 lg:px-6">
             <a class="flex items-center gap-3 no-underline hover:opacity-90 transition" href="/docs/">
-                <img src="/static/img/favicon.svg" alt="2c2a" class="h-7 w-auto">
+                <img src="{{ site_icon }}" alt="{{ site_name }}" class="h-7 w-auto">
                 <span class="text-md-on-surface font-medium text-lg">{{ doc_title }}</span>
             </a>
             <div class="flex items-center gap-3">

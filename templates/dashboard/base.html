@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <title>{% block title %}2c2a 仪表盘{% endblock %}</title>
+    <title>{% block title %}{{ site_name }} 仪表盘{% endblock %}</title>
     <link href="{% static 'css/provider.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
@@ -13,7 +13,7 @@
     <nav class="sticky top-0 z-20 bg-slate-950/80 backdrop-blur-xl border-b border-slate-700/50">
         <div class="flex items-center justify-between h-16 px-4 lg:px-6 max-w-7xl mx-auto">
             <div class="flex items-center gap-6">
-                <a class="text-cyan-400 font-bold text-lg" href="{% url 'dashboard:index' %}">2c2a</a>
+                <a class="text-cyan-400 font-bold text-lg" href="{% url 'dashboard:index' %}">{{ site_name }}</a>
                 <a class="text-slate-400 hover:text-slate-200 text-sm font-medium transition" href="{% url 'dashboard:index' %}">仪表盘</a>
             </div>
             <div class="flex items-center gap-4">

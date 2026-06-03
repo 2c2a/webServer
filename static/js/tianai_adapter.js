@@ -117,6 +117,9 @@
         if (token) {
             formData.append('captcha_token', token);
         }
+        if (window.REGLINK_TOKEN) {
+            formData.append('reglink_token', window.REGLINK_TOKEN);
+        }
 
         fetch(endpoint, {
             method: 'POST',

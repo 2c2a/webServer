@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <title>{% block title %}2c2a{% endblock %}</title>
+    <title>{% block title %}{{ site_name }}{% endblock %}</title>
 
     <!-- Tailwind CSS -->
     <link href="{% static 'css/provider.css' %}" rel="stylesheet">
@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="{% static 'vendor/material-icons/material-icons.css' %}">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="{{ site_icon }}">
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -30,7 +30,7 @@
     <nav class="bg-md-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm sticky top-0 z-30">
         <div class="flex items-center justify-between h-16 max-w-7xl mx-auto px-4 lg:px-6">
             <a class="flex items-center no-underline hover:opacity-90 transition" href="{% url 'dashboard:index' %}">
-                <img src="/static/img/favicon.svg" alt="2c2a" class="h-8 w-auto">
+                <img src="{{ site_icon }}" alt="{{ site_name }}" class="h-8 w-auto">
             </a>
 
             <button class="md-navbar-toggler hidden max-md:block bg-transparent border-none text-md-on-surface cursor-pointer p-2 rounded-md hover:bg-md-surface-variant transition" id="navbarToggle">
@@ -73,7 +73,7 @@
                         个人资料
                     </a>
                 </li>
-                {% if user.is_staff or user.is_superuser %}
+                {% if user.is_staff or user.is_superuser or is_site_group_admin %}
                 <li class="relative max-md:w-full md:hidden">
                     <a class="flex items-center gap-2 px-4 py-2 rounded-md-xl text-md-on-surface-variant no-underline text-sm font-medium transition hover:bg-md-surface-variant hover:text-md-on-surface min-h-[40px] whitespace-nowrap max-md:w-full max-md:justify-start max-md:px-4 max-md:py-3 max-md:rounded-md" href="/admin/">
                         <span class="material-symbols-rounded text-lg">admin_panel_settings</span>
@@ -124,7 +124,7 @@
                                 <span class="material-symbols-rounded text-lg">account_circle</span>
                                 个人资料
                             </a>
-                            {% if user.is_staff or user.is_superuser %}
+                            {% if user.is_staff or user.is_superuser or is_site_group_admin %}
                             <a class="flex items-center gap-3 px-4 py-3 text-md-on-surface no-underline text-sm transition hover:bg-md-surface-variant" href="/admin/">
                                 <span class="material-symbols-rounded text-lg">admin_panel_settings</span>
                                 后台管理
@@ -193,7 +193,7 @@
     <!-- 页脚 -->
     <footer class="relative z-10 bg-md-surface-container/70 backdrop-blur-xl border-t border-white/10 mt-8 py-4">
         <div class="max-w-7xl mx-auto text-center px-4">
-            <p class="mb-1 text-md-on-surface-variant text-sm">&copy; {% now "Y" %} 2c2a. All rights reserved.</p>
+            <p class="mb-1 text-md-on-surface-variant text-sm">&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
             {% if system_config %}
                 <div class="mb-1">
                     {% if system_config.icp_number %}
