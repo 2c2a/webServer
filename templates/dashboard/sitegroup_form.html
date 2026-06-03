@@ -1,0 +1,81 @@
+{% extends "admin_base/base.html" %}
+
+{% block title %}{{ site_name }} 超级管理员 - {{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard:sitegroup_list' %}" class="text-white/70 hover:text-cyan-400 transition">站点组管理</a>
+<span class="material-symbols-rounded text-sm text-white/50">chevron_right</span>
+<span class="text-cyan-400 font-medium">{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">{{ title }}</h1>
+        <p class="text-white/70 text-sm mt-1">
+            {% if sitegroup %}修改站点组「{{ sitegroup.name }}」的信息{% else %}填写以下信息创建新的站点组{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'dashboard:sitegroup_list' %}" class="inline-flex items-center gap-2 text-cyan-400 hover:text-white hover:bg-cyan-500/10 px-4 py-2 rounded-md transition text-sm font-medium">
+        <span class="material-symbols-rounded text-lg">arrow_back</span>
+        返回列表
+    </a>
+</div>
+
+<div class="bg-slate-950/70 backdrop-blur-xl border border-slate-700/50 rounded-md shadow-none">
+    <div class="p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="bg-red-900/20 border border-red-500/30 rounded-md p-4">
+                {% for error in form.non_field_errors %}
+                <p class="text-sm text-red-400">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div>
+                <h3 class="text-white font-medium mb-4 flex items-center gap-2">
+                    <span class="material-symbols-rounded text-cyan-400">domain</span>
+                    基本信息
+                </h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {% for field in form %}
+                    {% if field.name == 'is_active' %}
+                    <div class="flex items-center gap-3">
+                        {{ field }}
+                        <label for="{{ field.id_for_label }}" class="text-sm text-slate-300">{{ field.label }}</label>
+                        {% if field.help_text %}
+                        <span class="text-xs text-slate-500">- {{ field.help_text }}</span>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-slate-300 mb-2">
+                            {{ field.label }}
+                            {% if field.field.required %}<span class="text-red-400 ml-1">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="text-xs text-slate-500 mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/50">
+                <a href="{% url 'dashboard:sitegroup_list' %}" class="border border-slate-600 text-slate-300 hover:bg-slate-800 px-4 py-2 rounded-md transition inline-block">取消</a>
+                <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)] transition">
+                    {% if sitegroup %}保存{% else %}创建{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 {% extends "admin_base/base.html" %}
 
-{% block title %}2c2a 超级管理员 - 删除注册链接{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - 删除注册链接{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_reglinks:reglink_list' %}" class="text-white/70 hover:text-cyan-400 transition">注册链接管理</a>
@@ -32,6 +32,16 @@
             <div class="flex justify-between">
                 <span class="text-white/50">用户组</span>
                 <span class="text-white">{{ reglink.group.name }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-white/50">使用次数</span>
+                <span class="text-white">
+                    {% if reglink.max_uses == 0 %}
+                    已用 {{ reglink.used_count }}次 / 不限
+                    {% else %}
+                    已用 {{ reglink.used_count }}/{{ reglink.max_uses }}次
+                    {% endif %}
+                </span>
             </div>
             <div class="flex justify-between">
                 <span class="text-white/50">创建者</span>

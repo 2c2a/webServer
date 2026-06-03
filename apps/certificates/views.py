@@ -14,6 +14,58 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+def _get_or_create_ca(ca_name='default-ca'):
+    ca, created = CertificateAuthority.objects.get_or_create(
+        name=ca_name,
+        defaults={
+            'name': ca_name,
+            'description': f'Default CA for {ca_name}',
+        },
+    )
+    if created:
+        from utils.cert_service import generate_ca
+        from cryptography.hazmat.primitives import serialization
+        import datetime
+
+        ca_key, ca_cert = generate_ca()
+        ca_key_pem = ca_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        ca_cert_pem = ca_cert.public_bytes(serialization.Encoding.PEM)
+        ca.save_ca_files(ca_key_pem, ca_cert_pem)
+        ca.expires_at = (
+            datetime.datetime.now(datetime.timezone.utc)
+            + datetime.timedelta(days=3650)
+        )
+        ca.save()
+        logger.info(f"Created new CA: {ca_name}")
+
+    return ca, created
+
+
+def _load_ca_crypto(ca):
+    from cryptography.hazmat.primitives import serialization
+    from cryptography import x509 as x509_mod
+    from typing import cast
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    private_key_pem = ca.private_key
+    certificate_pem = ca.certificate
+    if not private_key_pem or not certificate_pem:
+        raise ValueError(f"CA {ca.name} key/cert files not found on disk")
+
+    ca_key = cast(
+        ec.EllipticCurvePrivateKey,
+        serialization.load_pem_private_key(
+            private_key_pem.encode(), password=None,
+        ),
+    )
+    ca_cert = x509_mod.load_pem_x509_certificate(certificate_pem.encode())
+    return ca_key, ca_cert
+
+
 @require_http_methods(["POST"])
 @login_required
 @permission_required('certificates.add_servercertificate', raise_exception=True)
@@ -30,17 +82,7 @@ def issue_server_certificate(request):
                 'error': 'Hostname is required'
             }, status=400)
 
-        ca, created = CertificateAuthority.objects.get_or_create(
-            name=ca_name,
-            defaults={
-                'name': ca_name,
-                'description': f'Default CA for {ca_name}'
-            }
-        )
-        if created:
-            ca.generate_self_signed_cert()
-            ca.save()
-            logger.info(f"Created new CA: {ca_name}")
+        ca, created = _get_or_create_ca(ca_name)
 
         cert, created = ServerCertificate.objects.get_or_create(
             hostname=hostname,
@@ -51,30 +93,16 @@ def issue_server_certificate(request):
         )
 
         if created or cert.is_revoked:
-            from utils.cert_service import (
-                issue_server_cert, generate_ca,
-            )
-            from cryptography.hazmat.primitives import serialization
-            from cryptography import x509 as x509_mod
-            from typing import cast
-            from cryptography.hazmat.primitives.asymmetric import ec
+            from utils.cert_service import issue_server_cert
+            from cryptography.hazmat.primitives import hashes
 
-            ca_key = cast(
-                ec.EllipticCurvePrivateKey,
-                serialization.load_pem_private_key(
-                    ca.private_key.encode(), password=None,
-                ),
-            )
-            ca_cert = x509_mod.load_pem_x509_certificate(
-                ca.certificate.encode()
-            )
+            ca_key, ca_cert = _load_ca_crypto(ca)
             result = issue_server_cert(
                 ca_key=ca_key,
                 ca_cert=ca_cert,
                 hostname=hostname,
                 ip_address=None,
             )
-            from cryptography.hazmat.primitives import hashes
             fingerprint = result['server_cert'].fingerprint(
                 hashes.SHA1()
             )
@@ -134,16 +162,7 @@ def issue_client_certificate(request):
                 'error': 'Certificate name is required'
             }, status=400)
 
-        ca, created = CertificateAuthority.objects.get_or_create(
-            name=ca_name,
-            defaults={
-                'name': ca_name,
-                'description': f'Default CA for {ca_name}'
-            }
-        )
-        if created:
-            ca.generate_self_signed_cert()
-            ca.save()
+        ca, created = _get_or_create_ca(ca_name)
 
         user = None
         if user_id:
@@ -168,20 +187,9 @@ def issue_client_certificate(request):
 
         if created:
             from utils.cert_service import issue_client_cert
-            from cryptography.hazmat.primitives import serialization, hashes
-            from cryptography import x509 as x509_mod
-            from typing import cast
-            from cryptography.hazmat.primitives.asymmetric import ec
+            from cryptography.hazmat.primitives import hashes
 
-            ca_key = cast(
-                ec.EllipticCurvePrivateKey,
-                serialization.load_pem_private_key(
-                    ca.private_key.encode(), password=None,
-                ),
-            )
-            ca_cert = x509_mod.load_pem_x509_certificate(
-                ca.certificate.encode()
-            )
+            ca_key, ca_cert = _load_ca_crypto(ca)
             upn_value = f"{name}@localhost"
             cert.upn_value = upn_value
             client_key, client_cert = issue_client_cert(
@@ -284,10 +292,16 @@ def get_ca_certificate(request):
             ca = CertificateAuthority.objects.get(
                 name=ca_name, is_active=True
             )
+            ca_cert_pem = ca.certificate
+            if not ca_cert_pem:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'CA certificate file not found on disk'
+                }, status=404)
             return JsonResponse({
                 'success': True,
                 'data': {
-                    'ca_cert': ca.certificate,
+                    'ca_cert': ca_cert_pem,
                     'expires_at': ca.expires_at.isoformat()
                 }
             })

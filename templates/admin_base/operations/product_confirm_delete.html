@@ -1,6 +1,6 @@
 {% extends "admin_base/base.html" %}
 
-{% block title %}2c2a 超级管理员 - 删除产品 {{ product.display_name }}{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - 删除产品 {{ product.display_name }}{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_operations:product_list' %}" class="text-white/70 hover:text-cyan-400 transition">产品管理</a>

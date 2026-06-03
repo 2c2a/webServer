@@ -42,13 +42,28 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         """获取仪表盘上下文数据"""
         context = super().get_context_data(**kwargs)
 
-        product_groups = ProductGroup.objects.filter(is_active=True).order_by(
-            "display_order", "name"
-        )
+        site_group = getattr(self.request, 'site_group', None)
+        if site_group:
+            product_groups = ProductGroup.objects.filter(
+                is_active=True, site_group=site_group
+            ).order_by(
+                "display_order", "name"
+            )
+        else:
+            product_groups = ProductGroup.objects.filter(is_active=True, site_group__isnull=True).order_by(
+                "display_order", "name"
+            )
 
-        products_qs = Product.objects.filter(is_available=True).select_related(
-            "host", "product_group"
-        )
+        if site_group:
+            products_qs = Product.objects.filter(
+                is_available=True, site_group=site_group
+            ).select_related(
+                "host", "product_group"
+            )
+        else:
+            products_qs = Product.objects.filter(is_available=True, site_group__isnull=True).select_related(
+                "host", "product_group"
+            )
 
         search = self.request.GET.get("search", "")
         if search:
@@ -159,24 +174,52 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context["group_filter"] = group_filter
         context["auto_approval_filter"] = auto_approval_filter
 
-        stats = AccountOpeningRequest.objects.aggregate(
-            pending_count=Count("id", filter=Q(status="pending")),
-        )
+        if site_group:
+            stats = AccountOpeningRequest.objects.filter(
+                target_product__site_group=site_group
+            ).aggregate(
+                pending_count=Count("id", filter=Q(status="pending")),
+            )
+            context["cloud_users_total"] = CloudComputerUser.objects.filter(
+                product__site_group=site_group
+            ).count()
+        else:
+            stats = AccountOpeningRequest.objects.filter(target_product__site_group__isnull=True).aggregate(
+                pending_count=Count("id", filter=Q(status="pending")),
+            )
+            context["cloud_users_total"] = CloudComputerUser.objects.filter(product__site_group__isnull=True).count()
         context["account_requests_pending"] = stats["pending_count"]
-        context["cloud_users_total"] = CloudComputerUser.objects.count()
 
         if self.request.user.is_staff or self.request.user.is_superuser:
-            context["account_requests_recent"] = (
-                AccountOpeningRequest.objects.select_related(
+            if site_group:
+                context["account_requests_recent"] = (
+                    AccountOpeningRequest.objects.filter(
+                        target_product__site_group=site_group
+                    ).select_related(
+                        "applicant", "target_product", "target_product__host"
+                    ).order_by("-created_at")[:5]
+                )
+            else:
+                context["account_requests_recent"] = (
+                    AccountOpeningRequest.objects.filter(target_product__site_group__isnull=True).select_related(
+                        "applicant", "target_product", "target_product__host"
+                    ).order_by("-created_at")[:5]
+                )
+        else:
+            if site_group:
+                context["account_requests_recent"] = AccountOpeningRequest.objects.filter(
+                    applicant=self.request.user,
+                ).filter(
+                    target_product__site_group=site_group
+                ).select_related(
                     "applicant", "target_product", "target_product__host"
                 ).order_by("-created_at")[:5]
-            )
-        else:
-            context["account_requests_recent"] = AccountOpeningRequest.objects.filter(
-                applicant=self.request.user
-            ).select_related(
-                "applicant", "target_product", "target_product__host"
-            ).order_by("-created_at")[:5]
+            else:
+                context["account_requests_recent"] = AccountOpeningRequest.objects.filter(
+                    applicant=self.request.user, target_product__site_group__isnull=True
+                ).select_related(
+                    "applicant", "target_product", "target_product__host"
+                ).order_by("-created_at")[:5]
 
         try:
             AuditLog.objects.create(
@@ -198,42 +241,47 @@ class StatsAPIView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         """获取统计数据"""
         stats_type = request.GET.get("type", "all")
+        site_group = getattr(request, 'site_group', None)
 
         if stats_type == "all":
-            data = self._get_all_stats()
+            data = self._get_all_stats(site_group)
         elif stats_type == "hosts":
-            data = self._get_host_stats()
+            data = self._get_host_stats(site_group)
         elif stats_type == "operations":
             data = self._get_operation_stats()
         elif stats_type == "users":
             data = self._get_user_stats()
         elif stats_type == "account_opening":
-            data = self._get_account_opening_stats()
+            data = self._get_account_opening_stats(site_group)
         else:
             data = {"error": "Invalid stats type"}
 
         return JsonResponse(data)
 
-    def _get_all_stats(self):
+    def _get_all_stats(self, site_group):
         """获取所有统计数据"""
         return {
-            "hosts": self._get_host_stats(),
+            "hosts": self._get_host_stats(site_group),
             "operations": self._get_operation_stats(),
             "users": self._get_user_stats(),
-            "account_opening": self._get_account_opening_stats(),
+            "account_opening": self._get_account_opening_stats(site_group),
         }
 
-    def _get_host_stats(self):
+    def _get_host_stats(self, site_group):
         """获取主机统计"""
         from django.db.models import Count, Q
-        stats = Host.objects.aggregate(
+        if site_group:
+            host_qs = Host.objects.filter(site_group=site_group)
+        else:
+            host_qs = Host.objects.filter(site_group__isnull=True)
+        stats = host_qs.aggregate(
             total=Count('id'),
             online=Count('id', filter=Q(status='online')),
             offline=Count('id', filter=Q(status='offline')),
             error=Count('id', filter=Q(status='error')),
         )
         by_type = dict(
-            Host.objects.values("connection_type")
+            host_qs.values("connection_type")
             .annotate(count=Count("id"))
             .values_list("connection_type", "count")
         )
@@ -262,18 +310,28 @@ class StatsAPIView(LoginRequiredMixin, View):
             recent_7_days=Count('id', filter=Q(date_joined__gte=seven_days_ago)),
         )
 
-    def _get_account_opening_stats(self):
+    def _get_account_opening_stats(self, site_group):
         """获取开户统计"""
         from django.db.models import Count, Q
 
-        request_stats = AccountOpeningRequest.objects.aggregate(
+        if site_group:
+            request_qs = AccountOpeningRequest.objects.filter(
+                target_product__site_group=site_group
+            )
+            cloud_qs = CloudComputerUser.objects.filter(
+                product__site_group=site_group
+            )
+        else:
+            request_qs = AccountOpeningRequest.objects.filter(target_product__site_group__isnull=True)
+            cloud_qs = CloudComputerUser.objects.filter(product__site_group__isnull=True)
+        request_stats = request_qs.aggregate(
             requests_total=Count('id'),
             requests_pending=Count('id', filter=Q(status='pending')),
             requests_approved=Count('id', filter=Q(status='approved')),
             requests_completed=Count('id', filter=Q(status='completed')),
             requests_failed=Count('id', filter=Q(status='failed')),
         )
-        cloud_user_stats = CloudComputerUser.objects.aggregate(
+        cloud_user_stats = cloud_qs.aggregate(
             cloud_users_total=Count('id'),
             cloud_users_active=Count('id', filter=Q(status='active')),
         )

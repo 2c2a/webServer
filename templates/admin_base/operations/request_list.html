@@ -1,6 +1,6 @@
 {% extends "admin_base/base.html" %}
 
-{% block title %}2c2a 超级管理员 - 开户申请{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - 开户申请{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_operations:request_list' %}" class="text-white/70 hover:text-cyan-400 transition">开户申请</a>
@@ -169,6 +169,17 @@
                     <span class="material-symbols-rounded text-lg">cancel</span>
                     已驳回
                 </span>
+                {% elif req.status == 'failed' %}
+                <form method="post" action="{% url 'admin:admin_operations:request_retry' req.pk %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25 transition"
+                            title="重试"
+                            onclick="return confirm('确定要重试此失败的开户申请吗？{% if req.retry_count > 0 %}此申请已重试过{{ req.retry_count }}次。{% endif %}')">
+                        <span class="material-symbols-rounded text-lg">refresh</span>
+                        重试
+                    </button>
+                </form>
                 {% endif %}
             </div>
         </div>

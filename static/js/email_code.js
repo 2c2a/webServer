@@ -71,6 +71,9 @@
 
         var fd = new FormData();
         fd.append('email', email);
+        if (window.REGLINK_TOKEN) {
+            fd.append('reglink_token', window.REGLINK_TOKEN);
+        }
         postCode(fd, btn);
     });
 })();

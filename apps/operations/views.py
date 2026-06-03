@@ -107,7 +107,7 @@ def task_progress(request, task_id):
 @method_decorator(login_required, name='dispatch')
 class AccountOpeningRequestCreateView(CreateView):
     """创建开户申请视图"""
-    
+
     model = AccountOpeningRequest
     form_class = AccountOpeningRequestForm
     template_name = 'operations/account_opening_request_form.html'
@@ -116,18 +116,29 @@ class AccountOpeningRequestCreateView(CreateView):
     def get_form_kwargs(self):
         """获取表单初始化参数"""
         kwargs = super().get_form_kwargs()
-        
+
         # 获取目标产品ID参数
         target_product_id = self.request.GET.get('target_product')
         target_host_id = self.request.GET.get('target_host')  # 兼容旧参数
-        
+
         # 获取可用产品查询集
-        products_qs = Product.objects.filter(is_available=True)
-        
+        site_group = getattr(self.request, 'site_group', None)
+        if site_group:
+            products_qs = Product.objects.filter(
+                is_available=True, site_group=site_group
+            )
+        else:
+            products_qs = Product.objects.filter(is_available=True, site_group__isnull=True)
+
         # 如果指定了特定产品，限制查询集
         if target_product_id:
             try:
-                target_product = Product.objects.get(id=target_product_id, is_available=True)
+                if site_group:
+                    target_product = Product.objects.filter(
+                        site_group=site_group
+                    ).get(id=target_product_id, is_available=True)
+                else:
+                    target_product = Product.objects.get(id=target_product_id, is_available=True, site_group__isnull=True)
                 products_qs = Product.objects.filter(id=target_product.id)
             except Product.DoesNotExist:
                 pass
@@ -137,10 +148,15 @@ class AccountOpeningRequestCreateView(CreateView):
                 from apps.hosts.models import Host
                 host = Host.objects.get(id=target_host_id)
                 # 获取与该主机关联的所有可用产品
-                products_qs = Product.objects.filter(host=host, is_available=True)
+                if site_group:
+                    products_qs = Product.objects.filter(
+                        host=host, is_available=True, site_group=site_group
+                    )
+                else:
+                    products_qs = Product.objects.filter(host=host, is_available=True, site_group__isnull=True)
             except Host.DoesNotExist:
                 pass
-        
+
         # 将产品查询集传递给表单
         kwargs['products_qs'] = products_qs
         return kwargs
@@ -158,7 +174,7 @@ class AccountOpeningRequestCreateView(CreateView):
             'requested_disk_capacity': form.cleaned_data.get('requested_disk_capacity', {}),
         }
         self.request.session['confirm_data'] = confirm_data
-        
+
         # 重定向到确认页面，而不是直接保存
         return redirect('operations:account_opening_confirm')
 
@@ -175,7 +191,7 @@ def account_opening_confirm(request):
     if not confirm_data:
         messages.error(request, '未找到待确认的申请信息，请重新填写申请。')
         return redirect('operations:account_opening_create')
-    
+
     context = {
         'confirm_data': confirm_data
     }
@@ -192,7 +208,7 @@ def account_opening_submit(request):
         messages.error(request, '未找到待提交的申请信息。')
         logger.warning(f'用户 {request.user.username} 尝试提交开户申请，但未找到确认数据')
         return redirect('operations:account_opening_create')
-    
+
     # 创建开户申请对象
     account_request = AccountOpeningRequest()
     account_request.applicant = request.user
@@ -203,26 +219,32 @@ def account_opening_submit(request):
     account_request.user_description = confirm_data['user_description']
     account_request.requested_disk_capacity = confirm_data.get('requested_disk_capacity', {})
     # 移除了requested_password字段，由系统自动生成
-    
+
     # 设置目标产品
     try:
-        target_product = Product.objects.get(id=confirm_data['target_product_id'])
+        site_group = getattr(request, 'site_group', None)
+        if site_group:
+            target_product = Product.objects.filter(
+                site_group=site_group
+            ).get(id=confirm_data['target_product_id'])
+        else:
+            target_product = Product.objects.get(id=confirm_data['target_product_id'], site_group__isnull=True)
         account_request.target_product = target_product
         logger.info(f'用户 {request.user.username} 提交开户申请，目标产品: {target_product.name}, 用户名: {account_request.username}, 联系邮箱: {account_request.contact_email}')
     except Product.DoesNotExist:
         messages.error(request, '指定的目标产品不存在。')
         logger.error(f'用户 {request.user.username} 尝试提交申请，但目标产品ID {confirm_data["target_product_id"]} 不存在')
         return redirect('operations:account_opening_create')
-    
+
     try:
         logger.info(f'准备保存开户申请，当前状态: {account_request.status}')
         account_request.save()
         logger.info(f'开户申请已保存，ID: {account_request.id}, 最终状态: {account_request.status}')
         messages.success(request, '开户申请已成功提交，请等待审核。')
-        
+
         # 清除session中的确认数据
         del request.session['confirm_data']
-        
+
         return redirect('operations:account_opening_list')
     except Exception as e:
         logger.error(f'提交申请时发生错误: {str(e)}', exc_info=True)
@@ -232,7 +254,7 @@ def account_opening_submit(request):
 
 class AccountOpeningRequestListView(ListView):
     """开户申请列表视图"""
-    
+
     model = AccountOpeningRequest
     template_name = 'operations/account_opening_request_list.html'
     context_object_name = 'requests'
@@ -242,7 +264,14 @@ class AccountOpeningRequestListView(ListView):
         """获取查询集"""
         queryset = AccountOpeningRequest.objects.all()
 
-        # 如果用户已认证且不是管理员，则只显示自己的申请
+        site_group = getattr(self.request, 'site_group', None)
+        if site_group:
+            queryset = queryset.filter(
+                target_product__site_group=site_group
+            )
+        else:
+            queryset = queryset.filter(target_product__site_group__isnull=True)
+
         if self.request.user.is_authenticated:
             if not (self.request.user.is_staff or self.request.user.is_superuser):
                 queryset = queryset.filter(applicant=self.request.user)
@@ -251,7 +280,10 @@ class AccountOpeningRequestListView(ListView):
             queryset = queryset.none()
 
         # 应用过滤条件
-        form = AccountOpeningRequestFilterForm(self.request.GET)
+        form = AccountOpeningRequestFilterForm(
+            self.request.GET,
+            site_group=getattr(self.request, 'site_group', None),
+        )
         if form.is_valid():
             status = form.cleaned_data.get('status')
             if status:
@@ -275,32 +307,58 @@ class AccountOpeningRequestListView(ListView):
     def get_context_data(self, **kwargs):
         """获取模板上下文数据"""
         context = super().get_context_data(**kwargs)
-        context['filter_form'] = AccountOpeningRequestFilterForm(self.request.GET)
+        context['filter_form'] = AccountOpeningRequestFilterForm(
+            self.request.GET,
+            site_group=getattr(self.request, 'site_group', None),
+        )
         context['statuses'] = AccountOpeningRequest._meta.get_field('status').choices
-        
+
         # 如果是管理员，显示所有主机；否则只显示与用户申请相关的产品的主机
+        site_group = getattr(self.request, 'site_group', None)
         if self.request.user.is_authenticated and (self.request.user.is_staff or self.request.user.is_superuser):
-            context['hosts'] = Host.objects.all()
+            if site_group:
+                context['hosts'] = Host.objects.filter(
+                    site_group=site_group
+                )
+            else:
+                context['hosts'] = Host.objects.filter(site_group__isnull=True)
         elif self.request.user.is_authenticated:
-            context['hosts'] = Host.objects.filter(
+            host_qs = Host.objects.filter(
                 product__accountopeningrequest__applicant=self.request.user
             ).distinct()
+            if site_group:
+                host_qs = host_qs.filter(
+                    site_group=site_group
+                )
+            else:
+                host_qs = host_qs.filter(site_group__isnull=True)
+            context['hosts'] = host_qs
         else:
             context['hosts'] = Host.objects.none()
-        
+
         return context
 
 
 @login_required
 def account_opening_detail(request, pk):
     """查看开户申请详情"""
-    account_request = get_object_or_404(AccountOpeningRequest, pk=pk)
-    
+    site_group = getattr(request, 'site_group', None)
+    if site_group:
+        account_request = get_object_or_404(
+            AccountOpeningRequest.objects.filter(
+                Q(target_product__site_group=site_group)
+            ), pk=pk
+        )
+    else:
+        account_request = get_object_or_404(
+            AccountOpeningRequest, pk=pk, target_product__site_group__isnull=True
+        )
+
     # 检查权限：用户只能查看自己提交的申请
     if account_request.applicant != request.user and not (request.user.is_staff or request.user.is_superuser):
         messages.error(request, '您没有权限查看此申请的详情。')
         return redirect('operations:account_opening_list')
-    
+
     timeline = []
     timeline.append({
         'label': '提交申请',
@@ -330,7 +388,7 @@ def account_opening_detail(request, pk):
 @method_decorator(login_required, name='dispatch')
 class CloudComputerUserListView(ListView):
     """云电脑用户列表视图"""
-    
+
     model = CloudComputerUser
     template_name = 'operations/cloud_computer_user_list.html'
     context_object_name = 'cloud_users'
@@ -340,7 +398,18 @@ class CloudComputerUserListView(ListView):
         """获取查询集"""
         queryset = CloudComputerUser.objects.all()
 
-        form = CloudComputerUserFilterForm(self.request.GET)
+        site_group = getattr(self.request, 'site_group', None)
+        if site_group:
+            queryset = queryset.filter(
+                product__site_group=site_group
+            )
+        else:
+            queryset = queryset.filter(product__site_group__isnull=True)
+
+        form = CloudComputerUserFilterForm(
+            self.request.GET,
+            site_group=getattr(self.request, 'site_group', None),
+        )
         if form.is_valid():
             status = form.cleaned_data.get('status')
             if status:
@@ -365,9 +434,18 @@ class CloudComputerUserListView(ListView):
     def get_context_data(self, **kwargs):
         """获取模板上下文数据"""
         context = super().get_context_data(**kwargs)
-        context['filter_form'] = CloudComputerUserFilterForm(self.request.GET)
+        context['filter_form'] = CloudComputerUserFilterForm(
+            self.request.GET,
+            site_group=getattr(self.request, 'site_group', None),
+        )
         context['statuses'] = CloudComputerUser._meta.get_field('status').choices
-        context['products'] = Product.objects.all()
+        site_group = getattr(self.request, 'site_group', None)
+        if site_group:
+            context['products'] = Product.objects.filter(
+                site_group=site_group
+            )
+        else:
+            context['products'] = Product.objects.filter(site_group__isnull=True)
         return context
 
 
@@ -378,10 +456,10 @@ class CloudComputerUserListView(ListView):
 @method_decorator(login_required, name='dispatch')
 class MyCloudComputersView(ListView):
     """我的云电脑用户列表视图
-    
+
     显示当前用户拥有的云电脑用户
     """
-    
+
     model = CloudComputerUser
     template_name = 'operations/my_cloud_computers.html'
     context_object_name = 'cloud_users'
@@ -393,8 +471,18 @@ class MyCloudComputersView(ListView):
             created_from_request__applicant=self.request.user
         )
 
-        # 应用过滤条件
-        form = CloudComputerUserFilterForm(self.request.GET)
+        site_group = getattr(self.request, 'site_group', None)
+        if site_group:
+            queryset = queryset.filter(
+                product__site_group=site_group
+            )
+        else:
+            queryset = queryset.filter(product__site_group__isnull=True)
+
+        form = CloudComputerUserFilterForm(
+            self.request.GET,
+            site_group=getattr(self.request, 'site_group', None),
+        )
         if form.is_valid():
             status = form.cleaned_data.get('status')
             if status:
@@ -419,19 +507,22 @@ class MyCloudComputersView(ListView):
     def get_context_data(self, **kwargs):
         """获取模板上下文数据"""
         context = super().get_context_data(**kwargs)
-        context['filter_form'] = CloudComputerUserFilterForm(self.request.GET)
+        context['filter_form'] = CloudComputerUserFilterForm(
+            self.request.GET,
+            site_group=getattr(self.request, 'site_group', None),
+        )
         context['statuses'] = CloudComputerUser._meta.get_field('status').choices
-        
+
         context['current_product'] = self.request.GET.get('product', '')
         context['current_search'] = self.request.GET.get('search', '')
         context['current_status'] = self.request.GET.get('status', '')
-        
+
         from collections import defaultdict
         cloud_users_by_product = defaultdict(list)
         for user in context['cloud_users']:
             cloud_users_by_product[user.product.display_name].append(user)
         context['cloud_users_by_product'] = dict(cloud_users_by_product)
-        
+
         return context
 
 
@@ -482,7 +573,13 @@ def get_password_and_burn(request, pk):
 def get_product_disk_config(request, product_id):
     """获取产品的磁盘配额配置"""
     try:
-        product = Product.objects.get(pk=product_id, is_available=True)
+        site_group = getattr(request, 'site_group', None)
+        if site_group:
+            product = Product.objects.filter(
+                site_group=site_group
+            ).get(pk=product_id, is_available=True)
+        else:
+            product = Product.objects.get(pk=product_id, is_available=True, site_group__isnull=True)
     except Product.DoesNotExist:
         return JsonResponse({'success': False, 'error': '产品不存在'}, status=404)
 
@@ -499,10 +596,15 @@ def get_product_disk_config(request, product_id):
 @login_required
 def get_host_disk_info(request, host_id):
     """获取主机的磁盘信息"""
-    from utils.disk_quota import get_disk_info_via_client
 
+    site_group = getattr(request, 'site_group', None)
+    host_qs = Host.objects.filter(pk=host_id)
+    if site_group:
+        host_qs = host_qs.filter(site_group=site_group)
+    else:
+        host_qs = host_qs.filter(site_group__isnull=True)
     try:
-        host = Host.objects.get(pk=host_id)
+        host = host_qs.get()
     except Host.DoesNotExist:
         return JsonResponse({'success': False, 'error': '主机不存在'}, status=404)
 
@@ -511,11 +613,15 @@ def get_host_disk_info(request, host_id):
             return JsonResponse({'success': False, 'error': '无权访问'}, status=403)
 
     try:
-        client = host.get_connection_client()
-        disks = get_disk_info_via_client(client)
-        return JsonResponse({'success': True, 'data': disks})
+        from apps.operations.tasks import remote_get_disk_info
+        result = remote_get_disk_info.delay(host_id, operator_id=request.user.pk)
+        return JsonResponse({
+            'success': True,
+            'task_id': result.id,
+            'message': '磁盘信息获取已提交，正在后台执行',
+        })
     except Exception as e:
-        logger.error(f"Error getting disk info: {str(e)}", exc_info=True)
+        logger.error(f"Error dispatching disk info task: {str(e)}", exc_info=True)
         return JsonResponse({'success': False, 'error': 'Failed to get disk info'})
 
 
@@ -536,9 +642,18 @@ def product_invite_view(request, token):
 
     User = get_user_model()
 
-    try:
-        invite_token = ProductInvitationToken.objects.get(token=token)
-    except ProductInvitationToken.DoesNotExist:
+    site_group = getattr(request, 'site_group', None)
+    if site_group:
+        invite_token = ProductInvitationToken.objects.filter(token=token).filter(
+            Q(product__site_group=site_group)
+            | Q(product_group__site_group=site_group)
+        ).first()
+    else:
+        invite_token = ProductInvitationToken.objects.filter(token=token).filter(
+            Q(product__site_group__isnull=True) | Q(product_group__site_group__isnull=True)
+        ).first()
+
+    if not invite_token:
         return render(request, 'operations/invite_result.html', {
             'success': False,
             'message': '邀请链接无效或不存在。',
@@ -645,7 +760,15 @@ def rdp_connect(request, product_id):
     from utils.gateway_client import GatewayClient
     from apps.dashboard.models import SystemConfig
 
-    product = get_object_or_404(Product, pk=product_id)
+    site_group = getattr(request, 'site_group', None)
+    if site_group:
+        product = get_object_or_404(
+            Product.objects.filter(
+                site_group=site_group
+            ), pk=product_id
+        )
+    else:
+        product = get_object_or_404(Product, pk=product_id, site_group__isnull=True)
 
     cloud_user = CloudComputerUser.objects.filter(
         product=product,

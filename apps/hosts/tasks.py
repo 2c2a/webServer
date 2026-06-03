@@ -157,101 +157,138 @@ def test_winrm_connection(self, host_id, use_certificate_auth=False):
     task = AsyncTask.objects.create(
         task_id=self.request.id,
         name=f"测试WinRM连接 - 主机 #{host_id}",
+        target_object_id=host_id,
+        target_content_type='hosts.Host',
         status='running'
     )
-    
+
     try:
         host = Host.objects.get(id=host_id)
         task.start_execution()
-        
-        if use_certificate_auth and host.auth_method == 'certificate':
-            import os
 
-            cert_pem_path = host.cert_pem_path
-            cert_key_path = host.cert_key_path
+        old_status = host.status
+        host.test_connection()
+        host.refresh_from_db()
+        new_status = host.status
+        success = new_status == 'online'
 
-            if not cert_pem_path or not cert_key_path:
-                raise ValueError(
-                    "证书路径未配置，无法进行证书认证测试"
-                )
-            if not os.path.exists(cert_pem_path):
-                raise ValueError(
-                    f"客户端证书文件不存在: {cert_pem_path}"
-                )
-            if not os.path.exists(cert_key_path):
-                raise ValueError(
-                    f"客户端私钥文件不存在: {cert_key_path}"
-                )
-
-            from utils.winrm_client import WinrmClient
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username='',
-                password='',
-                use_ssl=True,
-                auth_method='certificate',
-                cert_pem_path=cert_pem_path,
-                cert_key_path=cert_key_path,
-                server_cert_validation='ignore',
-            )
-            result = client.execute_command('echo', ['Connection Test'])
-            success = result.status_code == 0
-        else:
-            from utils.winrm_client import WinrmClient
-            client = WinrmClient(
-                hostname=host.hostname,
-                port=host.port,
-                username=host.username,
-                password=host.password,
-                use_ssl=host.use_ssl
-            )
-            
-            result = client.execute_command('echo', ['Connection Test'])
-            success = result.status_code == 0
-        
         if success:
             if host.auth_method == 'certificate' and host.cert_provision_status in ('pending', 'ready'):
                 Host.objects.filter(pk=host.pk).update(
                     cert_provision_status='configured',
                     cert_activated_at=timezone.now(),
                 )
+            status_display = dict(Host.STATUS_CHOICES).get(new_status, new_status)
             task.progress = 100
             task.complete_success({
                 'connected': True,
-                'protocol': 'HTTPS with Certificate' if use_certificate_auth else 'HTTP with Basic Auth',
-                'message': 'Connection successful'
+                'status': new_status,
+                'status_display': status_display,
+                'old_status': old_status,
+                'message': f'连接成功，主机状态: {status_display}',
             })
-            
+
             return {
                 'success': True,
                 'connected': True,
-                'protocol': 'HTTPS with Certificate' if use_certificate_auth else 'HTTP with Basic Auth'
+                'status': new_status,
+                'status_display': status_display,
             }
         else:
             if host.auth_method == 'certificate' and host.cert_provision_status in ('pending', 'ready'):
                 Host.objects.filter(pk=host.pk).update(cert_provision_status='failed')
-            task.complete_failure("Connection test failed")
+            status_display = dict(Host.STATUS_CHOICES).get(new_status, new_status)
+            task.complete_failure(f"连接测试失败，主机状态: {status_display}")
             return {
                 'success': False,
                 'connected': False,
-                'error': 'Connection test returned non-zero exit code'
+                'status': new_status,
+                'status_display': status_display,
+                'error': f'连接失败，主机状态: {status_display}',
             }
-        
+
     except Exception as e:
         logger.error(f"测试WinRM连接失败: {str(e)}", exc_info=True)
         try:
             host = Host.objects.get(id=host_id)
             if host.auth_method == 'certificate' and host.cert_provision_status in ('pending', 'ready'):
                 Host.objects.filter(pk=host.pk).update(cert_provision_status='failed')
+            Host.objects.filter(pk=host.pk).update(status='error')
         except Host.DoesNotExist:
             pass
         task.complete_failure(str(e))
-        
+
         return {
             'success': False,
             'connected': False,
             'error': str(e)
+        }
+
+
+@shared_task(bind=True)
+def test_winrm_connection_raw(self, connection_type, hostname, port, use_ssl, auth_method, username, password):
+    task = AsyncTask.objects.create(
+        task_id=self.request.id,
+        name=f"测试WinRM连接 - {hostname}",
+        status='running'
+    )
+
+    try:
+        task.start_execution()
+
+        if connection_type == 'localwinserver':
+            from utils.local_winserver_client import LocalWinServerClient
+            client = LocalWinServerClient(
+                username=username,
+                password=password,
+            )
+            result = client.execute_command('echo Connection Test OK')
+        elif connection_type == 'winrm' and auth_method == 'ntlm':
+            from utils.winrm_client import WinrmClient
+            client = WinrmClient(
+                hostname=hostname,
+                port=int(port),
+                username=username,
+                password=password,
+                use_ssl=bool(use_ssl),
+                auth_method='ntlm',
+            )
+            result = client.execute_command('whoami')
+        else:
+            raise ValueError(f'不支持的连接类型: {connection_type}')
+
+        if result.success:
+            output = result.std_out.strip() if result.std_out else ''
+            task.progress = 100
+            task.complete_success({
+                'connected': True,
+                'output': output,
+                'message': f'连接成功{f" ({output})" if output else ""}',
+            })
+
+            return {
+                'success': True,
+                'connected': True,
+                'output': output,
+                'message': f'连接成功{f" ({output})" if output else ""}',
+            }
+        else:
+            error_detail = result.std_err.strip() if result.std_err else f'命令执行返回非零状态码: {result.status_code}'
+            task.complete_failure(f"连接失败: {error_detail}")
+            return {
+                'success': False,
+                'connected': False,
+                'error': f'连接失败: {error_detail}',
+            }
+
+    except Exception as e:
+        logger.error(f"测试WinRM连接失败: {hostname}, 错误: {str(e)}", exc_info=True)
+        task.complete_failure(str(e))
+
+        return {
+            'success': False,
+            'connected': False,
+            'error': f'连接测试失败: {str(e)}',
         }
 
 
