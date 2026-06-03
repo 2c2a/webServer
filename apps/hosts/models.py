@@ -79,7 +79,16 @@ class Host(models.Model):
         related_name='provider_hosts',
         help_text='由超级管理员分配的提供商用户，提供商可以管理此主机'
     )
-    
+
+    site_group = models.ForeignKey(
+        'dashboard.SiteGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='hosts',
+        verbose_name='所属站点组',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
@@ -564,6 +573,16 @@ class HostGroup(models.Model):
         related_name='provider_hostgroups',
         help_text='由超级管理员分配的提供商用户，提供商可以管理此主机组'
     )
+
+    site_group = models.ForeignKey(
+        'dashboard.SiteGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='host_groups',
+        verbose_name='所属站点组',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 

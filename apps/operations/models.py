@@ -284,6 +284,16 @@ class ProductGroup(models.Model):
         verbose_name=_('自动分配提供商'),
         help_text=_('这些提供商创建的产品将自动加入此产品组')
     )
+
+    site_group = models.ForeignKey(
+        'dashboard.SiteGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='product_groups',
+        verbose_name=_('所属站点组'),
+    )
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -359,7 +369,16 @@ class Product(models.Model):
         verbose_name=_('关联主机'),
         help_text=_('此产品运行所在的主机')
     )
-    
+
+    site_group = models.ForeignKey(
+        'dashboard.SiteGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products',
+        verbose_name=_('所属站点组'),
+    )
+
     # 产品配置
     rdp_port = models.IntegerField(
         default=3389,
@@ -594,6 +613,11 @@ class AccountOpeningRequest(models.Model):
         verbose_name=_('结果信息'),
         help_text=_('开户操作的结果信息')
     )
+    retry_count = models.IntegerField(
+        default=0,
+        verbose_name=_('重试次数'),
+        help_text=_('管理员重试开户的次数')
+    )
 
     # 时间信息
     created_at = models.DateTimeField(
@@ -691,6 +715,53 @@ class AccountOpeningRequest(models.Model):
         self.status = 'failed'
         self.result_message = result_message
         self.save()
+
+    def retry(self, operator=None):
+        """
+        重试失败的开户申请
+
+        将状态从 failed 重置为 approved，
+        清除上次的错误信息，并重新触发开户流程。
+
+        Args:
+            operator: 执行重试操作的管理员
+
+        Returns:
+            bool: 重试是否成功启动
+        """
+        if self.status != 'failed':
+            return False
+
+        self.status = 'approved'
+        self.result_message = ''
+        self.retry_count += 1
+        if operator:
+            self.approval_notes = (
+                f'重试(第{self.retry_count}次) - '
+                f'操作人: {operator.username}'
+            )
+        self.save(update_fields=[
+            'status', 'result_message', 'retry_count',
+            'approval_notes',
+        ])
+
+        try:
+            from apps.operations.tasks import process_account_creation
+            process_account_creation.delay(self.pk)
+            logger.info(
+                f"Retry dispatched for request {self.pk}, "
+                f"attempt #{self.retry_count}"
+            )
+            return True
+        except Exception as e:
+            logger.error(
+                f"Failed to dispatch retry task for "
+                f"request {self.pk}: {str(e)}"
+            )
+            self.status = 'failed'
+            self.result_message = f'重试失败: {str(e)}'
+            self.save(update_fields=['status', 'result_message'])
+            return False
 
     def save(self, *args, **kwargs):
         """

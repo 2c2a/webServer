@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2c2a - 系统维护中</title>
+    <title>{{ site_name }} - 系统维护中</title>
     <!-- MD3 Theme CSS -->
     <link rel="stylesheet" href="/static/css/theme.css">
     <!-- Material Icons -->
     <link rel="stylesheet" href="/static/vendor/material-icons/material-icons.min.css">
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="{{ site_icon }}">
 </head>
 <body class="md-bg-background md-flex md-items-center md-justify-center md-min-h-screen md-m-0">
     <div class="md-maintenance-card">
@@ -19,7 +19,7 @@
         
         <h1 class="md-text-on-surface md-text-headline-lg md-font-bold md-mb-4">系统升级维护中</h1>
         <p class="md-text-on-surface-variant md-text-body-lg md-mb-6">
-            为了提供更稳定、高效的 <strong>2c2a</strong> 云管理体验，我们正在进行关键的服务器优化。
+            为了提供更稳定、高效的 <strong>{{ site_name }}</strong> 云管理体验，我们正在进行关键的服务器优化。
             <br>在此期间，Web端及开户服务将暂时不可用。
         </p>
 
@@ -36,7 +36,7 @@
         <footer class="md-maintenance-footer">
             <span class="md-mr-4"><span class="material-icons md-icon-sm md-align-middle">email</span> 联系管理员</span>
             <span><span class="material-icons md-icon-sm md-align-middle">code</span> GitHub Issues</span>
-            <div class="md-mt-3">&copy; 2023 2c2a Project. Powered by Django.</div>
+            <div class="md-mt-3">&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</div>
         </footer>
     </div>
 

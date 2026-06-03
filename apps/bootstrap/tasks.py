@@ -82,7 +82,7 @@ def cert_provision_issue_certs(self, token_str):
     from apps.bootstrap.models import CertProvisionToken
     from apps.certificates.models import CertificateAuthority
     from utils.cert_service import (
-        generate_ca, issue_server_cert, issue_client_cert,
+        issue_server_cert, issue_client_cert,
         generate_random_username, generate_random_password,
     )
     from utils.cert_storage import generate_cert_paths, save_cert_files
@@ -104,34 +104,42 @@ def cert_provision_issue_certs(self, token_str):
 
     ca_obj = CertificateAuthority.objects.filter(is_active=True).first()
     if not ca_obj:
-        ca_key, ca_cert = generate_ca()
+        from utils.cert_service import generate_ca as _gen_ca
+
+        ca_key, ca_cert = _gen_ca()
         ca_obj = CertificateAuthority(
             name='WinRM-CA', is_active=True,
         )
-        ca_obj.private_key = ca_key.private_bytes(
+        ca_key_pem = ca_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
-        ).decode('utf-8')
-        ca_obj.certificate = ca_cert.public_bytes(
+        )
+        ca_cert_pem = ca_cert.public_bytes(
             serialization.Encoding.PEM,
-        ).decode('utf-8')
+        )
+        ca_obj.save_ca_files(ca_key_pem, ca_cert_pem)
         ca_obj.expires_at = (
             datetime.datetime.now(datetime.timezone.utc)
             + datetime.timedelta(days=3650)
         )
         ca_obj.save()
 
-    if not ca_obj.private_key or not ca_obj.certificate:
+    ca_key_pem = ca_obj.private_key
+    ca_cert_pem = ca_obj.certificate
+    if not ca_key_pem or not ca_cert_pem:
+        logger.error(
+            f"CA {ca_obj.name} key/cert files not found on disk"
+        )
         return
 
     ca_key = cast(
         ec.EllipticCurvePrivateKey,
         serialization.load_pem_private_key(
-            ca_obj.private_key.encode(), password=None,
+            ca_key_pem.encode(), password=None,
         ),
     )
-    ca_cert = x509.load_pem_x509_certificate(ca_obj.certificate.encode())
+    ca_cert = x509.load_pem_x509_certificate(ca_cert_pem.encode())
 
     ntlm_user = generate_random_username()
     ntlm_password = generate_random_password()

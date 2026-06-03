@@ -93,9 +93,10 @@ def _save_cert_to_host(host, pfx_b64, pfx_password, service_user, service_passwo
 
     try:
         host.refresh_from_db()
-        host.test_connection()
+        from apps.hosts.tasks import test_winrm_connection
+        test_winrm_connection.delay(host.pk)
     except Exception as e:
-        logger.warning(f"Connection test after cert upload failed: {e}")
+        logger.warning(f"Failed to dispatch connection test after cert upload: {e}")
 
     return True
 

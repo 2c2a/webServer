@@ -107,14 +107,20 @@ class AccountOpeningRequestForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         # 从视图传入的产品查询集
         products_qs = kwargs.pop('products_qs', None)
+        site_group = kwargs.pop('site_group', None)
         super().__init__(*args, **kwargs)
-        
+
         if products_qs is not None:
             self.fields['target_product'].queryset = products_qs
         else:
-            # 默认显示所有可用产品
+            # 默认按 site_group 过滤可用产品
             from .models import Product
-            self.fields['target_product'].queryset = Product.objects.filter(is_available=True)
+            qs = Product.objects.filter(is_available=True)
+            if site_group:
+                qs = qs.filter(site_group=site_group)
+            else:
+                qs = qs.filter(site_group__isnull=True)
+            self.fields['target_product'].queryset = qs
         
         # 如果只有一个产品选项，将其设为初始值并隐藏
         if len(self.fields['target_product'].queryset) == 1:
@@ -162,11 +168,11 @@ class AccountOpeningRequestFilterForm(forms.Form):
     
     host = forms.ModelChoiceField(
         required=False,
-        queryset=Host.objects.all(),
+        queryset=Host.objects.none(),
         widget=forms.Select(attrs={'class': 'form-control'}),
         label=_('主机')
     )
-    
+
     search = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
@@ -175,6 +181,18 @@ class AccountOpeningRequestFilterForm(forms.Form):
         }),
         label=_('搜索')
     )
+
+    def __init__(self, *args, **kwargs):
+        site_group = kwargs.pop('site_group', None)
+        super().__init__(*args, **kwargs)
+        if site_group:
+            self.fields['host'].queryset = Host.objects.filter(
+                site_group=site_group
+            )
+        else:
+            self.fields['host'].queryset = Host.objects.filter(
+                site_group__isnull=True
+            )
 
 
 class CloudComputerUserFilterForm(forms.Form):
@@ -205,6 +223,14 @@ class CloudComputerUserFilterForm(forms.Form):
     )
     
     def __init__(self, *args, **kwargs):
+        site_group = kwargs.pop('site_group', None)
         super().__init__(*args, **kwargs)
         from .models import Product
-        self.fields['product'].queryset = Product.objects.all()
+        if site_group:
+            self.fields['product'].queryset = Product.objects.filter(
+                site_group=site_group
+            )
+        else:
+            self.fields['product'].queryset = Product.objects.filter(
+                site_group__isnull=True
+            )

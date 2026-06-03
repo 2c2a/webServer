@@ -162,6 +162,192 @@ def process_opening_request(self, request_id, operator_id):
         }
 
 
+@shared_task(bind=True)
+def remote_set_admin(self, cloud_user_id, operator_id=None):
+    task = AsyncTask.objects.create(
+        task_id=self.request.id,
+        name=f"设置管理员 - 用户 #{cloud_user_id}",
+        created_by_id=operator_id,
+        target_object_id=cloud_user_id,
+        target_content_type='operations.CloudComputerUser',
+        status='running'
+    )
+
+    try:
+        cloud_user = CloudComputerUser.objects.select_related('product', 'product__host').get(pk=cloud_user_id)
+        task.start_execution()
+
+        host = cloud_user.product.host
+        client = host.get_connection_client()
+        client.op_user(cloud_user.username)
+
+        task.progress = 100
+        task.complete_success({'username': cloud_user.username, 'is_admin': True})
+
+        return {'success': True, 'username': cloud_user.username}
+
+    except Exception as e:
+        logger.error(f"远程设置管理员失败: {str(e)}", exc_info=True)
+        task.complete_failure(str(e))
+        return {'success': False, 'error': str(e)}
+
+
+@shared_task(bind=True)
+def remote_remove_admin(self, cloud_user_id, operator_id=None):
+    task = AsyncTask.objects.create(
+        task_id=self.request.id,
+        name=f"取消管理员 - 用户 #{cloud_user_id}",
+        created_by_id=operator_id,
+        target_object_id=cloud_user_id,
+        target_content_type='operations.CloudComputerUser',
+        status='running'
+    )
+
+    try:
+        cloud_user = CloudComputerUser.objects.select_related('product', 'product__host').get(pk=cloud_user_id)
+        task.start_execution()
+
+        host = cloud_user.product.host
+        client = host.get_connection_client()
+        client.deop_user(cloud_user.username)
+
+        task.progress = 100
+        task.complete_success({'username': cloud_user.username, 'is_admin': False})
+
+        return {'success': True, 'username': cloud_user.username}
+
+    except Exception as e:
+        logger.error(f"远程取消管理员失败: {str(e)}", exc_info=True)
+        task.complete_failure(str(e))
+        return {'success': False, 'error': str(e)}
+
+
+@shared_task(bind=True)
+def remote_reset_windows_password(self, cloud_user_id, new_password, operator_id=None):
+    task = AsyncTask.objects.create(
+        task_id=self.request.id,
+        name=f"重置Windows密码 - 用户 #{cloud_user_id}",
+        created_by_id=operator_id,
+        target_object_id=cloud_user_id,
+        target_content_type='operations.CloudComputerUser',
+        status='running'
+    )
+
+    try:
+        cloud_user = CloudComputerUser.objects.select_related('product', 'product__host').get(pk=cloud_user_id)
+        task.start_execution()
+
+        cloud_user.reset_windows_password(new_password)
+
+        task.progress = 100
+        task.complete_success({'username': cloud_user.username})
+
+        return {'success': True, 'username': cloud_user.username}
+
+    except Exception as e:
+        logger.error(f"远程重置密码失败: {str(e)}", exc_info=True)
+        task.complete_failure(str(e))
+        return {'success': False, 'error': str(e)}
+
+
+@shared_task(bind=True)
+def remote_set_disk_quota(self, cloud_user_id, disk, quota_mb, operator_id=None):
+    task = AsyncTask.objects.create(
+        task_id=self.request.id,
+        name=f"设置磁盘配额 - 用户 #{cloud_user_id}",
+        created_by_id=operator_id,
+        target_object_id=cloud_user_id,
+        target_content_type='operations.CloudComputerUser',
+        status='running'
+    )
+
+    try:
+        cloud_user = CloudComputerUser.objects.select_related('product', 'product__host').get(pk=cloud_user_id)
+        task.start_execution()
+
+        from utils.disk_quota import set_disk_quota_via_client
+        host = cloud_user.product.host
+        client = host.get_connection_client()
+        result = set_disk_quota_via_client(client, cloud_user.username, disk, quota_mb)
+
+        if result['success']:
+            task.progress = 100
+            task.complete_success(result)
+            return result
+        else:
+            task.complete_failure(result.get('message', '设置配额失败'))
+            return result
+
+    except Exception as e:
+        logger.error(f"远程设置磁盘配额失败: {str(e)}", exc_info=True)
+        task.complete_failure(str(e))
+        return {'success': False, 'error': str(e)}
+
+
+@shared_task(bind=True)
+def remote_set_user_disk_quotas(self, cloud_user_id, disk_quota, operator_id=None):
+    task = AsyncTask.objects.create(
+        task_id=self.request.id,
+        name=f"设置用户磁盘配额 - 用户 #{cloud_user_id}",
+        created_by_id=operator_id,
+        target_object_id=cloud_user_id,
+        target_content_type='operations.CloudComputerUser',
+        status='running'
+    )
+
+    try:
+        cloud_user = CloudComputerUser.objects.select_related('product', 'product__host').get(pk=cloud_user_id)
+        task.start_execution()
+
+        from utils.disk_quota import set_user_disk_quotas
+        host = cloud_user.product.host
+        client = host.get_connection_client()
+        result = set_user_disk_quotas(client, cloud_user.username, disk_quota)
+
+        if result['success']:
+            task.progress = 100
+            task.complete_success(result)
+            return result
+        else:
+            task.complete_failure('; '.join(result.get('errors', ['设置配额失败'])))
+            return result
+
+    except Exception as e:
+        logger.error(f"远程设置用户磁盘配额失败: {str(e)}", exc_info=True)
+        task.complete_failure(str(e))
+        return {'success': False, 'error': str(e)}
+
+
+@shared_task(bind=True)
+def remote_get_disk_info(self, host_id, operator_id=None):
+    task = AsyncTask.objects.create(
+        task_id=self.request.id,
+        name=f"获取磁盘信息 - 主机 #{host_id}",
+        created_by_id=operator_id,
+        target_object_id=host_id,
+        target_content_type='hosts.Host',
+        status='running'
+    )
+
+    try:
+        host = Host.objects.get(pk=host_id)
+        task.start_execution()
+
+        from utils.disk_quota import get_disk_info_via_client
+        client = host.get_connection_client()
+        disks = get_disk_info_via_client(client)
+
+        task.progress = 100
+        task.complete_success({'disks': disks})
+
+        return {'success': True, 'data': disks}
+
+    except Exception as e:
+        logger.error(f"远程获取磁盘信息失败: {str(e)}", exc_info=True)
+        task.complete_failure(str(e))
+        return {'success': False, 'error': str(e)}
+
+
 @shared_task(
     bind=True,
     max_retries=3,

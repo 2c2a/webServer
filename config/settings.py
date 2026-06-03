@@ -200,6 +200,7 @@ MIDDLEWARE = [
     'config.security_middleware.SecurityHeadersMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.dashboard.middleware.SiteGroupMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'apps.bootstrap.middleware.SessionValidationMiddleware',
     'config.demo_middleware.DemoModeMiddleware',

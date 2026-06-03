@@ -1,6 +1,6 @@
 {% extends "admin_base/base.html" %}
 
-{% block title %}2c2a 超级管理员 - 申请详情{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - 申请详情{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_operations:request_list' %}" class="text-white/70 hover:text-cyan-400 transition">开户申请</a>
@@ -48,6 +48,29 @@
                 </template>
             </form>
         </x-admin-modal>
+        {% elif request_obj.status == 'failed' %}
+        <x-admin-modal title="确认重试">
+            <template #trigger>
+                <x-admin-button icon="refresh" @click="open = true">重试</x-admin-button>
+            </template>
+            <form method="post" action="{% url 'admin:admin_operations:request_retry' request_obj.pk %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <p class="text-sm text-white/70">
+                        确定要重试此失败的开户申请吗？系统将重新执行用户创建流程。
+                    </p>
+                    {% if request_obj.retry_count > 0 %}
+                    <p class="text-sm text-amber-400 mt-2">
+                        此申请已重试过 {{ request_obj.retry_count }} 次。
+                    </p>
+                    {% endif %}
+                </div>
+                <template #footer>
+                    <x-admin-button variant="outlined" @click="open = false">取消</x-admin-button>
+                    <x-admin-button icon="refresh" type="submit">确认重试</x-admin-button>
+                </template>
+            </form>
+        </x-admin-modal>
         {% endif %}
     </div>
 </div>
@@ -87,6 +110,9 @@
                 <div>
                     <p class="text-xl font-bold text-white">{{ request_obj.get_status_display }}</p>
                     <p class="text-sm text-white/70">提交于 {{ request_obj.created_at|date:"Y-m-d H:i" }}</p>
+                    {% if request_obj.retry_count > 0 %}
+                    <p class="text-xs text-amber-400 mt-1">已重试 {{ request_obj.retry_count }} 次</p>
+                    {% endif %}
                 </div>
             </div>
         </x-admin-card>
@@ -269,7 +295,37 @@
                     </form>
                 </x-admin-modal>
                 {% else %}
+                {% if request_obj.status == 'failed' %}
+                <x-admin-modal title="确认重试">
+                    <template #trigger>
+                        <button type="button" @click="open = true"
+                                class="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium
+                                       bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition">
+                            <span class="material-symbols-rounded text-lg">refresh</span>
+                            重试开户
+                        </button>
+                    </template>
+                    <form method="post" action="{% url 'admin:admin_operations:request_retry' request_obj.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <p class="text-sm text-white/70">
+                                确定要重试此失败的开户申请吗？系统将重新执行用户创建流程。
+                            </p>
+                            {% if request_obj.retry_count > 0 %}
+                            <p class="text-sm text-amber-400 mt-2">
+                                此申请已重试过 {{ request_obj.retry_count }} 次。
+                            </p>
+                            {% endif %}
+                        </div>
+                        <template #footer>
+                            <x-admin-button variant="outlined" @click="open = false">取消</x-admin-button>
+                            <x-admin-button icon="refresh" type="submit">确认重试</x-admin-button>
+                        </template>
+                    </form>
+                </x-admin-modal>
+                {% else %}
                 <p class="text-sm text-white/70">当前状态无可用操作</p>
+                {% endif %}
                 {% endif %}
             </div>
         </x-admin-card>

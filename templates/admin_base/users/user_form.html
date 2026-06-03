@@ -1,6 +1,6 @@
 {% extends "admin_base/base.html" %}
 
-{% block title %}2c2a 超级管理员 - {% if is_create %}创建{% else %}编辑{% endif %}用户{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - {% if is_create %}创建{% else %}编辑{% endif %}用户{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_users:user_list' %}" class="text-white/70 hover:text-cyan-400 transition">用户管理</a>

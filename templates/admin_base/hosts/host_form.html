@@ -1,7 +1,7 @@
 {% extends "admin_base/base.html" %}
 {% load plugin_extensions %}
 
-{% block title %}2c2a 超级管理员 - {% if is_create %}创建{% else %}编辑{% endif %}主机{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - {% if is_create %}创建{% else %}编辑{% endif %}主机{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_hosts:host_list' %}" class="text-white/70 hover:text-cyan-400 transition">主机管理</a>
@@ -237,7 +237,7 @@
                                 :class="authMethod === 'certificate' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-slate-600/30 bg-slate-900/50 text-white/70 hover:border-cyan-500/30'"
                                 class="flex items-center gap-2 px-4 py-2.5 rounded-md border transition text-sm font-medium"
                             >
-                                <span class="material-symbols-rounded text-lg">certificate</span>
+                                <span class="material-symbols-rounded text-lg">license</span>
                                 证书
                             </button>
                         </div>
