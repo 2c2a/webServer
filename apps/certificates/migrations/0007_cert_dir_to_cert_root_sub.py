@@ -48,8 +48,10 @@ def migrate_cert_dir_to_root_sub(apps, schema_editor):
         shutil.rmtree(old_dir)
         try:
             old_dir.parent.rmdir()
-        except OSError:
-            pass
+        except OSError as exc:
+            logger.debug(
+                f"CA {ca.name}: could not remove parent dir {old_dir.parent}: {exc}"
+            )
 
         ca.cert_root = cert_root
         ca.cert_sub = cert_sub
@@ -85,8 +87,10 @@ def reverse_migrate(apps, schema_editor):
             shutil.rmtree(old_dir)
             try:
                 old_dir.parent.rmdir()
-            except OSError:
-                pass
+            except OSError as exc:
+                logger.debug(
+                    f"CA {ca.name}: could not remove parent dir {old_dir.parent}: {exc}"
+                )
 
         ca.cert_dir = new_dir_name
         ca.save()
