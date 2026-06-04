@@ -528,7 +528,7 @@ class AdminProductGroupCreateView(TemplateView):
         if form.is_valid():
             productgroup = form.save(commit=False)
             productgroup.created_by = request.user
-            site_group = getattr(request, 'site_group', None)
+            site_group = getattr(request, "site_group", None)
             if site_group:
                 productgroup.site_group = site_group
             productgroup.save()
@@ -1505,7 +1505,9 @@ class AdminTokenListView(ListView):
             pass
         elif self.request.user.is_site_group_admin(site_group):
             if site_group:
-                qs = qs.filter(product__in=Product.objects.filter(site_group=site_group))
+                qs = qs.filter(
+                    product__in=Product.objects.filter(site_group=site_group)
+                )
             else:
                 qs = qs.none()
         else:
@@ -1549,7 +1551,9 @@ class AdminTokenDetailView(DetailView):
             pass
         elif self.request.user.is_site_group_admin(site_group):
             if site_group:
-                qs = qs.filter(product__in=Product.objects.filter(site_group=site_group))
+                qs = qs.filter(
+                    product__in=Product.objects.filter(site_group=site_group)
+                )
             else:
                 qs = qs.none()
         else:
@@ -1730,14 +1734,14 @@ class AdminTaskListView(ListView):
                 from apps.operations.models import Product
 
                 sg_host_ids = set(
-                    Host.objects.filter(
-                        site_group=site_group
-                    ).values_list("pk", flat=True)
+                    Host.objects.filter(site_group=site_group).values_list(
+                        "pk", flat=True
+                    )
                 )
                 sg_product_ids = set(
-                    Product.objects.filter(
-                        site_group=site_group
-                    ).values_list("pk", flat=True)
+                    Product.objects.filter(site_group=site_group).values_list(
+                        "pk", flat=True
+                    )
                 )
                 qs = qs.filter(
                     Q(
