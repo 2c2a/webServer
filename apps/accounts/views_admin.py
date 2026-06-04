@@ -112,7 +112,7 @@ def admin_dashboard(request):
         total_users = (
             User.objects.filter(
                 Q(cloud_users__product__in=provider_products)
-                | Q(hosts_provided__in=provider_hosts)
+                | Q(provider_hosts__in=provider_hosts)
             )
             .distinct()
             .count()
