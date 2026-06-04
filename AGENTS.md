@@ -142,42 +142,44 @@ uv run python manage.py migrate --run-syncdb
 | `master` | 生产版本 | 线上稳定运行，仅接受 hotfix 合并 | 生产服务器 |
 | `beta` | 公测版本 | 服务器端集成测试，QA 验证通过后方可合入 master | 预发布/测试服务器 |
 | `alpha` | 内测版本 | 本地开发机测试，功能验证与联调 | 本地开发环境 |
-| `hotfix` | 热修补 | 紧急修复线上问题，从 master 切出，修复后合并回 master 并同步 beta/alpha | 临时生产修复 |
-| `feat` | 功能开发 | 新功能迭代分支，开发完成后合并至 alpha 进入内测 | 本地开发环境 |
+| `hotfix/*` | 热修补 | 紧急修复线上问题，从 master 切出，修复后合并回 master 并同步 beta/alpha | 临时生产修复 |
+| `feat/*` | 功能开发 | 新功能迭代分支，开发完成后合并至 alpha 进入内测 | 本地开发环境 |
+
 
 **合并流向**：`feat` → `alpha` → `beta` → `master`，`hotfix` 可直接回灌各分支。
 
-### 5.1 开发工作流
-
+### 5.1 开发工作流（含清理）
 ```bash
-# 1. 从 feat 切出功能分支
-git checkout -b feat/user-auth origin/feat
-
+# 1. 从 alpha 切出功能分支
+git checkout -b feat/user-auth origin/alpha
 # 2. 开发完成后合并至 alpha 进行本地测试
 git checkout alpha
 git merge feat/user-auth
-
 # 3. 本地测试通过后提 PR 合并至 beta 进行服务器公测
 gh pr create --base beta --head alpha --title "feat: user auth"
-
-# 4. QA 通过后由维护者合并至 master 发布
-gh pr create --base master --head beta --title "release: user auth"
+# 4. 【强制清理】PR 合并后，必须立即删除本地和远程功能分支
+git push origin --delete feat/user-auth  # 删除远程分支 (若已推送)
+git branch -d feat/user-auth            # 删除本地分支
 ```
-
-### 5.2 热修补紧急流程
-
+### 5.2 热修补紧急流程（含清理）
 ```bash
-# 从 master 切出 hotfix
+# 1. 从 master 切出 hotfix
 git checkout -b hotfix/critical-bug origin/master
-
-# 修复后合并回 master
+# 2. 修复后合并回 master
 git checkout master
 git merge hotfix/critical-bug
-
-# 同步回灌 beta / alpha
+# 3. 同步回灌 beta / alpha
 git checkout beta && git merge master
 git checkout alpha && git merge master
+# 4. 【强制清理】回灌完毕后，必须立即删除本地和远程热修分支
+git push origin --delete hotfix/critical-bug  # 删除远程分支 (若已推送)
+git branch -d hotfix/critical-bug             # 删除本地分支
 ```
+
+### 5.3 Git 分支生命周期铁律（违反即严重错误）
+- **临时性原则**：`feat/*` 和 `hotfix/*` 是一次性分支，严禁长期存留。
+- **强制清理**：✅ 任何 `feat/*` 或 `hotfix/*` 分支在成功合并至主干（`alpha`/`beta`/`master`）后，**必须立即删除本地和远程分支**。
+- **禁止骑驴找马**：❌ 严禁在已合并的 `feat/*` 分支上继续开发新功能，必须从最新的主干切出新分支。
 
 ***
 
