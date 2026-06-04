@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from apps.accounts.provider_decorators import superadmin_required
 from .models import SiteGroup, SiteGroupHostname
 from .forms_sitegroup import SiteGroupForm, SiteGroupHostnameForm
