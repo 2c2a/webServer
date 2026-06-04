@@ -917,6 +917,7 @@ def _step_text(stdscr, field_data, current_val, step, total):
         try:
             stdscr.move(ry, input_x + min(cursor_offset, input_w - 1))
         except curses.error:
+            # Cursor move can fail when terminal is resized or too small; ignore and continue rendering.
             pass
 
         hint_y = box_y + box_h + 1

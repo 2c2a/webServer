@@ -40,7 +40,7 @@ jobs:
       run: uv run python manage.py collectstatic --noinput
       env:
         DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-        DEBUG: 'False'
+        DEBUG: 'True'
 
     - name: Prepare deployment directory
       run: |
@@ -73,7 +73,7 @@ jobs:
       uses: cloudflare/wrangler-action@v3
       with:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        command: pages deploy deploy --project-name=zascastatic --branch=main
+        command: pages deploy deploy --project-name=2c2astatic --branch=main
 
     - name: Upload static files artifact
       uses: actions/upload-artifact@v6

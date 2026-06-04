@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from django.shortcuts import render, redirect
 from django.views.static import serve
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseNotFound, Http404, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest
 import os
 
 from apps.dashboard.models import SystemConfig

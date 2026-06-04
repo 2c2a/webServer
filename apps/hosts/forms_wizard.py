@@ -90,6 +90,8 @@ def validate_private_key_pem(content: bytes) -> None:
         from cryptography.hazmat.backends import default_backend
         load_pem_private_key(content, password=None, backend=default_backend())
     except ImportError:
+        # cryptography 为可选依赖：缺失时仅执行基础 PEM 文本校验，
+        # 不阻断表单流程，以保持兼容现有部署环境。
         pass
     except Exception as e:
         raise forms.ValidationError(f'私钥文件无效: {str(e)}')

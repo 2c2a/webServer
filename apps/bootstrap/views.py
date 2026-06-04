@@ -142,7 +142,7 @@ def upload_host_cert(request):
 
     except Exception as e:
         logger.error(f"upload_host_cert error: {e}", exc_info=True)
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        return JsonResponse({'success': False, 'error': 'Internal server error'}, status=500)
 
 
 @login_required

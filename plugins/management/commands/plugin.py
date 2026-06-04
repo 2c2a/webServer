@@ -236,8 +236,10 @@ class Command(BaseCommand):
                     plugin_name = inst.name
                     plugin_version = inst.version
                     plugin_desc = inst.description
-                except Exception:
-                    pass
+                except Exception as exc:
+                    self.stderr.write(
+                        f"Warning: failed to read metadata from plugin '{entry}': {exc}"
+                    )
 
             discovered.append({
                 'dir_name': entry,
@@ -300,8 +302,12 @@ class Command(BaseCommand):
                     return True
                 if 'PLUGIN_INFO' in content:
                     return True
-            except Exception:
-                pass
+            except Exception as e:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'读取插件 {dir_name} 的 __init__.py 失败: {e}'
+                    )
+                )
 
         for item in os.listdir(dir_path):
             if not item.endswith('.py') or item == '__init__.py':
@@ -341,8 +347,12 @@ class Command(BaseCommand):
 
         try:
             plugin_instance.initialize()
-        except Exception:
-            pass
+        except Exception as e:
+            self.stdout.write(
+                self.style.WARNING(
+                    f'插件 {plugin_instance.plugin_id} 初始化失败，已继续安装流程: {e}'
+                )
+            )
 
         PluginRecord.objects.update_or_create(
             plugin_id=plugin_instance.plugin_id,
