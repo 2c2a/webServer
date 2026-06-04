@@ -68,7 +68,9 @@ def admin_dashboard(request):
     elif is_site_admin:
         sg = site_group
         total_users = (
-            User.objects.filter(Q(provider_hosts__site_group=sg) | Q(created_products__site_group=sg))
+            User.objects.filter(
+                Q(provider_hosts__site_group=sg) | Q(created_products__site_group=sg)
+            )
             .distinct()
             .count()
         )
@@ -84,13 +86,10 @@ def admin_dashboard(request):
             status="active",
             product__in=Product.objects.filter(site_group=sg),
         ).count()
-        active_tokens = (
-            ProductInvitationToken.objects.filter(
-                is_active=True,
-                product__in=Product.objects.filter(site_group=sg),
-            )
-            .count()
-        )
+        active_tokens = ProductInvitationToken.objects.filter(
+            is_active=True,
+            product__in=Product.objects.filter(site_group=sg),
+        ).count()
         active_grants = ProductAccessGrant.objects.filter(
             is_revoked=False,
             product__in=Product.objects.filter(site_group=sg),
@@ -112,7 +111,7 @@ def admin_dashboard(request):
     else:
         total_users = (
             User.objects.filter(
-                Q(cloud_computer_users__product__in=provider_products)
+                Q(cloud_users__product__in=provider_products)
                 | Q(hosts_provided__in=provider_hosts)
             )
             .distinct()

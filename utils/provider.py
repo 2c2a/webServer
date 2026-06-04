@@ -16,7 +16,7 @@ apps/tickets/admin.py 中重复的 is_provider 函数。
 from django.db import models
 
 
-PROVIDER_GROUP_NAME = '主机提供商'
+PROVIDER_GROUP_NAME = "主机提供商"
 
 
 def is_provider(user):
@@ -83,8 +83,9 @@ def get_provider_products(user, site_group=None):
     return qs
 
 
-def get_provider_queryset(user, model_class, filter_field='created_by',
-                          site_group=None):
+def get_provider_queryset(
+    user, model_class, filter_field="created_by", site_group=None
+):
     """
     通用的提供商数据隔离查询
 
@@ -113,7 +114,7 @@ def get_provider_queryset(user, model_class, filter_field='created_by',
     """
     qs = model_class.objects.filter(**{filter_field: user})
 
-    if hasattr(model_class, 'providers'):
+    if hasattr(model_class, "providers"):
         qs = qs | model_class.objects.filter(providers=user)
         qs = qs.distinct()
 
