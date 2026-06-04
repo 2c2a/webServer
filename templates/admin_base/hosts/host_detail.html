@@ -1,6 +1,6 @@
 {% extends "admin_base/base.html" %}
 
-{% block title %}2c2a 超级管理员 - {{ host.name }}{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - {{ host.name }}{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_hosts:host_list' %}" class="text-white/70 hover:text-cyan-400 transition">主机管理</a>
@@ -136,51 +136,6 @@
     {% endif %}
 </x-admin-card>
 
-{% if host.auth_method == 'certificate' %}
-<x-admin-card title="证书自动配置" icon="key" class="mt-6">
-    <div x-data="certProvision()">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-sm text-white/70">在目标主机上运行配置指令，自动完成证书签发与部署。</p>
-            <span class="px-2 py-1 rounded text-xs font-medium"
-                  :class="statusClass" x-text="statusText"></span>
-        </div>
-
-        <template x-if="!command">
-            <button x-on:click="generateCommand"
-                    class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)] transition">
-                生成配置指令
-            </button>
-        </template>
-
-        <template x-if="command">
-            <div>
-                <p class="text-xs text-white/50 mb-1">部署指令</p>
-                <div class="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded px-3 py-2 text-slate-200 font-mono text-sm break-all" x-text="command"></div>
-                <div class="flex gap-2 mt-2">
-                    <button x-on:click="copyCommand" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)] transition text-sm">
-                        复制指令
-                    </button>
-                    <span x-show="copied" class="text-cyan-400 text-sm self-center">已复制!</span>
-                </div>
-
-                <div x-show="debugCommand" class="mt-4">
-                    <p class="text-xs text-white/50 mb-1">调试部署指令</p>
-                    <div class="bg-slate-900/50 backdrop-blur-sm border border-yellow-700/30 rounded px-3 py-2 text-yellow-200 font-mono text-sm break-all" x-text="debugCommand"></div>
-                    <div class="flex gap-2 mt-2">
-                        <button x-on:click="copyDebugCommand" class="bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(234,179,8,0.3)] transition text-sm">
-                            复制调试指令
-                        </button>
-                        <span x-show="debugCopied" class="text-yellow-400 text-sm self-center">已复制!</span>
-                    </div>
-                </div>
-
-                <div class="mt-3 text-slate-400 text-xs" x-show="expiresAt" x-text="'有效期至: ' + expiresAt"></div>
-            </div>
-        </template>
-    </div>
-</x-admin-card>
-{% endif %}
-
 <!-- Tunnel Info -->
 {% if host.connection_type == 'tunnel' %}
 <x-admin-card title="隧道信息" icon="vpn_lock" class="mt-6">
@@ -287,7 +242,7 @@
 
 <!-- Host Init Command -->
 {% if host.auth_method == 'certificate' %}
-<x-admin-card title="H 端初始化" icon="terminal" class="mt-6">
+<x-admin-card title="主机端初始化" icon="terminal" class="mt-6">
     <div x-data="initCommand()">
         <p class="text-sm text-white/70 mb-4">
             在目标主机上以<b>管理员权限</b>运行以下命令，自动完成 H 端初始化和证书配置。
@@ -366,6 +321,7 @@ document.addEventListener('alpine:init', () => {
         loading: false,
         testResult: null,
         hostStatus: '{{ host.status }}',
+        pollTimer: null,
 
         async testHost() {
             if (this.loading) return;
@@ -381,18 +337,61 @@ document.addEventListener('alpine:init', () => {
                     },
                 });
                 const data = await resp.json();
-                this.testResult = data;
-                if (data.status) {
-                    this.hostStatus = data.status;
+                if (data.task_id) {
+                    this.testResult = { success: true, message: '连接测试已提交，正在后台执行...' };
+                    this.pollTaskStatus(data.task_id);
+                } else {
+                    this.testResult = data;
+                    if (data.status) {
+                        this.hostStatus = data.status;
+                    }
+                    this.loading = false;
                 }
             } catch (e) {
                 this.testResult = {
                     success: false,
                     message: '请求失败，请检查网络连接',
                 };
-            } finally {
                 this.loading = false;
             }
+        },
+
+        pollTaskStatus(taskId) {
+            if (this.pollTimer) clearInterval(this.pollTimer);
+            let attempts = 0;
+            const maxAttempts = 60;
+            this.pollTimer = setInterval(async () => {
+                attempts++;
+                if (attempts > maxAttempts) {
+                    clearInterval(this.pollTimer);
+                    this.testResult = { success: false, message: '连接测试超时' };
+                    this.loading = false;
+                    return;
+                }
+                try {
+                    const resp = await fetch('/tasks/' + taskId + '/');
+                    const data = await resp.json();
+                    if (data.status === 'success') {
+                        clearInterval(this.pollTimer);
+                        this.testResult = { success: true, message: data.message || '连接成功' };
+                        if (data.status_display) {
+                            this.hostStatus = data.status || 'online';
+                        } else {
+                            this.hostStatus = 'online';
+                        }
+                        this.loading = false;
+                    } else if (data.status === 'failed') {
+                        clearInterval(this.pollTimer);
+                        this.testResult = { success: false, message: data.error_message || '连接失败' };
+                        this.hostStatus = data.status || 'error';
+                        this.loading = false;
+                    }
+                } catch (e) {
+                    clearInterval(this.pollTimer);
+                    this.testResult = { success: false, message: '轮询任务状态失败' };
+                    this.loading = false;
+                }
+            }, 2000);
         },
     }));
 

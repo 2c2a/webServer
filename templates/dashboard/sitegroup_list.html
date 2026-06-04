@@ -1,0 +1,89 @@
+{% extends "admin_base/base.html" %}
+
+{% block title %}{{ site_name }} 超级管理员 - 站点组管理{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard:sitegroup_list' %}" class="text-white/70 hover:text-cyan-400 transition">站点组管理</a>
+<span class="material-symbols-rounded text-sm text-white/50">chevron_right</span>
+<span class="text-cyan-400 font-medium">站点组列表</span>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">站点组管理</h1>
+        <p class="text-white/70 text-sm mt-1">管理系统中的所有站点组及其绑定主机名和管理员</p>
+    </div>
+    <a href="{% url 'dashboard:sitegroup_create' %}">
+        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)] transition inline-flex items-center gap-2">
+            <span class="material-symbols-rounded text-lg">add</span>
+            创建站点组
+        </button>
+    </a>
+</div>
+
+<div class="bg-slate-950/70 backdrop-blur-xl border border-slate-700/50 rounded-md shadow-none overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="text-xs text-white/50 uppercase border-b border-slate-700/50">
+                <tr>
+                    <th class="px-6 py-3">名称</th>
+                    <th class="px-6 py-3">标识符</th>
+                    <th class="px-6 py-3">站点名称</th>
+                    <th class="px-6 py-3">状态</th>
+                    <th class="px-6 py-3">主机名</th>
+                    <th class="px-6 py-3">管理员</th>
+                    <th class="px-6 py-3">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sitegroup in sitegroups %}
+                <tr class="border-b border-slate-700/30 hover:bg-white/5 transition">
+                    <td class="px-6 py-4">
+                        <span class="text-white font-medium">{{ sitegroup.name }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <code class="text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded text-xs">{{ sitegroup.slug }}</code>
+                    </td>
+                    <td class="px-6 py-4 text-slate-300">{{ sitegroup.site_name|default:"-" }}</td>
+                    <td class="px-6 py-4">
+                        {% if sitegroup.is_active %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            启用
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                            禁用
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-slate-300">{{ sitegroup.hostnames.count }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ sitegroup.admins.count }}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'dashboard:sitegroup_detail' sitegroup.pk %}" class="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-xs font-medium transition">
+                                <span class="material-symbols-rounded text-sm">visibility</span>
+                                详情
+                            </a>
+                            <a href="{% url 'dashboard:sitegroup_update' sitegroup.pk %}" class="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-xs font-medium transition">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                                编辑
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-white/50">
+                        <span class="material-symbols-rounded text-4xl mb-2 block">domain</span>
+                        暂无站点组，点击上方按钮创建
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

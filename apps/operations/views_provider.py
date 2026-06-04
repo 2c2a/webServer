@@ -268,25 +268,16 @@ class CloudComputerUserSetDiskQuotaView(ProviderContextMixin, ProviderOperationB
 
                 # 远程设置磁盘配额
                 if disk_quota and cloud_user.product.enable_disk_quota:
-                    from utils.disk_quota import set_user_disk_quotas
-
-                    host = cloud_user.product.host
-                    client = host.get_connection_client()
-                    result = set_user_disk_quotas(
-                        client, cloud_user.username, disk_quota
+                    from apps.operations.tasks import remote_set_user_disk_quotas
+                    remote_set_user_disk_quotas.delay(
+                        cloud_user.pk, disk_quota,
+                        operator_id=request.user.pk,
                     )
-
-                    if result['success']:
-                        messages.success(
-                            request,
-                            f'成功设置用户 {cloud_user.username} 的磁盘配额'
-                        )
-                    else:
-                        errors = '; '.join(result.get('errors', []))
-                        messages.warning(
-                            request,
-                            f'设置磁盘配额部分失败: {errors}'
-                        )
+                    messages.success(
+                        request,
+                        f'已保存用户 {cloud_user.username} 的磁盘配额配置，'
+                        f'远程设置正在后台执行'
+                    )
                 else:
                     messages.success(
                         request,

@@ -6,13 +6,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <title>{% block title %}{% block page_title %}2c2a{% endblock %}{% endblock %}</title>
+    <title>{% block title %}{% block page_title %}{{ site_name }}{% endblock %}{% endblock %}</title>
 
     <link href="{% static 'css/provider.css' %}" rel="stylesheet">
 
     <link rel="stylesheet" href="{% static 'vendor/material-symbols-rounded/material-symbols-rounded.css' %}">
 
-    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <link rel="icon" type="image/svg+xml" href="{{ site_icon }}">
 
     <style>
         .sidebar-transition {
@@ -87,9 +87,9 @@
         >
             <div class="flex items-center gap-3 px-4 py-5 border-b border-white/10"
                  :class="sidebarExpanded ? '' : 'justify-center px-2'">
-                <img src="{% static 'img/favicon.svg' %}" alt="2c2a" class="h-8 w-8 shrink-0">
+                <img src="{{ site_icon }}" alt="{{ site_name }}" class="h-8 w-8 shrink-0">
                 <div x-show="sidebarExpanded" x-transition class="flex-1 min-w-0">
-                    <h1 class="text-white font-bold text-lg leading-tight">2c2a</h1>
+                    <h1 class="text-white font-bold text-lg leading-tight">{{ site_name }}</h1>
                     {% if user.is_superuser %}
                     <p class="text-white/70 text-xs">超级管理员</p>
                     {% else %}
@@ -243,6 +243,10 @@
                         <a href="{% url 'admin:admin_dashboard_config:systemconfig_edit' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition {% if active_nav == 'dashboard_config' %}bg-white/10 text-cyan-400 backdrop-blur-xl{% else %}text-white/70 hover:bg-white/5 hover:text-white{% endif %}">
                             <span class="material-symbols-rounded text-lg shrink-0 text-cyan-400">settings</span>
                             <span>系统配置</span>
+                        </a>
+                        <a href="{% url 'dashboard:sitegroup_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition {% if active_nav == 'sitegroups' %}bg-white/10 text-cyan-400 backdrop-blur-xl{% else %}text-white/70 hover:bg-white/5 hover:text-white{% endif %}">
+                            <span class="material-symbols-rounded text-lg shrink-0 text-cyan-400">domain</span>
+                            <span>站点组管理</span>
                         </a>
                         <a href="{% url 'admin:admin_themes:themeconfig_edit' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition {% if active_nav == 'themes_config' %}bg-white/10 text-cyan-400 backdrop-blur-xl{% else %}text-white/70 hover:bg-white/5 hover:text-white{% endif %}">
                             <span class="material-symbols-rounded text-lg shrink-0 text-cyan-400">palette</span>

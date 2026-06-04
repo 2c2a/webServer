@@ -7,8 +7,10 @@ from urllib.parse import urlparse
 from django.shortcuts import render, redirect
 from django.views.static import serve
 from django.conf import settings
-from django.http import HttpResponseNotFound, Http404, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest
 import os
+
+from apps.dashboard.models import SystemConfig
 
 
 def custom_404(request, exception):
@@ -38,26 +40,62 @@ def custom_500(request):
     return render(request, 'errors/500.html', status=500)
 
 
-def favicon_view(request):
-    """
-    提供 favicon 文件
-    """
-    favicon_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 'img', 'favicon.ico')
+def _get_default_favicon_path(filename):
+    return os.path.join(
+        settings.STATIC_ROOT or settings.STATICFILES_DIRS[0],
+        'img', filename
+    )
+
+
+def _serve_hostname_favicon(request, default_filename):
+    hostname = request.get_host().split(':')[0]
+    site_icon = None
+
+    site_group = getattr(request, 'site_group', None)
+    if site_group and site_group.site_icon:
+        site_icon = site_group.site_icon
+    else:
+        try:
+            config = SystemConfig.get_config()
+            site_icon = config.get_site_icon_for_hostname(hostname)
+        except Exception:
+            site_icon = '/static/img/favicon.svg'
+
+    if site_icon and site_icon != '/static/img/favicon.svg':
+        if site_icon.startswith(settings.MEDIA_URL):
+            rel_path = site_icon[len(settings.MEDIA_URL):]
+            file_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+        elif site_icon.startswith('/'):
+            file_path = os.path.join(settings.BASE_DIR, site_icon.lstrip('/'))
+        else:
+            file_path = site_icon
+
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            content_type = 'image/svg+xml'
+            if file_path.endswith('.ico'):
+                content_type = 'image/x-icon'
+            elif file_path.endswith('.png'):
+                content_type = 'image/png'
+            with open(file_path, 'rb') as f:
+                return HttpResponse(f.read(), content_type=content_type)
+
+    favicon_path = _get_default_favicon_path(default_filename)
     if not os.path.exists(favicon_path):
-        favicon_path = os.path.join(settings.STATICFILES_DIRS[0], 'img', 'favicon.ico')
-    
-    return serve(request, os.path.basename(favicon_path), document_root=os.path.dirname(favicon_path))
+        favicon_path = os.path.join(
+            settings.STATICFILES_DIRS[0], 'img', default_filename
+        )
+    return serve(
+        request, os.path.basename(favicon_path),
+        document_root=os.path.dirname(favicon_path)
+    )
+
+
+def favicon_view(request):
+    return _serve_hostname_favicon(request, 'favicon.ico')
 
 
 def favicon_svg_view(request):
-    """
-    提供 favicon.svg 文件
-    """
-    favicon_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 'img', 'favicon.svg')
-    if not os.path.exists(favicon_path):
-        favicon_path = os.path.join(settings.STATICFILES_DIRS[0], 'img', 'favicon.svg')
-    
-    return serve(request, os.path.basename(favicon_path), document_root=os.path.dirname(favicon_path))
+    return _serve_hostname_favicon(request, 'favicon.svg')
 
 
 # Static 文件降级服务域名

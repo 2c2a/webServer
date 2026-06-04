@@ -1,6 +1,6 @@
 {% extends "admin_base/base.html" %}
 
-{% block title %}2c2a 超级管理员 - 注册链接管理{% endblock %}
+{% block title %}{{ site_name }} 超级管理员 - 注册链接管理{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'admin:admin_reglinks:reglink_list' %}" class="text-white/70 hover:text-cyan-400 transition">注册链接管理</a>
@@ -12,7 +12,7 @@
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-bold text-white">注册链接管理</h1>
-        <p class="text-white/70 text-sm mt-1">创建一次性注册链接，指定注册后加入的用户组</p>
+        <p class="text-white/70 text-sm mt-1">创建注册链接，指定注册后加入的用户组</p>
     </div>
     <a href="{% url 'admin:admin_reglinks:reglink_create' %}">
         <x-admin-button variant="filled" icon="add_link">创建注册链接</x-admin-button>
@@ -57,7 +57,7 @@
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div class="flex items-start gap-3 flex-1 min-w-0">
                 <div class="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold
-                    {% if link.used %}
+                    {% if link.is_exhausted %}
                     bg-slate-500/20 text-slate-400
                     {% elif link.is_expired %}
                     bg-amber-500/20 text-amber-400
@@ -66,24 +66,35 @@
                     {% endif %}
                 ">
                     <span class="material-symbols-rounded text-lg">
-                        {% if link.used %}link_off{% elif link.is_expired %}timer_off{% else %}link{% endif %}
+                        {% if link.is_exhausted %}link_off{% elif link.is_expired %}timer_off{% else %}link{% endif %}
                     </span>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-white font-medium">{{ link.group.name }}</span>
-                        {% if link.used %}
-                        <x-admin-badge text="已使用" color="default"></x-admin-badge>
+                        {% if link.is_exhausted %}
+                        <x-admin-badge text="已用完" color="default"></x-admin-badge>
                         {% elif link.is_expired %}
                         <x-admin-badge text="已过期" color="warning"></x-admin-badge>
                         {% else %}
                         <x-admin-badge text="有效" color="success"></x-admin-badge>
+                        {% endif %}
+                        {% if link.max_uses == 0 %}
+                        <x-admin-badge text="不限次数" color="info"></x-admin-badge>
                         {% endif %}
                     </div>
                     {% if link.note %}
                     <p class="text-sm text-white/70 mt-1">{{ link.note }}</p>
                     {% endif %}
                     <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-white/50">
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-rounded text-sm">counter_1</span>
+                            {% if link.max_uses == 0 %}
+                            已用 {{ link.used_count }}次 / 不限
+                            {% else %}
+                            已用 {{ link.used_count }}/{{ link.max_uses }}次
+                            {% endif %}
+                        </span>
                         <span class="flex items-center gap-1">
                             <span class="material-symbols-rounded text-sm">person</span>
                             创建者: {{ link.created_by.username|default:"未知" }}
@@ -103,18 +114,18 @@
                             永不过期
                         </span>
                         {% endif %}
-                        {% if link.used %}
+                        {% if link.used_count > 0 %}
                         <span class="flex items-center gap-1">
                             <span class="material-symbols-rounded text-sm">how_to_reg</span>
-                            使用者: {{ link.used_by.username|default:"未知" }}
+                            最后使用者: {{ link.used_by.username|default:"未知" }}
                         </span>
                         <span class="flex items-center gap-1">
                             <span class="material-symbols-rounded text-sm">done_all</span>
-                            使用于: {{ link.used_at|date:"Y-m-d H:i" }}
+                            最后使用: {{ link.used_at|date:"Y-m-d H:i" }}
                         </span>
                         {% endif %}
                     </div>
-                    {% if not link.used and not link.is_expired %}
+                    {% if not link.is_exhausted and not link.is_expired %}
                     <div class="mt-2 flex items-center gap-2">
                         <code class="text-xs bg-white/5 px-2 py-1 rounded text-cyan-400 break-all select-all" id="link-url-{{ link.pk }}">
                             {% url 'accounts:register_by_link' token=link.token as link_path %}{{ request.scheme }}://{{ request.get_host }}{{ link_path }}
@@ -128,12 +139,12 @@
             </div>
 
             <div class="flex items-center gap-1 flex-shrink-0">
-                {% if not link.used %}
+                {% if not link.is_exhausted %}
                 <a href="{% url 'admin:admin_reglinks:reglink_delete' link.pk %}" class="inline-flex items-center justify-center w-9 h-9 rounded-md text-white/70 hover:text-red-400 hover:bg-red-500/10 transition" title="删除">
                     <span class="material-symbols-rounded text-lg">delete</span>
                 </a>
                 {% else %}
-                <span class="inline-flex items-center justify-center w-9 h-9 rounded-md text-white/20 cursor-not-allowed" title="已使用的链接不可删除">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-md text-white/20 cursor-not-allowed" title="已用完的链接不可删除">
                     <span class="material-symbols-rounded text-lg">lock</span>
                 </span>
                 {% endif %}
@@ -170,7 +181,7 @@
 {% endif %}
 
 {% else %}
-<x-admin-empty icon="link_off" title="暂无注册链接" description="创建一次性注册链接，指定注册后加入的用户组">
+<x-admin-empty icon="link_off" title="暂无注册链接" description="创建注册链接，指定注册后加入的用户组">
     <a href="{% url 'admin:admin_reglinks:reglink_create' %}">
         <x-admin-button variant="filled" icon="add_link">创建注册链接</x-admin-button>
     </a>

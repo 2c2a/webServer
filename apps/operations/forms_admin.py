@@ -2,7 +2,8 @@
 运营管理 - 超级管理员后台表单
 
 包含产品、产品组、开户申请驳回等表单。
-超管表单不做数据隔离，所有字段均可选择全部记录。
+超管可查看所有记录；站点组管理员仅可查看当前站点组记录；
+提供商仅可查看自己相关的记录。
 """
 
 import json
@@ -155,15 +156,27 @@ class AdminProductForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, site_group=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # 超管不做数据隔离，所有主机和产品组均可选择
         from apps.hosts.models import Host
-        self.fields['host'].queryset = Host.objects.all().order_by('name')
-        self.fields['product_group'].queryset = (
-            ProductGroup.objects.all().order_by('name')
-        )
+        from utils.provider import get_provider_hosts
+
+        if user and user.is_superuser:
+            host_qs = Host.objects.all()
+            pg_qs = ProductGroup.objects.all()
+        elif user and site_group and user.is_site_group_admin(site_group):
+            host_qs = Host.objects.filter(site_group=site_group)
+            pg_qs = ProductGroup.objects.filter(site_group=site_group)
+        elif user:
+            host_qs = get_provider_hosts(user, site_group=site_group)
+            pg_qs = ProductGroup.objects.filter(created_by=user)
+        else:
+            host_qs = Host.objects.all()
+            pg_qs = ProductGroup.objects.all()
+
+        self.fields['host'].queryset = host_qs.order_by('name')
+        self.fields['product_group'].queryset = pg_qs.order_by('name')
 
         # 初始化 JSON 字段的显示值
         if self.instance and self.instance.pk:
