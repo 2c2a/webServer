@@ -16,8 +16,8 @@ import functools
 logger = logging.getLogger("2c2a")
 
 
-USERNAME_PATTERN = re.compile(r'^[a-zA-Z0-9_]{1,150}$')
-GROUPNAME_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\s]{1,256}$')
+USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_]{1,150}$")
+GROUPNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-\s]{1,256}$")
 MAX_STRING_LENGTH = 4096
 
 
@@ -41,11 +41,15 @@ def validate_groupname(group: str) -> str:
     if len(group) > 256:
         raise CommandInjectionError("组名长度不能超过256个字符")
     if not GROUPNAME_PATTERN.match(group):
-        raise CommandInjectionError(f"组名格式无效: 只允许字母、数字、下划线、连字符和空格")
+        raise CommandInjectionError(
+            f"组名格式无效: 只允许字母、数字、下划线、连字符和空格"
+        )
     return group
 
 
-def validate_string_length(s: str, max_length: int = MAX_STRING_LENGTH, field_name: str = "输入") -> str:
+def validate_string_length(
+    s: str, max_length: int = MAX_STRING_LENGTH, field_name: str = "输入"
+) -> str:
     if s and len(s) > max_length:
         raise CommandInjectionError(f"{field_name}长度不能超过{max_length}个字符")
     return s
@@ -56,13 +60,20 @@ def _escape_ps_string(s: str) -> str:
         return s
     if len(s) > MAX_STRING_LENGTH:
         raise CommandInjectionError(f"字符串长度超过最大限制 {MAX_STRING_LENGTH}")
-    return s.replace('\x00', '').replace('`', '``').replace('"', '`"').replace('$', '`$').replace('\n', '`n').replace('\r', '`r')
+    return (
+        s.replace("\x00", "")
+        .replace("`", "``")
+        .replace('"', '`"')
+        .replace("$", "`$")
+        .replace("\n", "`n")
+        .replace("\r", "`r")
+    )
 
 
 def _escape_for_here_string(s: str) -> str:
     if not s:
         return s
-    s = s.replace('\x00', '')
+    s = s.replace("\x00", "")
     if '@"' in s or '"@' in s:
         raise CommandInjectionError("内容包含非法的 here-string 分隔符")
     return s
@@ -83,21 +94,21 @@ class WinrmClient:
     """WinRM客户端 - 远程管理Windows主机"""
 
     def __init__(
-            self,
-            hostname: str,
-            username: Optional[str] = None,
-            password: Optional[str] = None,
-            port: int = 5985,
-            use_ssl: bool = False,
-            auth_method: str = 'ntlm',
-            cert_pem_path: Optional[str] = None,
-            cert_key_path: Optional[str] = None,
-            timeout: Optional[int] = None,
-            max_retries: Optional[int] = None,
-            server_cert_validation: str = 'validate',
-            ca_trust_path: Optional[str] = None,
-            client_cert_pem: Optional[str] = None,
-            client_cert_key: Optional[str] = None
+        self,
+        hostname: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        port: int = 5985,
+        use_ssl: bool = False,
+        auth_method: str = "ntlm",
+        cert_pem_path: Optional[str] = None,
+        cert_key_path: Optional[str] = None,
+        timeout: Optional[int] = None,
+        max_retries: Optional[int] = None,
+        server_cert_validation: str = "validate",
+        ca_trust_path: Optional[str] = None,
+        client_cert_pem: Optional[str] = None,
+        client_cert_key: Optional[str] = None,
     ):
         """
         初始化WinRM客户端
@@ -118,7 +129,7 @@ class WinrmClient:
             client_cert_pem: 客户端证书PEM文件路径(已弃用，使用cert_pem_path)
             client_cert_key: 客户端证书私钥文件路径(已弃用，使用cert_key_path)
         """
-        if auth_method == 'certificate':
+        if auth_method == "certificate":
             if not cert_pem_path and client_cert_pem:
                 cert_pem_path = client_cert_pem
             if not cert_key_path and client_cert_key:
@@ -129,27 +140,27 @@ class WinrmClient:
                 raise ValueError(f"客户端证书文件不存在: {cert_pem_path}")
             if not os.path.exists(cert_key_path):
                 raise ValueError(f"客户端私钥文件不存在: {cert_key_path}")
-            self.auth_method = 'certificate'
+            self.auth_method = "certificate"
             self.cert_pem_path = cert_pem_path
             self.cert_key_path = cert_key_path
-            self.username = username or ''
-            self.password = password or ''
-        elif auth_method == 'ntlm':
+            self.username = username or ""
+            self.password = password or ""
+        elif auth_method == "ntlm":
             if not username:
                 raise ValueError("NTLM认证方式必须提供用户名")
             if not password:
                 raise ValueError("NTLM认证方式必须提供密码")
-            self.auth_method = 'ntlm'
+            self.auth_method = "ntlm"
             self.username = username
             self.password = password
-            self.cert_pem_path = ''
-            self.cert_key_path = ''
+            self.cert_pem_path = ""
+            self.cert_key_path = ""
         else:
             raise ValueError(f"不支持的认证方式: {auth_method}")
         # 检查主机名是否包含端口（例如 "hostname:port" 或 "ip:port" 格式）
-        if ':' in hostname and not hostname.startswith('http'):
+        if ":" in hostname and not hostname.startswith("http"):
             # 分离主机名和端口
-            parts = hostname.split(':', 1)
+            parts = hostname.split(":", 1)
             if len(parts) == 2 and parts[1].isdigit():
                 # 提取主机名和端口
                 actual_hostname = parts[0]
@@ -178,30 +189,29 @@ class WinrmClient:
         self.client_cert_pem = client_cert_pem
         self.client_cert_key = client_cert_key
 
-        if server_cert_validation == 'ignore':
+        if server_cert_validation == "ignore":
             logger.warning(
-                f"WinRM连接到 {hostname} 未启用服务器证书验证，"
-                "存在中间人攻击风险"
+                f"WinRM连接到 {hostname} 未启用服务器证书验证，" "存在中间人攻击风险"
             )
 
-        if use_ssl and server_cert_validation == 'validate':
+        if use_ssl and server_cert_validation == "validate":
             if not ca_trust_path:
                 logger.warning("SSL验证启用但未提供CA证书路径，将使用系统默认证书")
             elif not os.path.exists(ca_trust_path):
                 logger.error(f"CA证书文件不存在: {ca_trust_path}")
                 raise ValueError(f"CA证书文件不存在: {ca_trust_path}")
 
-        if self.auth_method == 'certificate':
-            transport = 'certificate'
+        if self.auth_method == "certificate":
+            transport = "certificate"
             if not self.use_ssl:
                 self.use_ssl = True
             if self.port == 5985:
                 self.port = 5986
         else:
-            transport = 'ntlm'
+            transport = "ntlm"
 
-        protocol = 'https' if self.use_ssl else 'http'
-        self.endpoint = f'{protocol}://{self.hostname}:{self.port}/wsman'
+        protocol = "https" if self.use_ssl else "http"
+        self.endpoint = f"{protocol}://{self.hostname}:{self.port}/wsman"
 
         if not self._validate_hostname():
             raise ValueError(f"主机名无法解析: {self.hostname}")
@@ -213,9 +223,9 @@ class WinrmClient:
             operation_timeout_sec=self.timeout,
             read_timeout_sec=self.timeout + 10,
         )
-        if self.auth_method == 'certificate':
-            session_kwargs['cert_pem'] = self.cert_pem_path
-            session_kwargs['cert_key_pem'] = self.cert_key_path
+        if self.auth_method == "certificate":
+            session_kwargs["cert_pem"] = self.cert_pem_path
+            session_kwargs["cert_key_pem"] = self.cert_key_path
             self.session = Session(
                 self.endpoint,
                 auth=(self.username, self.password),
@@ -237,7 +247,7 @@ class WinrmClient:
     def _validate_hostname(self) -> bool:
         """
         验证主机名是否可以解析
-        
+
         Returns:
             bool: 如果主机名可以解析则返回True，否则返回False
         """
@@ -253,9 +263,7 @@ class WinrmClient:
             return False
 
     def execute_command(
-            self,
-            command: str,
-            arguments: Optional[list] = None
+        self, command: str, arguments: Optional[list] = None
     ) -> WinrmResult:
         """
         执行远程命令
@@ -271,16 +279,17 @@ class WinrmClient:
             Exception: 当所有重试尝试都失败时抛出
         """
         import os
+
         # 如果是DEMO模式，模拟执行命令而不实际执行
-        if os.environ.get('2C2A_DEMO', '').lower() == '1':
+        if os.environ.get("2C2A_DEMO", "").lower() == "1":
             logger.info(f"DEMO模式: 模拟执行远程命令: {command}, 参数: {arguments}")
             # 模拟成功执行的结果
             return WinrmResult(
                 status_code=0,
                 std_out="Command executed successfully in demo mode",
-                std_err=""
+                std_err="",
             )
-        
+
         logger.info(f"执行远程命令: {command}, 参数: {arguments}")
 
         for attempt in range(self.max_retries):
@@ -288,8 +297,8 @@ class WinrmClient:
                 result = self.session.run_cmd(command, arguments or [])
                 winrm_result = WinrmResult(
                     status_code=result.status_code,
-                    std_out=result.std_out.decode('utf-8', errors='ignore'),
-                    std_err=result.std_err.decode('utf-8', errors='ignore')
+                    std_out=result.std_out.decode("utf-8", errors="ignore"),
+                    std_err=result.std_err.decode("utf-8", errors="ignore"),
                 )
 
                 if winrm_result.success:
@@ -304,10 +313,15 @@ class WinrmClient:
             except Exception as e:
                 # 检查是否是网络连接错误
                 error_str = str(e)
-                if "NameResolutionError" in error_str or "Failed to resolve" in error_str:
+                if (
+                    "NameResolutionError" in error_str
+                    or "Failed to resolve" in error_str
+                ):
                     logger.error(f"主机名解析失败: {self.hostname}")
-                    raise Exception(f'主机名解析失败: 无法解析主机名 "{self.hostname}". 请检查主机名拼写或网络连接.')
-                
+                    raise Exception(
+                        f'主机名解析失败: 无法解析主机名 "{self.hostname}". 请检查主机名拼写或网络连接.'
+                    )
+
                 logger.error(
                     f"命令执行失败 (尝试 {attempt + 1}/{self.max_retries}): "
                     f"{command}, 错误: {str(e)}"
@@ -315,15 +329,13 @@ class WinrmClient:
 
                 if attempt == self.max_retries - 1:
                     logger.error(f"命令执行最终失败: {command}")
-                    raise Exception(f'命令执行失败: {str(e)}')
-                
+                    raise Exception(f"命令执行失败: {str(e)}")
+
                 # 在重试之间等待一段时间
                 time.sleep(1)
 
     def execute_powershell(
-            self,
-            script: str,
-            arguments: Optional[Dict[str, Any]] = None
+        self, script: str, arguments: Optional[Dict[str, Any]] = None
     ) -> WinrmResult:
         """
         执行PowerShell脚本
@@ -339,25 +351,26 @@ class WinrmClient:
             Exception: 当所有重试尝试都失败时抛出
         """
         import os
+
         # 如果是DEMO模式，模拟执行PowerShell而不实际执行
-        if os.environ.get('2C2A_DEMO', '').lower() == '1':
+        if os.environ.get("2C2A_DEMO", "").lower() == "1":
             logger.info("DEMO模式: 模拟执行PowerShell脚本")
             # 模拟成功执行的结果
             return WinrmResult(
                 status_code=0,
                 std_out="PowerShell script executed successfully in demo mode",
-                std_err=""
+                std_err="",
             )
-        
-        logger.info("执行PowerShell脚本")
+
+        logger.info(f"执行远程命令: {script}, 参数: {arguments}")
 
         for attempt in range(self.max_retries):
             try:
                 result = self.session.run_ps(script)
                 winrm_result = WinrmResult(
                     status_code=result.status_code,
-                    std_out=result.std_out.decode('utf-8', errors='ignore'),
-                    std_err=result.std_err.decode('utf-8', errors='ignore')
+                    std_out=result.std_out.decode("utf-8", errors="ignore"),
+                    std_err=result.std_err.decode("utf-8", errors="ignore"),
                 )
 
                 if winrm_result.success:
@@ -372,10 +385,15 @@ class WinrmClient:
             except Exception as e:
                 # 检查是否是网络连接错误
                 error_str = str(e)
-                if "NameResolutionError" in error_str or "Failed to resolve" in error_str:
+                if (
+                    "NameResolutionError" in error_str
+                    or "Failed to resolve" in error_str
+                ):
                     logger.error(f"主机名解析失败: {self.hostname}")
-                    raise Exception(f'主机名解析失败: 无法解析主机名 "{self.hostname}". 请检查主机名拼写或网络连接.')
-                
+                    raise Exception(
+                        f'主机名解析失败: 无法解析主机名 "{self.hostname}". 请检查主机名拼写或网络连接.'
+                    )
+
                 logger.error(
                     f"PowerShell脚本执行失败 (尝试 {attempt + 1}/{self.max_retries}), "
                     f"错误: {str(e)}"
@@ -383,17 +401,17 @@ class WinrmClient:
 
                 if attempt == self.max_retries - 1:
                     logger.error("PowerShell脚本执行最终失败")
-                    raise Exception(f'PowerShell执行失败: {str(e)}')
-                
+                    raise Exception(f"PowerShell执行失败: {str(e)}")
+
                 # 在重试之间等待一段时间
                 time.sleep(1)
 
     def create_user(
-            self,
-            username: str,
-            password: str,
-            description: Optional[str] = None,
-            group: Optional[str] = None
+        self,
+        username: str,
+        password: str,
+        description: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> WinrmResult:
         try:
             validate_username(username)
@@ -404,17 +422,17 @@ class WinrmClient:
                 validate_groupname(group)
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
 
         safe_user = _escape_ps_string(username)
         safe_pass = _escape_ps_string(password)
-        safe_desc = _escape_ps_string(description or '')
+        safe_desc = _escape_ps_string(description or "")
 
-        script = f'''
+        script = f"""
 $pw = ConvertTo-SecureString "{safe_pass}" -AsPlainText -Force
 New-LocalUser -Name "{safe_user}" -Password $pw -Description "{safe_desc}" -ErrorAction Stop
 Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
-'''
+"""
         if group:
             safe_group = _escape_ps_string(group)
             script += f'Add-LocalGroupMember -Group "{safe_group}" -Member "{safe_user}" -ErrorAction Stop\n'
@@ -425,11 +443,11 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
         return result
 
     def create_user_with_reset_password_on_next_login(
-            self,
-            username: str,
-            password: str,
-            description: Optional[str] = None,
-            group: Optional[str] = None
+        self,
+        username: str,
+        password: str,
+        description: Optional[str] = None,
+        group: Optional[str] = None,
     ) -> WinrmResult:
         try:
             validate_username(username)
@@ -440,18 +458,18 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
                 validate_groupname(group)
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
 
         safe_user = _escape_ps_string(username)
         safe_pass = _escape_ps_string(password)
-        safe_desc = _escape_ps_string(description or '')
+        safe_desc = _escape_ps_string(description or "")
 
-        script = f'''
+        script = f"""
 $pw = ConvertTo-SecureString "{safe_pass}" -AsPlainText -Force
 New-LocalUser -Name "{safe_user}" -Password $pw -Description "{safe_desc}" -ErrorAction Stop
 net user "{safe_user}" /logonpasswordchg:YES
 Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
-'''
+"""
         if group:
             safe_group = _escape_ps_string(group)
             script += f'Add-LocalGroupMember -Group "{safe_group}" -Member "{safe_user}" -ErrorAction Stop\n'
@@ -466,7 +484,7 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
             validate_username(username)
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
         safe_user = _escape_ps_string(username)
         script = f'Remove-LocalUser -Name "{safe_user}" -ErrorAction Stop'
         logger.info(f"删除用户: {username}")
@@ -477,7 +495,7 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
             validate_username(username)
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
         safe_user = _escape_ps_string(username)
         script = f'Enable-LocalUser -Name "{safe_user}" -ErrorAction Stop'
         logger.info(f"启用用户: {username}")
@@ -488,7 +506,7 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
             validate_username(username)
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
         safe_user = _escape_ps_string(username)
         script = f'Disable-LocalUser -Name "{safe_user}" -ErrorAction Stop'
         logger.info(f"禁用用户: {username}")
@@ -499,13 +517,13 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
             validate_username(username)
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
         safe_user = _escape_ps_string(username)
         script = f'Get-LocalUser -Name "{safe_user}" | ConvertTo-Json'
         return self.execute_powershell(script)
 
     def list_users(self) -> WinrmResult:
-        return self.execute_powershell('Get-LocalUser | ConvertTo-Json')
+        return self.execute_powershell("Get-LocalUser | ConvertTo-Json")
 
     def check_user_exists(self, username: str) -> bool:
         try:
@@ -516,7 +534,7 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
         try:
             script = f'$u = Get-LocalUser -Name "{safe_user}" -ErrorAction Stop; $true'
             result = self.execute_powershell(script)
-            return result.success and 'True' in result.std_out
+            return result.success and "True" in result.std_out
         except:
             return False
 
@@ -528,13 +546,13 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
             Dict: 包含密码策略信息的字典
         """
         try:
-            script = f'''
+            script = f"""
             secedit /export /cfg "$env:TEMP\\secpol.cfg" | Out-Null
             Get-Content "$env:TEMP\\secpol.cfg" | Where-Object {{ $_ -match '^(MinimumPasswordLength|PasswordComplexity|PasswordHistorySize|MaximumPasswordAge|MinimumPasswordAge)\\s*=' }}
             Remove-Item "$env:TEMP\\secpol.cfg" -ErrorAction SilentlyContinue
-            '''
+            """
             result = self.execute_powershell(script)
-            
+
             policy = {}
             if result.success:
                 lines = result.std_out.strip().split("\n")
@@ -547,7 +565,9 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
                             policy["minimum_length"] = 8  # 默认值
                     elif line.startswith("PasswordComplexity"):
                         try:
-                            policy["complexity_required"] = bool(int(line.split("=")[1].strip()))
+                            policy["complexity_required"] = bool(
+                                int(line.split("=")[1].strip())
+                            )
                         except:
                             policy["complexity_required"] = True  # 默认值
                     elif line.startswith("PasswordHistorySize"):
@@ -565,13 +585,13 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
                             policy["min_age_days"] = int(line.split("=")[1].strip())
                         except:
                             policy["min_age_days"] = 0  # 默认值
-            
+
             # 设置默认值
             if "minimum_length" not in policy:
                 policy["minimum_length"] = 8
             if "complexity_required" not in policy:
                 policy["complexity_required"] = True
-            
+
             logger.info(f"获取密码策略成功: {policy}")
             return policy
         except Exception as e:
@@ -582,7 +602,7 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
                 "complexity_required": True,
                 "history_size": 0,
                 "max_age_days": 42,
-                "min_age_days": 1
+                "min_age_days": 1,
             }
 
     def generate_strong_password(self, length: Optional[int] = None) -> str:
@@ -597,25 +617,27 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
         """
         import secrets
         import string
-        
+
         # 获取服务器密码策略
         policy = self.get_password_policy()
-        
+
         # 确定密码长度
         actual_length = length or max(policy["minimum_length"], 12)  # 默认至少12位
-        
+
         if policy["complexity_required"]:
             # 密码复杂性要求：至少包含大写字母、小写字母、数字和特殊字符
             uppercase = secrets.choice(string.ascii_uppercase)
             lowercase = secrets.choice(string.ascii_lowercase)
             digit = secrets.choice(string.digits)
             special_char = secrets.choice("!@#$%^&*()_+-=[]{}|;:,.<>?")
-            
+
             # 剩余部分随机生成
             remaining_length = max(0, actual_length - 4)
-            alphabet = string.ascii_letters + string.digits + "!@#$%^&*()_+-=[]{}|;:,.<>?"
+            alphabet = (
+                string.ascii_letters + string.digits + "!@#$%^&*()_+-=[]{}|;:,.<>?"
+            )
             rest = "".join(secrets.choice(alphabet) for i in range(remaining_length))
-            
+
             # 打乱顺序以确保安全
             password_chars = list(uppercase + lowercase + digit + special_char + rest)
             secrets.SystemRandom().shuffle(password_chars)
@@ -624,9 +646,10 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
             # 不需要复杂性要求，简单生成随机密码
             alphabet = string.ascii_letters + string.digits
             password = "".join(secrets.choice(alphabet) for i in range(actual_length))
-        
+
         logger.info(f"生成强密码完成，长度: {len(password)}")
         return password
+
     def op_user(self, username: str) -> bool:
         try:
             validate_username(username)
@@ -661,13 +684,13 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
             validate_string_length(password, 256, "密码")
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
         safe_user = _escape_ps_string(username)
         safe_pass = _escape_ps_string(password)
-        script = f'''
+        script = f"""
 $pw = ConvertTo-SecureString "{safe_pass}" -AsPlainText -Force
 Set-LocalUser -Name "{safe_user}" -Password $pw
-'''
+"""
         result = self.execute_powershell(script)
         if result.success:
             self.add_to_remote_users(username)
@@ -678,7 +701,7 @@ Set-LocalUser -Name "{safe_user}" -Password $pw
             validate_username(username)
         except CommandInjectionError as e:
             logger.warning(f"输入验证失败: {str(e)}")
-            return WinrmResult(1, '', str(e))
+            return WinrmResult(1, "", str(e))
         safe_user = _escape_ps_string(username)
         script = (
             f'Add-LocalGroupMember -Group "Remote Desktop Users" '
