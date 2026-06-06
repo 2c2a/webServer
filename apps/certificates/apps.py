@@ -40,12 +40,16 @@ class CertificatesConfig(AppConfig):
                     serialization.Encoding.PEM,
                 )
 
-                ca = CertificateAuthority(name="WinRM-CA", is_active=True)
-                ca.save_ca_files(ca_key_pem, ca_cert_pem)
-                ca.expires_at = datetime.datetime.now(
-                    datetime.timezone.utc
-                ) + datetime.timedelta(days=3650)
-                ca.save()
+                ca, created = CertificateAuthority.objects.get_or_create(
+                    name="WinRM-CA",
+                    defaults={"is_active": True},
+                )
+                if created:
+                    ca.save_ca_files(ca_key_pem, ca_cert_pem)
+                    ca.expires_at = datetime.datetime.now(
+                        datetime.timezone.utc
+                    ) + datetime.timedelta(days=3650)
+                    ca.save()
         except Exception:
             logger.exception(
                 "Failed to ensure default certificate authority exists during app startup."
