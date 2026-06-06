@@ -172,7 +172,9 @@ def systemconfig_send_test_email(request):
 
     # 创建 AsyncTask 追踪记录
     from apps.tasks.models import AsyncTask
+    import uuid
     task_record = AsyncTask.objects.create(
+        task_id=str(uuid.uuid4()),
         name='测试邮件发送',
         created_by=request.user,
         status='pending',
@@ -181,7 +183,11 @@ def systemconfig_send_test_email(request):
 
     # 派发 Celery 任务
     from apps.accounts.tasks import send_test_email_task
-    send_test_email_task.delay(task_record.pk)
+    result = send_test_email_task.delay(task_record.pk)
+
+    # 回填 Celery task ID
+    task_record.task_id = result.id
+    task_record.save(update_fields=['task_id'])
 
     # 跳转到中间页
     return redirect(
