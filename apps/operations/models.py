@@ -654,19 +654,24 @@ class AccountOpeningRequest(models.Model):
             approver: 批准申请的管理员
             notes: 审核备注
         """
-        # 获取当前状态以判断是否从pending变更为approved
-        old_status = self.status
-        
         self.status = 'approved'
         self.approved_by = approver
         self.approval_date = timezone.now()
         self.approval_notes = notes
         # 不直接调用save，而是通过super().save()让重写的save方法处理后续操作
         super().save()
-        
-        # 如果之前的状态是pending，现在变更为approved，则触发自动创建
-        if old_status == 'pending' and self.status == 'approved':
-            self.auto_process_creation()
+
+        # 状态从pending变为approved时，通过Celery异步处理用户创建
+        # （save()中的逻辑也会检测此条件并派发任务，但approve()绕过了save()，
+        # 所以需要在此处显式派发）
+        try:
+            from apps.operations.tasks import process_account_creation
+            process_account_creation.delay(self.pk)
+        except Exception as e:
+            logger.error(
+                f"Failed to dispatch account creation task "
+                f"for request {self.pk}: {str(e)}"
+            )
 
     def reject(self, approver, notes=''):
         """

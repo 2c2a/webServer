@@ -114,3 +114,114 @@ def send_ticket_email_task(
     except Exception as exc:
         logger.error(f'异步工单邮件发送失败: {exc}', exc_info=True)
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=1, acks_late=True)
+def send_test_email_task(self, async_task_id):
+    """
+    异步发送测试邮件，使用 AsyncTask 追踪状态
+
+    Args:
+        async_task_id: AsyncTask 记录的 PK
+    """
+    from apps.tasks.models import AsyncTask
+    from apps.accounts.email_service import EmailService
+    from apps.dashboard.models import SystemConfig
+
+    try:
+        task_record = AsyncTask.objects.get(pk=async_task_id)
+    except AsyncTask.DoesNotExist:
+        logger.error(f'AsyncTask {async_task_id} 不存在')
+        return
+
+    task_record.start_execution()
+
+    try:
+        config = SystemConfig.get_config()
+        email_service = EmailService.from_system_config(config)
+        test_email = (
+            task_record.result.get('test_email', '')
+            if task_record.result else ''
+        )
+
+        subject = '2c2a 测试邮件'
+        from django.utils import timezone
+        text_body = (
+            f'这是一封测试邮件，用于验证邮件配置是否正确。'
+            f'测试时间: {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        )
+        html_body = f'''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>{subject}</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    border: 1px solid #eee;
+                }}
+                .header {{
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    text-align: center;
+                    border-bottom: 1px solid #dee2e6;
+                }}
+                .content {{ padding: 20px 0; }}
+                .footer {{
+                    padding: 20px 0;
+                    text-align: center;
+                    border-top: 1px solid #dee2e6;
+                    color: #6c757d;
+                    font-size: 12px;
+                }}
+                .highlight {{
+                    background-color: #e7f3ff;
+                    padding: 15px;
+                    border-left: 4px solid #007bff;
+                    margin: 15px 0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>2c2a 验证码服务</h2>
+                </div>
+                <div class="content">
+                    <p>您好！</p>
+                    <div class="highlight">
+                        <p><strong>这是一封测试邮件，用于验证邮件配置是否正确。</strong></p>
+                    </div>
+                    <p>系统配置的SMTP服务器可以正常发送邮件。</p>
+                    <p>测试时间: {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2026 2c2a. All rights reserved.</p>
+                    <p>此邮件由系统自动发送，请勿回复。</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        '''
+
+        email_service.send_email(
+            to_emails=[test_email],
+            subject=subject,
+            text_body=text_body,
+            html_body=html_body,
+        )
+
+        task_record.complete_success(
+            result_data={'test_email': test_email}
+        )
+    except Exception as exc:
+        logger.error(f'测试邮件发送失败: {exc}', exc_info=True)
+        task_record.complete_failure(str(exc))

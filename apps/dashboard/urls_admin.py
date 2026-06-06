@@ -7,6 +7,8 @@ from .views_admin import (
     widget_delete,
     systemconfig_edit,
     systemconfig_send_test_email,
+    test_email_progress,
+    test_email_sse,
 )
 
 app_name = 'admin_dashboard_config'
@@ -21,5 +23,15 @@ urlpatterns = [
         'config/send-test-email/',
         systemconfig_send_test_email,
         name='systemconfig_send_test_email',
+    ),
+    path(
+        'config/test-email/<int:task_pk>/',
+        test_email_progress,
+        name='test_email_progress',
+    ),
+    path(
+        'config/test-email/<int:task_pk>/sse/',
+        test_email_sse,
+        name='test_email_sse',
     ),
 ]
