@@ -51,6 +51,7 @@ app.conf.task_routes = {
     'operations.tasks.*': {'queue': 'operations'},
     'bootstrap.tasks.*': {'queue': 'bootstrap'},
     'plugins.beta_push.tasks.*': {'queue': 'beta_push'},
+    'accounts.tasks.*': {'queue': 'accounts'},
 }
 
 app.conf.task_default_retry_delay = 30

@@ -77,3 +77,21 @@ class EmailService:
             smtp_from_email=config.smtp_from_email,
             smtp_use_tls=config.smtp_use_tls,
         )
+
+    @staticmethod
+    def send_email_async(
+        to_emails,
+        subject,
+        text_body,
+        html_body=None,
+        from_email=None,
+    ):
+        """异步发送邮件，通过 Celery 任务执行"""
+        from .tasks import send_email_task
+        send_email_task.delay(
+            to_emails=to_emails,
+            subject=subject,
+            text_body=text_body,
+            html_body=html_body,
+            from_email=from_email,
+        )

@@ -1,13 +1,8 @@
 """
 工单系统通知模块
 
-支持邮件通知和站内通知
+支持邮件通知和站内通知（邮件通过 Celery 异步发送）
 """
-
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-
-from apps.accounts.email_service import EmailService
 
 
 def _get_system_config():
@@ -27,7 +22,7 @@ def _get_site_url():
 
 def send_ticket_email(subject, template_name, context, recipient_list):
     """
-    发送工单相关邮件
+    异步发送工单相关邮件（通过 Celery 任务）
 
     Args:
         subject: 邮件主题
@@ -38,42 +33,12 @@ def send_ticket_email(subject, template_name, context, recipient_list):
     if not recipient_list:
         return
 
-    # 渲染邮件内容
-    html_message = render_to_string(template_name, context)
-    plain_message = strip_tags(html_message)
-
-    # 从系统配置获取邮件设置
-    config = _get_system_config()
-    if config and config.smtp_from_email:
-        from_email = config.smtp_from_email
-    else:
-        from_email = 'noreply@2c2a.com'
-
-    # 使用 EmailService 发送邮件
-    if config:
-        try:
-            email_service = EmailService.from_system_config(config)
-            email_service.send_email(
-                to_emails=recipient_list,
-                subject=subject,
-                text_body=plain_message,
-                html_body=html_message,
-                from_email=from_email,
-            )
-            return
-        except Exception:
-            # 如果 EmailService 发送失败，回退到 Django 的 send_mail
-            pass
-
-    # 回退到 Django 的 send_mail
-    from django.core.mail import send_mail
-    send_mail(
+    from apps.accounts.tasks import send_ticket_email_task
+    send_ticket_email_task.delay(
         subject=subject,
-        message=plain_message,
-        from_email=from_email,
+        template_name=template_name,
+        context=context,
         recipient_list=recipient_list,
-        html_message=html_message,
-        fail_silently=True
     )
 
 
