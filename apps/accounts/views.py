@@ -467,8 +467,7 @@ def send_register_email_code(request):
 
     from .email_service import EmailService
     try:
-        email_service = EmailService.from_system_config(config)
-        email_service.send_email(
+        EmailService.send_email_async(
             to_emails=[email],
             subject=subject,
             text_body=message_body,
@@ -477,7 +476,8 @@ def send_register_email_code(request):
     except Exception as e:
         import logging as _logging
         _logging.getLogger(__name__).error(
-            f'发送注册验证码邮件失败: {str(e)}', exc_info=True
+            f'发送注册验证码邮件任务派发失败: {str(e)}',
+            exc_info=True
         )
         return JsonResponse(
             {'status': 'error', 'message': 'SMTP配置不完整'},
@@ -703,9 +703,6 @@ def send_forgot_password_email_code(request):
             status=400
         )
 
-    from apps.dashboard.models import SystemConfig
-    cfg = SystemConfig.get_config()
-
     from .captcha_service import validate_captcha
     is_valid, error_msg = validate_captcha(request, scene='email')
 
@@ -779,8 +776,7 @@ def send_forgot_password_email_code(request):
 
     from .email_service import EmailService
     try:
-        email_service = EmailService.from_system_config(cfg)
-        email_service.send_email(
+        EmailService.send_email_async(
             to_emails=[email],
             subject=subject,
             text_body=message_body,
@@ -789,7 +785,8 @@ def send_forgot_password_email_code(request):
     except Exception as e:
         import logging as _logging
         _logging.getLogger(__name__).error(
-            f'发送忘记密码验证码邮件失败: {str(e)}', exc_info=True
+            f'发送忘记密码验证码邮件任务派发失败: {str(e)}',
+            exc_info=True
         )
         return JsonResponse(
             {'status': 'error', 'message': 'SMTP配置不完整'},
