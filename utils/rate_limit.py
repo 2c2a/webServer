@@ -6,12 +6,12 @@
 - Redis（django-redis）：高性能，支持分布式
 - LocMemCache：本地内存，无需额外依赖
 """
-import time
 from functools import wraps
-from typing import Optional, Callable, Any
+from typing import Callable
 from django.core.cache import cache
 from django.conf import settings
 from django.http import JsonResponse
+from utils.helpers import get_client_ip
 import logging
 
 logger = logging.getLogger('2c2a')
@@ -108,16 +108,6 @@ def login_rate_limit():
 def api_rate_limit():
     """API 通用限流装饰器"""
     return rate_limit(key_prefix='api', limit=settings.API_RATE_LIMIT, period=60)
-
-
-def get_client_ip(request) -> str:
-    """获取客户端 IP 地址"""
-    if getattr(settings, 'USE_X_FORWARDED_FOR', False):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            return x_forwarded_for.split(',')[0].strip()
-    ip = request.META.get('REMOTE_ADDR')
-    return ip or 'unknown'
 
 
 def register_rate_limit(view_func):

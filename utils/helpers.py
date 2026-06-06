@@ -11,11 +11,40 @@ from django.conf import settings
 
 
 def get_client_ip(request) -> Optional[str]:
+    """获取客户端真实 IP 地址（支持 nginx 反向代理）
+
+    优先级：
+    1. 当请求来自可信代理时，依次尝试 X-Forwarded-For（取第一个非可信 IP）、X-Real-IP
+    2. 否则直接使用 REMOTE_ADDR
+    """
+    remote_addr = request.META.get('REMOTE_ADDR', '')
+
+    # 检查请求是否来自可信代理
+    trusted_proxies = getattr(settings, 'TRUSTED_PROXY_IPS', None)
+    if trusted_proxies and remote_addr in trusted_proxies:
+        # X-Forwarded-For: client, proxy1, proxy2 — 取最右边的非可信 IP
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ips = [ip.strip() for ip in x_forwarded_for.split(',')]
+            # 从右往左找第一个非可信代理的 IP
+            for ip in reversed(ips):
+                if ip not in trusted_proxies:
+                    return ip
+            # 全部都是可信代理，取最左边的
+            return ips[0]
+
+        # 尝试 X-Real-IP（nginx 默认设置）
+        x_real_ip = request.META.get('HTTP_X_REAL_IP')
+        if x_real_ip:
+            return x_real_ip.strip()
+
+    # 兼容旧配置 USE_X_FORWARDED_FOR
     if getattr(settings, 'USE_X_FORWARDED_FOR', False):
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             return x_forwarded_for.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR')
+
+    return remote_addr or None
 
 
 def validate_ip_address(ip: str) -> bool:

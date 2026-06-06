@@ -384,6 +384,13 @@ USE_X_FORWARDED_FOR = _env(
     'USE_X_FORWARDED_FOR', 'False'
 ).lower() == 'true'
 
+# 可信反向代理 IP 集合（nginx 等）
+# 当 REMOTE_ADDR 在此集合中时，从 X-Forwarded-For / X-Real-IP 获取真实客户端 IP
+# 防止代理场景下所有用户共享同一 IP 导致限流误触发
+TRUSTED_PROXY_IPS = set(
+    _env('TRUSTED_PROXY_IPS', '127.0.0.1,::1').split(',')
+)
+
 SESSION_COOKIE_SECURE = _env(
     'SESSION_COOKIE_SECURE', 'True' if not DEBUG else 'False'
 ).lower() == 'true'
