@@ -9,12 +9,12 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto mt-16"
+<div class="max-w-2xl mx-auto mt-16"
      x-data="emailProgress()"
      x-init="init()">
 
     <x-admin-card>
-        <div class="text-center py-8">
+        <div class="text-center py-6">
             <!-- Pending / Running -->
             <template x-if="status === 'pending' || status === 'running'">
                 <div>
@@ -27,7 +27,13 @@
                     <p class="text-white/70 text-sm">
                         目标: <span class="text-cyan-400">{{ test_email }}</span>
                     </p>
-                    <p class="text-white/50 text-xs mt-2">请稍候，正在连接 SMTP 服务器...</p>
+                    <!-- Progress bar -->
+                    <div class="mt-4 mx-auto max-w-xs">
+                        <div class="w-full bg-slate-800 rounded-full h-1.5">
+                            <div class="bg-cyan-500 h-1.5 rounded-full transition-all duration-500"
+                                 :style="`width: ${progress}%`"></div>
+                        </div>
+                    </div>
                 </div>
             </template>
 
@@ -93,6 +99,23 @@
                 </div>
             </template>
         </div>
+
+        <!-- Debug Log Panel -->
+        <div class="border-t border-slate-700/50 px-6 py-4">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-rounded text-sm text-cyan-400">terminal</span>
+                <span class="text-xs font-medium text-white/70 uppercase tracking-wider">调试日志</span>
+            </div>
+            <div class="bg-slate-950/80 rounded-md p-3 max-h-48 overflow-y-auto font-mono text-xs space-y-0.5"
+                 x-ref="logContainer">
+                <template x-if="logs.length === 0">
+                    <p class="text-white/30">等待任务启动...</p>
+                </template>
+                <template x-for="(log, index) in logs" :key="index">
+                    <p class="text-green-400/80 whitespace-pre-wrap" x-text="log"></p>
+                </template>
+            </div>
+        </div>
     </x-admin-card>
 </div>
 
@@ -100,7 +123,9 @@
 function emailProgress() {
     return {
         status: '{{ task_record.status }}',
+        progress: {{ task_record.progress|default:0 }},
         errorMsg: '{{ task_record.error_message|default:"" }}',
+        logs: [],
 
         init() {
             if (this.status === 'success' || this.status === 'failed' || this.status === 'cancelled') {
@@ -114,8 +139,16 @@ function emailProgress() {
                 try {
                     const data = JSON.parse(event.data);
                     this.status = data.status;
+                    this.progress = data.progress || 0;
                     if (data.error) {
                         this.errorMsg = data.error;
+                    }
+                    if (data.logs) {
+                        this.logs = data.logs;
+                        this.$nextTick(() => {
+                            const el = this.$refs.logContainer;
+                            if (el) el.scrollTop = el.scrollHeight;
+                        });
                     }
                     if (data.status === 'success' || data.status === 'failed' || data.status === 'cancelled' || data.status === 'timeout') {
                         es.close();

@@ -86,6 +86,7 @@ def send_ticket_email_task(
             if config and config.smtp_from_email
             else 'noreply@2c2a.com'
         )
+        from_name = config.smtp_from_name if config else None
 
         if config:
             try:
@@ -103,6 +104,8 @@ def send_ticket_email_task(
 
         # 回退到 Django 的 send_mail
         from django.core.mail import send_mail
+        if from_name:
+            from_email = f'{from_name} <{from_email}>'
         send_mail(
             subject=subject,
             message=plain_message,
@@ -119,7 +122,7 @@ def send_ticket_email_task(
 @shared_task(bind=True, max_retries=1, acks_late=True)
 def send_test_email_task(self, async_task_id):
     """
-    异步发送测试邮件，使用 AsyncTask 追踪状态
+    异步发送测试邮件，使用 AsyncTask 追踪状态并记录调试日志
 
     Args:
         async_task_id: AsyncTask 记录的 PK
@@ -134,15 +137,44 @@ def send_test_email_task(self, async_task_id):
         logger.error(f'AsyncTask {async_task_id} 不存在')
         return
 
+    def _log(msg):
+        """追加调试日志到 AsyncTask.result"""
+        task_record.refresh_from_db()
+        result = task_record.result or {}
+        logs = result.get('logs', [])
+        from django.utils import timezone
+        logs.append(
+            f'[{timezone.now().strftime("%H:%M:%S")}] {msg}'
+        )
+        result['logs'] = logs
+        task_record.result = result
+        task_record.save(update_fields=['result'])
+
     task_record.start_execution()
+    _log('任务已启动')
 
     try:
+        _log('正在读取系统 SMTP 配置...')
         config = SystemConfig.get_config()
+
+        if not config or not config.smtp_host:
+            _log('错误: SMTP 未配置')
+            task_record.complete_failure('SMTP 未配置（smtp_host 为空）')
+            return
+
+        _log(
+            f'SMTP 配置: {config.smtp_host}:{config.smtp_port}, '
+            f'TLS={config.smtp_use_tls}, '
+            f'from={config.smtp_from_email}'
+        )
+
         email_service = EmailService.from_system_config(config)
         test_email = (
             task_record.result.get('test_email', '')
             if task_record.result else ''
         )
+
+        _log(f'收件人: {test_email}')
 
         subject = '2c2a 测试邮件'
         from django.utils import timezone
@@ -212,6 +244,10 @@ def send_test_email_task(self, async_task_id):
         </html>
         '''
 
+        _log('正在连接 SMTP 服务器...')
+        task_record.progress = 30
+        task_record.save(update_fields=['progress'])
+
         email_service.send_email(
             to_emails=[test_email],
             subject=subject,
@@ -219,9 +255,14 @@ def send_test_email_task(self, async_task_id):
             html_body=html_body,
         )
 
+        _log('邮件发送成功')
+        task_record.progress = 100
+        task_record.save(update_fields=['progress'])
+
         task_record.complete_success(
             result_data={'test_email': test_email}
         )
     except Exception as exc:
         logger.error(f'测试邮件发送失败: {exc}', exc_info=True)
+        _log(f'异常: {exc}')
         task_record.complete_failure(str(exc))

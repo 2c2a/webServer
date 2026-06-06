@@ -239,10 +239,12 @@ def test_email_sse(request, task_pk):
                 yield f"data: {json.dumps({'status': 'failed', 'error': '任务不存在'})}\n\n"
                 return
 
+            result = task_record.result or {}
             data = {
                 'status': task_record.status,
                 'progress': task_record.progress,
                 'error': task_record.error_message,
+                'logs': result.get('logs', []),
             }
             yield f"data: {json.dumps(data)}\n\n"
 
