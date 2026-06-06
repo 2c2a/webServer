@@ -1228,17 +1228,19 @@ class CloudComputerUser(models.Model):
         import string
         
         # 包含大写字母、小写字母、数字和特殊字符
-        alphabet = string.ascii_letters + string.digits + '!@#$%^&*()_+-=[]{}|;:,.<>?'
-        
+        # 排除 PowerShell 双引号字符串中有歧义的字符: " $ `
+        _special = '!@#%^&*()_+-=[]{}|;:,.<>?'
+        alphabet = string.ascii_letters + string.digits + _special
+
         # 确保至少包含每种类型的字符
         while True:
             password = ''.join(secrets.choice(alphabet) for i in range(length))
-            
+
             # 检查是否包含所需类型的字符
             has_upper = any(c.isupper() for c in password)
             has_lower = any(c.islower() for c in password)
             has_digit = any(c.isdigit() for c in password)
-            has_special = any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in password)
+            has_special = any(c in _special for c in password)
             
             if has_upper and has_lower and has_digit and has_special:
                 return password
