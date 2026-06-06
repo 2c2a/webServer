@@ -87,14 +87,14 @@ def execute_account_opening(account_request):
             else:
                 # 创建用户失败
                 error_msg = result.std_err if result.std_err else '未知错误'
-                account_request.fail(f"创建用户失败: {error_msg}")
+                account_request.fail("开户处理失败，请联系管理员了解详情")
                 logger.error(f"开户申请处理失败: {account_request.username}, 错误: {error_msg}")
                 raise Exception(f"创建用户失败: {error_msg}")
-                
+
         except Exception as e:
             # 处理过程中的任何异常
             error_msg = str(e)
-            account_request.fail(error_msg)
+            account_request.fail("开户处理失败，请联系管理员了解详情")
             logger.error(f"开户申请处理异常: {account_request.username}, 异常: {error_msg}")
             raise
 

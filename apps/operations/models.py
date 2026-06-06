@@ -764,7 +764,7 @@ class AccountOpeningRequest(models.Model):
                 f"request {self.pk}: {str(e)}"
             )
             self.status = 'failed'
-            self.result_message = f'重试失败: {str(e)}'
+            self.result_message = '重试失败，请联系管理员了解详情'
             self.save(update_fields=['status', 'result_message'])
             return False
 

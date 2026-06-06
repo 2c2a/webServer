@@ -422,7 +422,9 @@ def account_opening_detail(request, pk):
                 ),
                 "done": account_request.status in ("completed",),
                 "detail": (
-                    account_request.result_message
+                    "开户处理失败，请联系管理员了解详情"
+                    if account_request.status == "failed"
+                    else account_request.result_message
                     if account_request.result_message
                     else None
                 ),
