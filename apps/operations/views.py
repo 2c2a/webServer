@@ -623,6 +623,33 @@ def get_password_and_burn(request, pk):
 
 
 @login_required
+@require_POST
+def reset_password_and_burn(request, pk):
+    """重置密码并返回新密码（阅后即焚）"""
+    cloud_user = get_object_or_404(CloudComputerUser, pk=pk)
+
+    # 权限检查
+    has_access = False
+    if cloud_user.owner and cloud_user.owner == request.user:
+        has_access = True
+    elif (
+        cloud_user.created_from_request
+        and cloud_user.created_from_request.applicant == request.user
+    ):
+        has_access = True
+
+    if not has_access:
+        return JsonResponse({"success": False, "error": "无权访问"}, status=403)
+
+    try:
+        new_password = cloud_user.reset_and_get_new_password()
+        return JsonResponse({"success": True, "password": new_password})
+    except Exception as e:
+        logger.error(f"重置密码失败: {str(e)}", exc_info=True)
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@login_required
 def get_product_disk_config(request, product_id):
     """获取产品的磁盘配额配置"""
     try:

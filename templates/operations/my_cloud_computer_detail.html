@@ -231,11 +231,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 重置密码功能
     if (resetPasswordBtn) {
         resetPasswordBtn.addEventListener('click', function() {
-            if (!confirm('确定要重置密码吗？这将会生成一个新的强密码，并设置为下次登录必须修改。')) {
+            if (!confirm('确定要重置密码吗？这将会生成一个新的强密码。')) {
                 return;
             }
             
-            fetch('{% url "operations:get_password_and_burn" cloud_user.pk %}', {
+            fetch('{% url "operations:reset_password_and_burn" cloud_user.pk %}', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',

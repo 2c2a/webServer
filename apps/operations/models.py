@@ -1200,18 +1200,36 @@ class CloudComputerUser(models.Model):
         if os.environ.get('2C2A_DEMO', '').lower() == '1':
             logger.info(f'DEMO模式: 模拟重置用户 {self.username} 的密码')
             return
-        
+
         try:
             product = self.product
             host = product.host
             client = host.get_connection_client()
-            
+
             result = client.reset_password(self.username, new_password)
             if result.status_code != 0:
                 error_msg = result.std_err if result.std_err else 'Unknown error'
                 logger.error(f"Failed to reset password for user {self.username} on host {host.name}: {error_msg}")
+                raise Exception(f"远程重置密码失败: {error_msg}")
         except Exception as e:
             logger.error(f"Error resetting password for user {self.username} on host {host.name}: {str(e)}")
+            raise
+
+    def reset_and_get_new_password(self):
+        """重置密码并返回新密码（用于阅后即焚流程）"""
+        from django.utils import timezone
+
+        new_password = self.generate_complex_password()
+        self.reset_windows_password(new_password)
+
+        self._initial_password = ''
+        self.initial_password = new_password
+        self.password_viewed = False
+        self.password_viewed_at = None
+        self.save(update_fields=['password_viewed', 'password_viewed_at', '_initial_password'])
+
+        password = self.get_and_burn_password()
+        return password
 
     @staticmethod
     def generate_complex_password(length=16):

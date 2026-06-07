@@ -431,6 +431,7 @@ class WinrmClient:
         script = f"""
 $pw = ConvertTo-SecureString "{safe_pass}" -AsPlainText -Force
 New-LocalUser -Name "{safe_user}" -Password $pw -Description "{safe_desc}" -ErrorAction Stop
+net user "{safe_user}" /logonpasswordchg:NO
 Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
 """
         if group:
@@ -467,7 +468,7 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
         script = f"""
 $pw = ConvertTo-SecureString "{safe_pass}" -AsPlainText -Force
 New-LocalUser -Name "{safe_user}" -Password $pw -Description "{safe_desc}" -ErrorAction Stop
-net user "{safe_user}" /logonpasswordchg:YES
+net user "{safe_user}" /logonpasswordchg:NO
 Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
 """
         if group:
@@ -690,6 +691,7 @@ Add-LocalGroupMember -Group "Users" -Member "{safe_user}" -ErrorAction Stop
         script = f"""
 $pw = ConvertTo-SecureString "{safe_pass}" -AsPlainText -Force
 Set-LocalUser -Name "{safe_user}" -Password $pw
+net user "{safe_user}" /logonpasswordchg:NO
 """
         result = self.execute_powershell(script)
         if result.success:
