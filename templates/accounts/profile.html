@@ -25,6 +25,10 @@
                 <span class="material-symbols-rounded text-xl">notifications</span>
                 <span class="text-base font-medium">通知设置</span>
             </div>
+            <div class="flex items-center gap-4 px-6 py-4 cursor-pointer border-l-[3px] border-l-transparent text-md-on-surface-variant transition hover:bg-md-surface-variant hover:text-md-on-surface nav-item" data-target="emails-panel">
+                <span class="material-symbols-rounded text-xl">email</span>
+                <span class="text-base font-medium">邮箱管理</span>
+            </div>
         </div>
 
         <!-- 右侧内容 -->
@@ -190,6 +194,87 @@
                     </div>
                 </form>
             </div>
+
+            <!-- 邮箱管理面板 -->
+            <div class="bg-md-surface-container/70 backdrop-blur-xl border border-white/10 rounded-md-lg shadow-2xl p-8 sm:p-6 hidden settings-panel" id="emails-panel">
+                <div class="mb-8 pb-4 border-b border-md-outline-variant">
+                    <h2 class="text-2xl font-bold text-md-on-surface mb-2">邮箱管理</h2>
+                    <p class="text-sm text-md-on-surface-variant m-0">管理您绑定的邮箱地址，绑定新邮箱时如遇已注册账户将触发合并</p>
+                </div>
+
+                <!-- 已绑定邮箱列表 -->
+                <div id="email-list" class="space-y-3 mb-6">
+                    <div class="text-center py-8 text-md-on-surface-variant">
+                        <span class="material-symbols-rounded text-4xl block mb-2">hourglass_empty</span>
+                        加载中...
+                    </div>
+                </div>
+
+                <!-- 绑定新邮箱 -->
+                <div class="border-t border-md-outline-variant pt-6">
+                    <h3 class="text-lg font-medium text-md-on-surface mb-4">绑定新邮箱</h3>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-md-on-surface">邮箱地址</label>
+                            <input type="email" id="bind-email-input"
+                                class="w-full px-4 py-3 border border-md-outline/50 rounded-md bg-md-surface/50 text-md-on-surface transition focus:outline-none focus:ring-2 focus:ring-md-primary"
+                                placeholder="请输入要绑定的邮箱地址">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-md-on-surface">验证码</label>
+                            <div class="flex gap-3">
+                                <input type="text" id="bind-email-code"
+                                    class="flex-1 px-4 py-3 border border-md-outline/50 rounded-md bg-md-surface/50 text-md-on-surface transition focus:outline-none focus:ring-2 focus:ring-md-primary"
+                                    placeholder="输入验证码" maxlength="6">
+                                <button type="button" id="send-bind-code-btn"
+                                    class="bg-md-secondary-container text-md-on-secondary-container px-4 py-3 rounded-md font-medium transition hover:bg-md-secondary-container/80 whitespace-nowrap">
+                                    发送验证码
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" id="bind-email-btn"
+                            class="bg-md-primary text-md-on-primary px-6 py-3 rounded-md-xl font-medium shadow-lg transition hover:shadow-xl">
+                            绑定邮箱
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 合并确认弹窗 -->
+                <div id="merge-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div class="bg-md-surface-container/80 backdrop-blur-2xl border border-md-outline/30 rounded-md-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                        <h3 class="text-xl font-bold text-md-on-surface mb-3">账户合并确认</h3>
+                        <p id="merge-message" class="text-sm text-md-on-surface-variant mb-4"></p>
+                        <div class="space-y-3 mb-6">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="merge-direction" value="true" checked
+                                    class="w-5 h-5 accent-md-primary">
+                                <div>
+                                    <span class="text-sm font-medium text-md-on-surface">保留较新的账户</span>
+                                    <span class="text-xs text-md-on-surface-variant block">较旧的账户数据将合并到较新账户</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="merge-direction" value="false"
+                                    class="w-5 h-5 accent-md-primary">
+                                <div>
+                                    <span class="text-sm font-medium text-md-on-surface">保留较旧的账户</span>
+                                    <span class="text-xs text-md-on-surface-variant block">较新的账户数据将合并到较旧账户</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="flex gap-3 justify-end">
+                            <button type="button" id="merge-cancel-btn"
+                                class="px-4 py-2 rounded-md text-md-on-surface-variant hover:bg-md-surface-variant transition">
+                                取消
+                            </button>
+                            <button type="button" id="merge-confirm-btn"
+                                class="bg-md-primary text-md-on-primary px-6 py-2 rounded-md font-medium transition hover:bg-md-primary/90">
+                                确认合并
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -212,6 +297,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const target = document.getElementById(targetId);
             target.classList.remove('hidden');
             target.classList.add('active');
+
+            // 加载邮箱列表
+            if (targetId === 'emails-panel') loadEmails();
         });
     });
 
@@ -240,6 +328,186 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!isValid) { e.preventDefault(); }
         });
     });
+
+    // ── 邮箱管理逻辑 ──
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    function loadEmails() {
+        fetch('{% url "accounts:email_list" %}')
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('email-list');
+                if (!data.emails || data.emails.length === 0) {
+                    list.innerHTML = '<p class="text-center py-4 text-md-on-surface-variant">暂无绑定邮箱</p>';
+                    return;
+                }
+                list.innerHTML = data.emails.map(e => `
+                    <div class="flex items-center justify-between px-4 py-3 border border-md-outline/30 rounded-md bg-md-surface/30">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-rounded text-md-primary">${e.is_primary ? 'mark_email_unread' : 'email'}</span>
+                            <div>
+                                <span class="text-md-on-surface text-sm font-medium">${e.email}</span>
+                                <div class="flex gap-2 mt-0.5">
+                                    ${e.is_primary ? '<span class="text-xs px-1.5 py-0.5 rounded bg-md-primary/20 text-md-primary">主邮箱</span>' : ''}
+                                    ${e.is_verified ? '<span class="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">已验证</span>' : '<span class="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">未验证</span>'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            ${!e.is_primary && e.is_verified ? `<button onclick="setPrimary(${e.id})" class="text-xs px-3 py-1 rounded-md bg-md-secondary-container text-md-on-secondary-container hover:bg-md-secondary-container/80 transition">设为主邮箱</button>` : ''}
+                            ${!e.is_primary ? `<button onclick="unbindEmail(${e.id})" class="text-xs px-3 py-1 rounded-md bg-md-error-container text-md-on-error-container hover:bg-md-error-container/80 transition">解绑</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            })
+            .catch(() => {
+                document.getElementById('email-list').innerHTML =
+                    '<p class="text-center py-4 text-md-error">加载失败</p>';
+            });
+    }
+
+    // 发送绑定验证码
+    let bindCodeTimer = null;
+    document.getElementById('send-bind-code-btn').addEventListener('click', function() {
+        const email = document.getElementById('bind-email-input').value.trim();
+        if (!email) { alert('请输入邮箱地址'); return; }
+        const btn = this;
+        btn.disabled = true;
+        let countdown = 60;
+        btn.textContent = countdown + 's';
+        bindCodeTimer = setInterval(() => {
+            countdown--;
+            btn.textContent = countdown + 's';
+            if (countdown <= 0) {
+                clearInterval(bindCodeTimer);
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            }
+        }, 1000);
+
+        fetch('{% url "accounts:send_bind_email_code" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrftoken},
+            body: 'email=' + encodeURIComponent(email)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status !== 'ok') {
+                alert(data.message || '发送失败');
+                clearInterval(bindCodeTimer);
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            }
+        })
+        .catch(() => {
+            alert('发送失败');
+            clearInterval(bindCodeTimer);
+            btn.disabled = false;
+            btn.textContent = '发送验证码';
+        });
+    });
+
+    // 绑定邮箱
+    document.getElementById('bind-email-btn').addEventListener('click', function() {
+        const email = document.getElementById('bind-email-input').value.trim();
+        const code = document.getElementById('bind-email-code').value.trim();
+        if (!email || !code) { alert('请填写邮箱和验证码'); return; }
+
+        fetch('{% url "accounts:email_bind" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrftoken},
+            body: 'email=' + encodeURIComponent(email) + '&email_code=' + encodeURIComponent(code)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                alert('邮箱绑定成功');
+                loadEmails();
+                document.getElementById('bind-email-input').value = '';
+                document.getElementById('bind-email-code').value = '';
+            } else if (data.action === 'merge_required') {
+                // 显示合并确认弹窗
+                document.getElementById('merge-message').textContent = data.message;
+                document.getElementById('merge-modal').dataset.otherUserId = data.merge_info.other_user_id;
+                document.getElementById('merge-modal').classList.remove('hidden');
+            } else if (data.action === 'banned') {
+                alert(data.message || '该邮箱关联的账户已被封禁，您的账户也已被同步封禁');
+            } else {
+                alert(data.message || '绑定失败');
+            }
+        })
+        .catch(() => alert('绑定失败'));
+    });
+
+    // 合并确认
+    document.getElementById('merge-cancel-btn').addEventListener('click', function() {
+        document.getElementById('merge-modal').classList.add('hidden');
+    });
+    document.getElementById('merge-confirm-btn').addEventListener('click', function() {
+        const modal = document.getElementById('merge-modal');
+        const otherUserId = modal.dataset.otherUserId;
+        const keepNewer = document.querySelector('input[name="merge-direction"]:checked').value === 'true';
+        modal.classList.add('hidden');
+
+        fetch('{% url "accounts:email_merge_confirm" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrftoken},
+            body: 'other_user_id=' + encodeURIComponent(otherUserId) + '&keep_newer=' + keepNewer
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                alert('账户合并成功');
+                loadEmails();
+            } else {
+                alert(data.message || '合并失败');
+            }
+        })
+        .catch(() => alert('合并失败'));
+    });
+
+    // 设为主邮箱
+    window.setPrimary = function(emailId) {
+        fetch('/accounts/api/emails/' + emailId + '/set-primary/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrftoken}
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') loadEmails();
+            else alert(data.message);
+        })
+        .catch(() => alert('操作失败'));
+    };
+
+    // 解绑邮箱
+    window.unbindEmail = function(emailId) {
+        if (!confirm('确定要解绑该邮箱吗？')) return;
+        fetch('/accounts/api/emails/' + emailId + '/unbind/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrftoken}
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') loadEmails();
+            else alert(data.message);
+        })
+        .catch(() => alert('操作失败'));
+    };
 });
 </script>
 {% endblock %}

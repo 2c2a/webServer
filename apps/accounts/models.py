@@ -1,6 +1,7 @@
 """
 用户管理模型
 """
+
 import uuid as _uuid
 
 from django.db import models
@@ -15,63 +16,58 @@ class User(AbstractUser):
 
     扩展Django默认用户模型，添加额外字段
     """
+
     # 基本信息
     phone = models.CharField(
         max_length=20,
         blank=True,
         null=True,
-        verbose_name=_('手机号码'),
-        help_text=_('用户的手机号码')
+        verbose_name=_("手机号码"),
+        help_text=_("用户的手机号码"),
     )
     avatar = models.ImageField(
-        upload_to='avatars/',
+        upload_to="avatars/",
         blank=True,
         null=True,
-        verbose_name=_('头像'),
-        help_text=_('用户头像图片')
+        verbose_name=_("头像"),
+        help_text=_("用户头像图片"),
     )
 
     # 状态信息
     is_verified = models.BooleanField(
-        default=False,
-        verbose_name=_('已验证'),
-        help_text=_('用户邮箱是否已验证')
+        default=False, verbose_name=_("已验证"), help_text=_("用户邮箱是否已验证")
     )
     last_login_ip = models.GenericIPAddressField(
         blank=True,
         null=True,
-        verbose_name=_('最后登录IP'),
-        help_text=_('用户最后一次登录的IP地址')
+        verbose_name=_("最后登录IP"),
+        help_text=_("用户最后一次登录的IP地址"),
     )
 
     # 时间信息
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('创建时间'),
-        help_text=_('用户账号创建时间')
+        auto_now_add=True, verbose_name=_("创建时间"), help_text=_("用户账号创建时间")
     )
     updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name=_('更新时间'),
-        help_text=_('用户信息最后更新时间')
+        auto_now=True, verbose_name=_("更新时间"), help_text=_("用户信息最后更新时间")
     )
 
     site_groups = models.ManyToManyField(
-        'dashboard.SiteGroup',
+        "dashboard.SiteGroup",
         blank=True,
-        related_name='members',
-        verbose_name=_('所属站点组'),
-        help_text=_('用户所属的站点组，决定用户可见的数据范围'),
+        related_name="members",
+        verbose_name=_("所属站点组"),
+        help_text=_("用户所属的站点组，决定用户可见的数据范围"),
     )
 
     class Meta:
-        verbose_name = _('用户')
+        verbose_name = _("用户")
         verbose_name_plural = verbose_name
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['email']),
-            models.Index(fields=['phone']),
-            models.Index(fields=['is_active']),
+            models.Index(fields=["email"]),
+            models.Index(fields=["phone"]),
+            models.Index(fields=["is_active"]),
         ]
 
     def __str__(self):
@@ -93,6 +89,7 @@ class User(AbstractUser):
     def get_adminable_site_groups(self):
         if self.is_superuser:
             from apps.dashboard.models import SiteGroup
+
             return SiteGroup.objects.all()
         return self.admin_site_groups.all()
 
@@ -100,16 +97,14 @@ class User(AbstractUser):
         if self.is_superuser:
             if not self.is_staff:
                 self.is_staff = True
-                self.save(update_fields=['is_staff'])
+                self.save(update_fields=["is_staff"])
             return
 
-        has_auto_staff = self.groups.filter(
-            profile__auto_staff=True
-        ).exists()
+        has_auto_staff = self.groups.filter(profile__auto_staff=True).exists()
 
         if has_auto_staff != self.is_staff:
             self.is_staff = has_auto_staff
-            self.save(update_fields=['is_staff'])
+            self.save(update_fields=["is_staff"])
 
     def update_last_login(self, request):
         """
@@ -119,9 +114,161 @@ class User(AbstractUser):
             request: Django请求对象
         """
         from utils.helpers import get_client_ip
+
         self.last_login = timezone.now()
         self.last_login_ip = get_client_ip(request)
-        self.save(update_fields=['last_login', 'last_login_ip'])
+        self.save(update_fields=["last_login", "last_login_ip"])
+
+
+class UserEmail(models.Model):
+    """
+    用户多邮箱绑定模型
+
+    一个用户可以有一个主邮箱和多个子邮箱。
+    用于账户合并检测和封禁污染追踪。
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="emails",
+        verbose_name=_("用户"),
+        help_text=_("关联的用户"),
+    )
+    email = models.EmailField(
+        verbose_name=_("邮箱地址"),
+        help_text=_("绑定的邮箱地址"),
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        verbose_name=_("主邮箱"),
+        help_text=_("是否为用户的主邮箱"),
+    )
+    is_verified = models.BooleanField(
+        default=False,
+        verbose_name=_("已验证"),
+        help_text=_("邮箱是否已通过验证码验证"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("绑定时间"),
+        help_text=_("邮箱绑定的时间"),
+    )
+
+    class Meta:
+        verbose_name = _("用户邮箱")
+        verbose_name_plural = verbose_name
+        unique_together = [("email",)]
+        indexes = [
+            models.Index(fields=["email"]),
+            models.Index(fields=["user", "is_primary"]),
+        ]
+
+    def __str__(self):
+        primary_tag = " [主]" if self.is_primary else ""
+        return f"{self.email}{primary_tag}"
+
+    def save(self, *args, **kwargs):
+        # 如果设置为主邮箱，确保同用户其他邮箱取消主邮箱标记
+        if self.is_primary:
+            UserEmail.objects.filter(user=self.user, is_primary=True).exclude(
+                pk=self.pk
+            ).update(is_primary=False)
+        super().save(*args, **kwargs)
+
+
+class UserBan(models.Model):
+    """
+    用户封禁记录
+
+    自定义封禁系统，替代 Django 的 is_active 字段。
+    支持封禁理由、封禁者记录，以及封禁历史。
+    一个用户同一时间只能有一条活跃封禁记录。
+    """
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="active_ban",
+        verbose_name=_("用户"),
+        help_text=_("被封禁的用户"),
+    )
+    reason = models.TextField(
+        blank=True,
+        verbose_name=_("封禁理由"),
+        help_text=_("封禁该用户的理由，将展示给用户"),
+    )
+    banned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issued_bans",
+        verbose_name=_("封禁操作者"),
+        help_text=_("执行封禁操作的管理员"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("封禁时间"),
+        help_text=_("封禁操作的时间"),
+    )
+
+    class Meta:
+        verbose_name = _("用户封禁")
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f"封禁: {self.user.username} ({self.created_at:%Y-%m-%d %H:%M})"
+
+
+class UserBanHistory(models.Model):
+    """
+    封禁历史记录
+
+    解封时将活跃封禁记录归档到此表，保留完整封禁历史。
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="ban_history",
+        verbose_name=_("用户"),
+    )
+    reason = models.TextField(
+        blank=True,
+        verbose_name=_("封禁理由"),
+    )
+    banned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issued_ban_history",
+        verbose_name=_("封禁操作者"),
+    )
+    unbanned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="revoked_ban_history",
+        verbose_name=_("解封操作者"),
+    )
+    banned_at = models.DateTimeField(
+        verbose_name=_("封禁时间"),
+    )
+    unbanned_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("解封时间"),
+    )
+
+    class Meta:
+        verbose_name = _("封禁历史")
+        verbose_name_plural = verbose_name
+        ordering = ["-unbanned_at"]
+
+    def __str__(self):
+        return f"封禁历史: {self.user.username} ({self.banned_at:%Y-%m-%d} → {self.unbanned_at:%Y-%m-%d})"
 
 
 class UserProfile(models.Model):
@@ -130,79 +277,61 @@ class UserProfile(models.Model):
 
     存储用户的详细资料信息
     """
+
     # 关联用户
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='profile',
-        verbose_name=_('用户'),
-        help_text=_('关联的用户')
+        related_name="profile",
+        verbose_name=_("用户"),
+        help_text=_("关联的用户"),
     )
 
     # 个人信息
     nickname = models.CharField(
-        max_length=50,
-        blank=True,
-        verbose_name=_('昵称'),
-        help_text=_('用户昵称')
+        max_length=50, blank=True, verbose_name=_("昵称"), help_text=_("用户昵称")
     )
     gender = models.CharField(
         max_length=10,
         choices=[
-            ('male', _('男')),
-            ('female', _('女')),
-            ('other', _('其他')),
+            ("male", _("男")),
+            ("female", _("女")),
+            ("other", _("其他")),
         ],
         blank=True,
-        verbose_name=_('性别'),
-        help_text=_('用户性别')
+        verbose_name=_("性别"),
+        help_text=_("用户性别"),
     )
     birthday = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name=_('生日'),
-        help_text=_('用户生日')
+        blank=True, null=True, verbose_name=_("生日"), help_text=_("用户生日")
     )
     location = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name=_('所在地'),
-        help_text=_('用户所在地')
+        max_length=100, blank=True, verbose_name=_("所在地"), help_text=_("用户所在地")
     )
     bio = models.TextField(
-        blank=True,
-        verbose_name=_('个人简介'),
-        help_text=_('用户个人简介')
+        blank=True, verbose_name=_("个人简介"), help_text=_("用户个人简介")
     )
 
     # 通知设置
     email_notification = models.BooleanField(
-        default=True,
-        verbose_name=_('邮件通知'),
-        help_text=_('是否接收邮件通知')
+        default=True, verbose_name=_("邮件通知"), help_text=_("是否接收邮件通知")
     )
     system_notification = models.BooleanField(
-        default=True,
-        verbose_name=_('系统通知'),
-        help_text=_('是否接收系统通知')
+        default=True, verbose_name=_("系统通知"), help_text=_("是否接收系统通知")
     )
 
     # 时间信息
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('创建时间'),
-        help_text=_('资料创建时间')
+        auto_now_add=True, verbose_name=_("创建时间"), help_text=_("资料创建时间")
     )
     updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name=_('更新时间'),
-        help_text=_('资料最后更新时间')
+        auto_now=True, verbose_name=_("更新时间"), help_text=_("资料最后更新时间")
     )
 
     class Meta:
-        verbose_name = _('用户资料')
+        verbose_name = _("用户资料")
         verbose_name_plural = verbose_name
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         """返回用户昵称或用户名"""
@@ -215,76 +344,71 @@ class LoginLog(models.Model):
 
     记录用户的登录历史
     """
+
     # 关联用户
     user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
-        related_name='login_logs',
-        verbose_name=_('用户'),
-        help_text=_('登录的用户')
+        related_name="login_logs",
+        verbose_name=_("用户"),
+        help_text=_("登录的用户"),
     )
 
     # 登录信息
     ip_address = models.GenericIPAddressField(
-        verbose_name=_('IP地址'),
-        help_text=_('登录时的IP地址')
+        verbose_name=_("IP地址"), help_text=_("登录时的IP地址")
     )
     user_agent = models.TextField(
-        blank=True,
-        verbose_name=_('用户代理'),
-        help_text=_('登录时的浏览器信息')
+        blank=True, verbose_name=_("用户代理"), help_text=_("登录时的浏览器信息")
     )
     login_type = models.CharField(
         max_length=20,
         choices=[
-            ('web', _('网页登录')),
-            ('api', _('API登录')),
-            ('other', _('其他')),
+            ("web", _("网页登录")),
+            ("api", _("API登录")),
+            ("other", _("其他")),
         ],
-        default='web',
-        verbose_name=_('登录方式'),
-        help_text=_('用户的登录方式')
+        default="web",
+        verbose_name=_("登录方式"),
+        help_text=_("用户的登录方式"),
     )
     status = models.CharField(
         max_length=20,
         choices=[
-            ('success', _('成功')),
-            ('failed', _('失败')),
+            ("success", _("成功")),
+            ("failed", _("失败")),
         ],
-        verbose_name=_('登录状态'),
-        help_text=_('登录是否成功')
+        verbose_name=_("登录状态"),
+        help_text=_("登录是否成功"),
     )
     failure_reason = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name=_('失败原因'),
-        help_text=_('登录失败的原因')
+        verbose_name=_("失败原因"),
+        help_text=_("登录失败的原因"),
     )
 
     # 时间信息
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('登录时间'),
-        help_text=_('登录发生的时间')
+        auto_now_add=True, verbose_name=_("登录时间"), help_text=_("登录发生的时间")
     )
 
     class Meta:
-        verbose_name = _('登录日志')
+        verbose_name = _("登录日志")
         verbose_name_plural = verbose_name
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['user']),
-            models.Index(fields=['ip_address']),
-            models.Index(fields=['status']),
-            models.Index(fields=['created_at']),
+            models.Index(fields=["user"]),
+            models.Index(fields=["ip_address"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["created_at"]),
         ]
 
     def __str__(self):
         """返回登录信息"""
         return (
-            f'{self.user.username if self.user else "未知用户"}'
-            f' - {self.ip_address}'
+            f'{self.user.username if self.user else "未知用户"}' f" - {self.ip_address}"
         )
 
 
@@ -292,39 +416,35 @@ class GroupProfile(models.Model):
     group = models.OneToOneField(
         Group,
         on_delete=models.CASCADE,
-        related_name='profile',
-        verbose_name=_('用户组'),
-        help_text=_('关联的Django用户组')
+        related_name="profile",
+        verbose_name=_("用户组"),
+        help_text=_("关联的Django用户组"),
     )
     is_default = models.BooleanField(
         default=False,
-        verbose_name=_('默认组'),
-        help_text=_('默认组不可删除，系统预设角色')
+        verbose_name=_("默认组"),
+        help_text=_("默认组不可删除，系统预设角色"),
     )
     description = models.TextField(
-        blank=True,
-        verbose_name=_('描述'),
-        help_text=_('用户组的功能描述')
+        blank=True, verbose_name=_("描述"), help_text=_("用户组的功能描述")
     )
     auto_staff = models.BooleanField(
         default=False,
-        verbose_name=_('自动员工'),
-        help_text=_('勾选后，属于该组的用户将自动获得员工身份(is_staff)')
+        verbose_name=_("自动员工"),
+        help_text=_("勾选后，属于该组的用户将自动获得员工身份(is_staff)"),
     )
     sort_order = models.IntegerField(
-        default=0,
-        verbose_name=_('排序'),
-        help_text=_('数值越小排序越靠前')
+        default=0, verbose_name=_("排序"), help_text=_("数值越小排序越靠前")
     )
 
     class Meta:
-        verbose_name = _('用户组配置')
+        verbose_name = _("用户组配置")
         verbose_name_plural = verbose_name
-        ordering = ['sort_order', 'group__name']
+        ordering = ["sort_order", "group__name"]
 
     def __str__(self):
-        default_tag = ' [默认]' if self.is_default else ''
-        return f'{self.group.name}{default_tag}'
+        default_tag = " [默认]" if self.is_default else ""
+        return f"{self.group.name}{default_tag}"
 
 
 class RegistrationLink(models.Model):
@@ -332,80 +452,70 @@ class RegistrationLink(models.Model):
         max_length=64,
         unique=True,
         default=_uuid.uuid4,
-        verbose_name=_('令牌'),
-        help_text=_('注册链接的唯一标识')
+        verbose_name=_("令牌"),
+        help_text=_("注册链接的唯一标识"),
     )
     group = models.ForeignKey(
         Group,
         on_delete=models.CASCADE,
-        related_name='registration_links',
-        verbose_name=_('注册后用户组'),
-        help_text=_('通过此链接注册的用户将自动加入该用户组')
+        related_name="registration_links",
+        verbose_name=_("注册后用户组"),
+        help_text=_("通过此链接注册的用户将自动加入该用户组"),
     )
     created_by = models.ForeignKey(
-        'User',
+        "User",
         on_delete=models.SET_NULL,
         null=True,
-        related_name='created_registration_links',
-        verbose_name=_('创建者'),
-        help_text=_('创建此注册链接的管理员')
+        related_name="created_registration_links",
+        verbose_name=_("创建者"),
+        help_text=_("创建此注册链接的管理员"),
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('创建时间')
-    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("创建时间"))
     max_uses = models.IntegerField(
         default=1,
-        verbose_name=_('最大使用次数'),
-        help_text=_('设置为0表示不限制使用次数')
+        verbose_name=_("最大使用次数"),
+        help_text=_("设置为0表示不限制使用次数"),
     )
-    used_count = models.IntegerField(
-        default=0,
-        verbose_name=_('已使用次数')
-    )
+    used_count = models.IntegerField(default=0, verbose_name=_("已使用次数"))
     used = models.BooleanField(
-        default=False,
-        verbose_name=_('已使用'),
-        help_text=_('此注册链接是否已被使用')
+        default=False, verbose_name=_("已使用"), help_text=_("此注册链接是否已被使用")
     )
     used_by = models.ForeignKey(
-        'User',
+        "User",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='used_registration_link',
-        verbose_name=_('最后使用者'),
-        help_text=_('最后使用此链接注册的用户')
+        related_name="used_registration_link",
+        verbose_name=_("最后使用者"),
+        help_text=_("最后使用此链接注册的用户"),
     )
     used_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name=_('最后使用时间')
+        null=True, blank=True, verbose_name=_("最后使用时间")
     )
     expires_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name=_('过期时间'),
-        help_text=_('留空表示永不过期')
+        verbose_name=_("过期时间"),
+        help_text=_("留空表示永不过期"),
     )
     note = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name=_('备注'),
-        help_text=_('管理员备注，仅后台可见')
+        verbose_name=_("备注"),
+        help_text=_("管理员备注，仅后台可见"),
     )
 
     class Meta:
-        verbose_name = _('注册链接')
+        verbose_name = _("注册链接")
         verbose_name_plural = verbose_name
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         if self.max_uses == 0:
-            usage = f'已用{self.used_count}次/不限'
+            usage = f"已用{self.used_count}次/不限"
         else:
-            usage = f'已用{self.used_count}/{self.max_uses}次'
-        return f'注册链接({self.group.name}) - {usage}'
+            usage = f"已用{self.used_count}/{self.max_uses}次"
+        return f"注册链接({self.group.name}) - {usage}"
 
     @property
     def is_expired(self):
@@ -425,8 +535,9 @@ class RegistrationLink(models.Model):
 
     def increment_usage(self, user):
         from django.db.models import F
+
         RegistrationLink.objects.filter(pk=self.pk).update(
-            used_count=F('used_count') + 1,
+            used_count=F("used_count") + 1,
             used_by=user,
             used_at=timezone.now(),
         )

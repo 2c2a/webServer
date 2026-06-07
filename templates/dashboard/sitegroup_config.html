@@ -1,0 +1,189 @@
+{% extends "admin_base/base.html" %}
+{% block title %}{{ site_name }} - 站点组配置 - {{ sitegroup.name }}{% endblock %}
+{% block breadcrumb %}
+    {% if user.is_superuser %}
+        <a href="{% url 'dashboard:sitegroup_list' %}"
+           class="text-white/70 hover:text-cyan-400 transition">站点组管理</a>
+        <span class="material-symbols-rounded text-sm text-white/50">chevron_right</span>
+        <a href="{% url 'dashboard:sitegroup_detail' sitegroup.pk %}"
+           class="text-white/70 hover:text-cyan-400 transition">{{ sitegroup.name }}</a>
+        <span class="material-symbols-rounded text-sm text-white/50">chevron_right</span>
+    {% endif %}
+    <span class="text-cyan-400 font-medium">配置覆盖</span>
+{% endblock %}
+{% block content %}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">{{ sitegroup.name }} - 配置覆盖</h1>
+            <p class="text-white/70 text-sm mt-1">留空的字段将使用全局默认配置</p>
+        </div>
+        {% if user.is_superuser %}
+        <a href="{% url 'dashboard:sitegroup_detail' sitegroup.pk %}"
+           class="inline-flex items-center gap-2 text-white/70 hover:text-white hover:bg-white/5 px-4 py-2 rounded-md transition text-sm font-medium">
+            <span class="material-symbols-rounded text-lg">arrow_back</span>
+            返回详情
+        </a>
+        {% endif %}
+    </div>
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <!-- 站点外观配置 -->
+        <div class="bg-slate-950/70 backdrop-blur-xl border border-slate-700/50 rounded-md shadow-none">
+            <div class="p-4 border-b border-slate-700/50 flex items-center gap-2">
+                <span class="material-symbols-rounded text-cyan-400">palette</span>
+                <h3 class="text-white font-medium">站点外观</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">站点名称</label>
+                        {{ form.site_name }}
+                        <p class="text-slate-500 text-xs mt-1">全局默认: {{ global_config.site_name|default:"2c2a" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">站点图标</label>
+                        {{ form.site_icon }}
+                        <p class="text-slate-500 text-xs mt-1">全局默认: {{ global_config.site_icon_for_hostname|default:"/static/img/favicon.svg" }}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">ICP备案号</label>
+                        {{ form.icp_number }}
+                        <p class="text-slate-500 text-xs mt-1">全局默认: {{ global_config.icp_number|default:"未配置" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">公安备案号</label>
+                        {{ form.police_number }}
+                        <p class="text-slate-500 text-xs mt-1">全局默认: {{ global_config.police_number|default:"未配置" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 注册与邮箱配置 -->
+        <div class="bg-slate-950/70 backdrop-blur-xl border border-slate-700/50 rounded-md shadow-none">
+            <div class="p-4 border-b border-slate-700/50 flex items-center gap-2">
+                <span class="material-symbols-rounded text-cyan-400">how_to_reg</span>
+                <h3 class="text-white font-medium">注册与邮箱</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-slate-400 text-sm mb-1">启用用户注册</label>
+                    {{ form.enable_registration }}
+                    <p class="text-slate-500 text-xs mt-1">
+                        全局默认:
+                        {% if global_config.enable_registration %}
+                            启用
+                        {% else %}
+                            禁用
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-sm mb-1">邮箱后缀白名单</label>
+                    {{ form.email_suffix_whitelist }}
+                    <p class="text-slate-500 text-xs mt-1">
+                        全局默认: {{ global_config.email_suffix_whitelist|default:"不限制"|truncatewords:5 }}
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-sm mb-1">邮箱后缀黑名单</label>
+                    {{ form.email_suffix_blacklist }}
+                    <p class="text-slate-500 text-xs mt-1">
+                        全局默认: {{ global_config.email_suffix_blacklist|default:"不限制"|truncatewords:5 }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- SMTP 配置 -->
+        <div class="bg-slate-950/70 backdrop-blur-xl border border-slate-700/50 rounded-md shadow-none">
+            <div class="p-4 border-b border-slate-700/50 flex items-center gap-2">
+                <span class="material-symbols-rounded text-cyan-400">mail</span>
+                <h3 class="text-white font-medium">SMTP 邮件配置</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">SMTP 服务器</label>
+                        {{ form.smtp_host }}
+                        <p class="text-slate-500 text-xs mt-1">全局: {{ global_config.smtp_host|default:"未配置" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">SMTP 端口</label>
+                        {{ form.smtp_port }}
+                        <p class="text-slate-500 text-xs mt-1">全局: {{ global_config.smtp_port|default:"未配置" }}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">加密方式</label>
+                        {{ form.smtp_encryption }}
+                        <p class="text-slate-500 text-xs mt-1">全局: {{ global_config.get_smtp_encryption_display|default:"未配置" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">SMTP 用户名</label>
+                        {{ form.smtp_username }}
+                        <p class="text-slate-500 text-xs mt-1">全局: {{ global_config.smtp_username|default:"未配置" }}</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-sm mb-1">SMTP 密码</label>
+                    {{ form.smtp_password }}
+                    <p class="text-slate-500 text-xs mt-1">留空保持原值不变</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">发件人邮箱</label>
+                        {{ form.smtp_from_email }}
+                        <p class="text-slate-500 text-xs mt-1">全局: {{ global_config.smtp_from_email|default:"未配置" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">发件人名称</label>
+                        {{ form.smtp_from_name }}
+                        <p class="text-slate-500 text-xs mt-1">全局: {{ global_config.smtp_from_name|default:"未配置" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 验证码配置 -->
+        <div class="bg-slate-950/70 backdrop-blur-xl border border-slate-700/50 rounded-md shadow-none">
+            <div class="p-4 border-b border-slate-700/50 flex items-center gap-2">
+                <span class="material-symbols-rounded text-cyan-400">verified_user</span>
+                <h3 class="text-white font-medium">验证码配置</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-slate-400 text-sm mb-1">验证码提供器</label>
+                    {{ form.captcha_provider }}
+                    <p class="text-slate-500 text-xs mt-1">全局: {{ global_config.get_captcha_provider_display|default:"未配置" }}</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">默认验证码类型</label>
+                        {{ form.captcha_type }}
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">登录验证码类型</label>
+                        {{ form.login_captcha_type }}
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">注册验证码类型</label>
+                        {{ form.register_captcha_type }}
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-sm mb-1">邮箱验证码类型</label>
+                        {{ form.email_captcha_type }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit"
+                    class="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-md font-medium shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)] transition">
+                保存配置
+            </button>
+        </div>
+    </form>
+{% endblock %}

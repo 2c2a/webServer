@@ -187,6 +187,24 @@
                     {% endif %}
                 </div>
 
+                <!-- Allow Banned Users -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-white mb-2">
+                        允许封禁用户提交
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        {{ form.allow_banned_users }}
+                        <span class="text-sm text-white/70">封禁用户可以在此分类下提交工单</span>
+                    </label>
+                    {% if form.allow_banned_users.errors %}
+                    <div class="mt-1">
+                        {% for error in form.allow_banned_users.errors %}
+                        <p class="text-sm text-red-400">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
                 <!-- Display Order -->
                 <div class="mb-4">
                     <label for="id_display_order" class="block text-sm font-medium text-white mb-2">

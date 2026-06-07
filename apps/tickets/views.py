@@ -161,6 +161,14 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         """表单验证成功后的处理"""
+        # 封禁用户只能提交允许的分类
+        from apps.accounts.models import UserBan
+        if UserBan.objects.filter(user=self.request.user).exists():
+            category = form.instance.category
+            if not category or not category.allow_banned_users:
+                messages.error(self.request, '您只能在被允许的分类下提交工单')
+                return self.form_invalid(form)
+
         form.instance.creator = self.request.user
         form.instance.status = 'pending'
         form.instance.source = 'web'

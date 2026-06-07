@@ -86,6 +86,9 @@
                         {% else %}
                         <x-admin-badge text="禁用" color="error"></x-admin-badge>
                         {% endif %}
+                        {% if user.active_ban %}
+                        <x-admin-badge text="封禁" color="error"></x-admin-badge>
+                        {% endif %}
                     </div>
                     <p class="text-sm text-white/70 mt-1">
                         {{ user.email|default:"未设置邮箱" }}
@@ -116,11 +119,17 @@
                     <span class="material-symbols-rounded text-lg">key</span>
                 </a>
                 <!-- Toggle Active -->
-                <form method="post" action="{% url 'admin:admin_users:user_toggle_active' user.pk %}" class="inline">
+                <form method="post" action="{% url 'admin:admin_users:user_toggle_active' user.pk %}" class="inline" id="ban-form-{{ user.pk }}">
                     {% csrf_token %}
-                    <button type="submit" class="inline-flex items-center justify-center w-9 h-9 rounded-md {% if user.is_active %}text-red-400 hover:bg-red-500/10{% else %}text-green-400 hover:bg-green-500/10{% endif %} transition" title="{% if user.is_active %}禁用{% else %}启用{% endif %}">
-                        <span class="material-symbols-rounded text-lg">{% if user.is_active %}person_off{% else %}person_check{% endif %}</span>
+                    {% if user.active_ban %}
+                    <button type="submit" class="inline-flex items-center justify-center w-9 h-9 rounded-md text-green-400 hover:bg-green-500/10 transition" title="解封">
+                        <span class="material-symbols-rounded text-lg">person_check</span>
                     </button>
+                    {% else %}
+                    <button type="button" onclick="showBanDialog({{ user.pk }}, '{{ user.username }}')" class="inline-flex items-center justify-center w-9 h-9 rounded-md text-red-400 hover:bg-red-500/10 transition" title="封禁">
+                        <span class="material-symbols-rounded text-lg">person_off</span>
+                    </button>
+                    {% endif %}
                 </form>
 
                 <a href="{% url 'admin:admin_users:user_delete' user.pk %}" class="inline-flex items-center justify-center w-9 h-9 rounded-md text-white/70 hover:text-red-400 hover:bg-red-500/10 transition" title="删除">
@@ -146,4 +155,62 @@
     </a>
 </x-admin-empty>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<!-- Ban Dialog -->
+<div id="ban-dialog" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-white/10 rounded-lg shadow-2xl p-6 w-full max-w-md mx-4">
+        <h3 class="text-lg font-medium text-white mb-2">封禁用户</h3>
+        <p class="text-sm text-white/70 mb-4">确认封禁用户 <strong id="ban-dialog-username" class="text-white"></strong>？</p>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-white mb-2">封禁理由</label>
+            <textarea id="ban-dialog-reason" name="ban_reason" rows="3"
+                class="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition resize-none"
+                placeholder="请输入封禁理由（将展示给用户）"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-3">
+            <button type="button" onclick="hideBanDialog()" class="px-4 py-2 text-sm text-white/70 hover:text-white border border-white/10 rounded-md hover:bg-white/5 transition">取消</button>
+            <button type="button" onclick="submitBan()" class="px-4 py-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-md transition">确认封禁</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBanFormId = null;
+
+function showBanDialog(userId, username) {
+    currentBanFormId = 'ban-form-' + userId;
+    document.getElementById('ban-dialog-username').textContent = username;
+    document.getElementById('ban-dialog-reason').value = '';
+    const dialog = document.getElementById('ban-dialog');
+    dialog.classList.remove('hidden');
+    dialog.classList.add('flex');
+}
+
+function hideBanDialog() {
+    const dialog = document.getElementById('ban-dialog');
+    dialog.classList.add('hidden');
+    dialog.classList.remove('flex');
+    currentBanFormId = null;
+}
+
+function submitBan() {
+    if (!currentBanFormId) return;
+    const form = document.getElementById(currentBanFormId);
+    const reason = document.getElementById('ban-dialog-reason').value;
+    // 添加隐藏的 reason 字段
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'ban_reason';
+    input.value = reason;
+    form.appendChild(input);
+    form.submit();
+}
+
+// ESC 关闭
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') hideBanDialog();
+});
+</script>
 {% endblock %}

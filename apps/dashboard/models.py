@@ -190,6 +190,13 @@ class SystemConfig(models.Model):
         verbose_name='站点名称',
         help_text='系统显示的站点名称'
     )
+    site_icon = models.CharField(
+        max_length=500,
+        blank=True,
+        default='',
+        verbose_name='站点图标',
+        help_text='站点图标路径，如 /media/branding/icon.svg，留空使用默认图标'
+    )
 
     # 注册开关
     enable_registration = models.BooleanField(
@@ -347,6 +354,172 @@ class SiteGroup(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class SiteGroupConfig(models.Model):
+    """
+    站点组配置覆盖模型
+
+    允许每个站点组覆盖 SystemConfig 中的配置项。
+    字段留空(null)表示使用 SystemConfig 的全局默认值。
+    """
+    site_group = models.OneToOneField(
+        SiteGroup,
+        on_delete=models.CASCADE,
+        related_name='config',
+        verbose_name='站点组',
+        help_text='关联的站点组',
+    )
+
+    # SMTP 配置覆盖
+    smtp_host = models.CharField(
+        max_length=255, blank=True, null=True,
+        verbose_name='SMTP服务器',
+        help_text='留空使用全局配置',
+    )
+    smtp_port = models.IntegerField(
+        blank=True, null=True,
+        verbose_name='SMTP端口',
+        help_text='留空使用全局配置',
+    )
+    smtp_encryption = models.CharField(
+        max_length=8,
+        choices=SystemConfig.SMTP_ENCRYPTION_TYPES,
+        blank=True, null=True,
+        verbose_name='加密方式',
+        help_text='留空使用全局配置',
+    )
+    smtp_username = models.CharField(
+        max_length=255, blank=True, null=True,
+        verbose_name='SMTP用户名',
+        help_text='留空使用全局配置',
+    )
+    smtp_password = models.CharField(
+        max_length=255, blank=True, null=True,
+        verbose_name='SMTP密码',
+        help_text='留空使用全局配置',
+    )
+    smtp_from_email = models.EmailField(
+        blank=True, null=True,
+        verbose_name='发件人邮箱',
+        help_text='留空使用全局配置',
+    )
+    smtp_from_name = models.CharField(
+        max_length=255, blank=True, null=True,
+        verbose_name='发件人名称',
+        help_text='留空使用全局配置',
+    )
+
+    # 验证码配置覆盖
+    captcha_provider = models.CharField(
+        max_length=32,
+        choices=(('none', '无'), ('tianai', '天爱验证码')),
+        blank=True, null=True,
+        verbose_name='验证码提供器',
+        help_text='留空使用全局配置',
+    )
+    captcha_type = models.CharField(
+        max_length=32,
+        choices=SystemConfig.CAPTCHA_TYPES,
+        blank=True, null=True,
+        verbose_name='默认验证码类型',
+        help_text='留空使用全局配置',
+    )
+    login_captcha_type = models.CharField(
+        max_length=32,
+        choices=SystemConfig.CAPTCHA_TYPES,
+        blank=True, null=True,
+        verbose_name='登录验证码类型',
+        help_text='留空使用全局配置',
+    )
+    register_captcha_type = models.CharField(
+        max_length=32,
+        choices=SystemConfig.CAPTCHA_TYPES,
+        blank=True, null=True,
+        verbose_name='注册验证码类型',
+        help_text='留空使用全局配置',
+    )
+    email_captcha_type = models.CharField(
+        max_length=32,
+        choices=SystemConfig.CAPTCHA_TYPES,
+        blank=True, null=True,
+        verbose_name='邮箱验证码类型',
+        help_text='留空使用全局配置',
+    )
+
+    # 注册与邮箱配置覆盖
+    enable_registration = models.BooleanField(
+        blank=True, null=True,
+        verbose_name='启用用户注册',
+        help_text='留空使用全局配置',
+    )
+    email_suffix_whitelist = models.TextField(
+        blank=True, null=True,
+        verbose_name='邮箱后缀白名单',
+        help_text='留空使用全局配置。每行一个后缀',
+    )
+    email_suffix_blacklist = models.TextField(
+        blank=True, null=True,
+        verbose_name='邮箱后缀黑名单',
+        help_text='留空使用全局配置。每行一个后缀',
+    )
+
+    # 站点外观配置覆盖
+    site_name = models.CharField(
+        max_length=100, blank=True, null=True,
+        verbose_name='站点名称',
+        help_text='留空使用全局配置',
+    )
+    site_icon = models.CharField(
+        max_length=500, blank=True, null=True,
+        verbose_name='站点图标',
+        help_text='留空使用全局配置。图标路径，如 /media/branding/icon.svg',
+    )
+    icp_number = models.CharField(
+        max_length=100, blank=True, null=True,
+        verbose_name='ICP备案号',
+        help_text='留空使用全局配置',
+    )
+    police_number = models.CharField(
+        max_length=100, blank=True, null=True,
+        verbose_name='公安备案号',
+        help_text='留空使用全局配置',
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        verbose_name = '站点组配置'
+        verbose_name_plural = '站点组配置'
+
+    def __str__(self):
+        return f'{self.site_group.name} 配置'
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        result = super().save(*args, **kwargs)
+        cache.delete(f'site_group_config:{self.site_group_id}')
+        return result
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete(f'site_group_config:{self.site_group_id}')
+        return super().delete(*args, **kwargs)
+
+    @classmethod
+    def get_config(cls, site_group):
+        """获取站点组配置（带缓存）"""
+        if site_group is None:
+            return None
+        from django.core.cache import cache
+        cache_key = f'site_group_config:{site_group.pk}'
+        config = cache.get(cache_key)
+        if config is not None:
+            return config
+        config, _ = cls.objects.get_or_create(site_group=site_group)
+        cache.set(cache_key, config, timeout=300)
+        return config
 
 
 class SiteGroupHostname(models.Model):

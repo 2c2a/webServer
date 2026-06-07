@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
 from .models import Ticket, TicketComment, TicketCategory
+from apps.accounts.models import UserBan
 
 User = get_user_model()
 
@@ -81,13 +82,22 @@ class TicketForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        
+
         # 动态设置关联产品查询集
         from apps.operations.models import Product
         from apps.hosts.models import Host
-        
+
         self.fields['related_product'].queryset = Product.objects.filter(is_available=True)
         self.fields['related_host'].queryset = Host.objects.all()
+
+        # 封禁用户只能选择允许封禁用户提交的分类
+        if self.user and UserBan.objects.filter(user=self.user).exists():
+            self.fields['category'].queryset = TicketCategory.objects.filter(
+                is_active=True, allow_banned_users=True
+            )
+            # 封禁用户不需要关联产品和主机
+            self.fields['related_product'].queryset = Product.objects.none()
+            self.fields['related_host'].queryset = Host.objects.none()
         
         # 如果有分类，设置默认优先级
         if self.data.get('category'):
