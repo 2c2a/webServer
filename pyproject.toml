@@ -46,7 +46,7 @@ dev = [
     "pytest>=9.0.3",
     "pytest-django",
     "black",
-    "django-stubs>=6.0.2",
+    "django-stubs>=6.0.5",
     "flake8",
     "pyrefly>=0.60.0",
     "pytest",

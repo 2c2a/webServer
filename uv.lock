@@ -82,7 +82,7 @@ provides-extras = ["kerberos"]
 [package.metadata.requires-dev]
 dev = [
     { name = "black" },
-    { name = "django-stubs", specifier = ">=6.0.2" },
+    { name = "django-stubs", specifier = ">=6.0.5" },
     { name = "flake8" },
     { name = "pyrefly", specifier = ">=0.60.0" },
     { name = "pytest" },
@@ -584,7 +584,7 @@ wheels = [
 
 [[package]]
 name = "django-stubs"
-version = "6.0.2"
+version = "6.0.5"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
 dependencies = [
     { name = "django" },
@@ -593,9 +593,9 @@ dependencies = [
     { name = "types-pyyaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://mirrors.aliyun.com/pypi/packages/03/b2/f0214d86180f937c8e3358ff831b20f0634d95bd77436b18861c647e15bc/django_stubs-6.0.2.tar.gz", hash = "sha256:56d43b5e3741563af0063e5b6283f908c625b0439aa06314268673699d1bdccd" }
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/e4/8a/8946216758eb66c5700a235e230af538d4ea474244c79452159b580425ba/django_stubs-6.0.5.tar.gz", hash = "sha256:7742b8e60afc68a8545158e2bdb103376d5a092f7902c17f370920a9c08eb957" }
 wheels = [
-    { url = "https://mirrors.aliyun.com/pypi/packages/49/e7/8f2aaa22eac7fa18db3aca0e7b651ccf5ac79a2021bf67e75a16934a7076/django_stubs-6.0.2-py3-none-any.whl", hash = "sha256:c3bc84d80421758f3b2ad9e1358e001d719388a8eb106e67c873e606216108d4" },
+    { url = "https://mirrors.aliyun.com/pypi/packages/c6/09/64ff51a4cf4e8bdf8423d249b32eca0676e69233009ce9cd5478ba2c9635/django_stubs-6.0.5-py3-none-any.whl", hash = "sha256:9fb9eede9b2fc47b36c3dc4a93652eb959dff45466ec4a580e4a22782192d746" },
 ]
 
 [[package]]
