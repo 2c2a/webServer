@@ -164,7 +164,7 @@ def send_test_email_task(self, async_task_id):
 
         _log(
             f'SMTP 配置: {config.smtp_host}:{config.smtp_port}, '
-            f'TLS={config.smtp_use_tls}, '
+            f'加密={config.smtp_encryption}, '
             f'from={config.smtp_from_email}'
         )
 

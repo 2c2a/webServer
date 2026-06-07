@@ -93,10 +93,18 @@ class SystemConfig(models.Model):
         verbose_name='SMTP端口',
         help_text='SMTP服务器端口，通常为587或465'
     )
-    smtp_use_tls = models.BooleanField(
-        default=True,
-        verbose_name='使用TLS',
-        help_text='是否使用TLS加密连接'
+    SMTP_ENCRYPTION_TYPES = (
+        ('NONE', '无加密'),
+        ('TLS', 'TLS (STARTTLS)'),
+        ('SSL', 'SSL (SMTPS)'),
+    )
+
+    smtp_encryption = models.CharField(
+        max_length=8,
+        choices=SMTP_ENCRYPTION_TYPES,
+        default='TLS',
+        verbose_name='加密方式',
+        help_text='TLS: 端口通常为587；SSL: 端口通常为465'
     )
     smtp_username = models.CharField(
         max_length=255,
@@ -117,6 +125,13 @@ class SystemConfig(models.Model):
         null=True,
         verbose_name='发件人邮箱',
         help_text='系统发送邮件时使用的发件人地址'
+    )
+    smtp_from_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='发件人名称',
+        help_text='系统发送邮件时显示的发件人名称，如"XX云服务"'
     )
 
     CAPTCHA_TYPES = (

@@ -12,13 +12,15 @@ logger = logging.getLogger(__name__)
 class EmailService:
     def __init__(self, smtp_host: str, smtp_port: int,
                  smtp_username: str, smtp_password: str,
-                 smtp_from_email: str, smtp_use_tls: bool = False):
+                 smtp_from_email: str, smtp_encryption: str = 'TLS',
+                 smtp_from_name: Optional[str] = None):
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
         self.smtp_username = smtp_username
         self.smtp_password = smtp_password
         self.smtp_from_email = smtp_from_email
-        self.smtp_use_tls = smtp_use_tls
+        self.smtp_encryption = smtp_encryption
+        self.smtp_from_name = smtp_from_name
 
     def send_email(
         self,
@@ -75,7 +77,8 @@ class EmailService:
             smtp_username=config.smtp_username,
             smtp_password=config.smtp_password,
             smtp_from_email=config.smtp_from_email,
-            smtp_use_tls=config.smtp_use_tls,
+            smtp_encryption=config.smtp_encryption,
+            smtp_from_name=config.smtp_from_name,
         )
 
     @staticmethod
