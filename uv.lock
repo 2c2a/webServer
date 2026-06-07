@@ -71,7 +71,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.8.0" },
     { name = "pyotp" },
     { name = "python-dotenv", specifier = "==1.2.1" },
-    { name = "pywinrm", specifier = "==0.4.3" },
+    { name = "pywinrm", specifier = "==0.5.0" },
     { name = "redis", specifier = ">=5.0.0" },
     { name = "requests", specifier = "==2.32.3" },
     { name = "toml" },
@@ -1158,17 +1158,16 @@ wheels = [
 
 [[package]]
 name = "pywinrm"
-version = "0.4.3"
+version = "0.5.0"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
 dependencies = [
     { name = "requests" },
     { name = "requests-ntlm" },
-    { name = "six" },
     { name = "xmltodict" },
 ]
-sdist = { url = "https://mirrors.aliyun.com/pypi/packages/7c/ba/78329e124138f8edf40a41b4252baf20cafdbea92ea45d50ec712124e99b/pywinrm-0.4.3.tar.gz", hash = "sha256:995674bf5ac64b2562c9c56540473109e530d36bde10c262d5a5296121ad5565" }
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/5a/2f/d835c342c4b11e28beaccef74982e7669986c84bf19654c39f53c8b8243c/pywinrm-0.5.0.tar.gz", hash = "sha256:5428eb1e494af7954546cd4ff15c9ef1a30a75e05b25a39fd606cef22201e9f1" }
 wheels = [
-    { url = "https://mirrors.aliyun.com/pypi/packages/5c/1a/74bdbb7a3f8a6c1d2254c39c53c2d388529a314366130147d180522c59a3/pywinrm-0.4.3-py2.py3-none-any.whl", hash = "sha256:c476c1e20dd0875da6fe4684c4d8e242dd537025907c2f11e1990c5aee5c9526" },
+    { url = "https://mirrors.aliyun.com/pypi/packages/0c/45/4340320145c225387f40ce412de1b209d991c322032e4922cc0a9935fd31/pywinrm-0.5.0-py3-none-any.whl", hash = "sha256:c267046d281de613fc7c8a528cdd261564d9b99bdb7c2926221eff3263b700c8" },
 ]
 
 [[package]]

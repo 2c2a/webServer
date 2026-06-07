@@ -19,7 +19,7 @@ dependencies = [
     "PyJWT>=2.8.0",
     "pyotp",
     "python-dotenv==1.2.1",
-    "pywinrm==0.4.3",
+    "pywinrm==0.5.0",
     "redis>=5.0.0",
     "requests==2.32.3",
     "toml",
