@@ -18,7 +18,7 @@ dependencies = [
     "pillow==12.1.0",
     "PyJWT>=2.8.0",
     "pyotp",
-    "python-dotenv==1.2.1",
+    "python-dotenv==1.2.2",
     "pywinrm==0.4.3",
     "redis>=5.0.0",
     "requests==2.32.3",
