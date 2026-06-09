@@ -58,36 +58,52 @@ class TicketForm(forms.ModelForm):
         initial='medium'
     )
 
-    related_product = forms.ModelChoiceField(
+    related_cloud_computer = forms.ModelChoiceField(
         queryset=None,
         widget=forms.Select(attrs={'class': MD3_INPUT_CLASS}),
-        label=_('关联产品'),
-        help_text=_('如有关联的产品，请选择'),
+        label=_('关联云电脑'),
+        help_text=_('选择您拥有的云电脑（可选）'),
         required=False
     )
 
-    related_host = forms.ModelChoiceField(
+    related_request = forms.ModelChoiceField(
         queryset=None,
         widget=forms.Select(attrs={'class': MD3_INPUT_CLASS}),
-        label=_('关联主机'),
-        help_text=_('如有关联的主机，请选择'),
+        label=_('关联申请'),
+        help_text=_('选择您提交的申请（可选）'),
         required=False
     )
 
     class Meta:
         model = Ticket
-        fields = ['title', 'description', 'category', 'priority', 'related_product', 'related_host']
+        fields = ['title', 'description', 'category', 'priority', 'related_cloud_computer', 'related_request']
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        
-        # 动态设置关联产品查询集
-        from apps.operations.models import Product
-        from apps.hosts.models import Host
-        
-        self.fields['related_product'].queryset = Product.objects.filter(is_available=True)
-        self.fields['related_host'].queryset = Host.objects.all()
+        from apps.operations.models import CloudComputerUser, AccountOpeningRequest
+
+        # 关联云电脑：只显示当前用户拥有的、激活状态的云电脑
+        if self.user:
+            self.fields['related_cloud_computer'].queryset = CloudComputerUser.objects.filter(
+                owner=self.user, status='active'
+            ).select_related('product')
+            # 关联申请：只显示当前用户提交的申请
+            self.fields['related_request'].queryset = AccountOpeningRequest.objects.filter(
+                applicant=self.user
+            ).select_related('target_product').order_by('-created_at')
+        else:
+            self.fields['related_cloud_computer'].queryset = CloudComputerUser.objects.none()
+            self.fields['related_request'].queryset = AccountOpeningRequest.objects.none()
+
+        # 封禁用户只能选择允许封禁用户提交的分类
+        if self.user and UserBan.objects.filter(user=self.user).exists():
+            self.fields['category'].queryset = TicketCategory.objects.filter(
+                is_active=True, allow_banned_users=True
+            )
+            # 封禁用户不需要关联云电脑和申请
+            self.fields['related_cloud_computer'].queryset = CloudComputerUser.objects.none()
+            self.fields['related_request'].queryset = AccountOpeningRequest.objects.none()
         
         # 如果有分类，设置默认优先级
         if self.data.get('category'):

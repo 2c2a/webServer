@@ -93,16 +93,16 @@
                         </div>
                     </div>
                     {% endif %}
-                    {% if ticket.related_product %}
+                    {% if ticket.related_cloud_computer %}
                     <div class="flex flex-wrap mb-3">
-                        <div class="w-full sm:w-1/4 text-md-on-surface-variant text-sm">关联产品</div>
-                        <div class="w-full sm:w-3/4 text-md-on-surface">{{ ticket.related_product.display_name }}</div>
+                        <div class="w-full sm:w-1/4 text-md-on-surface-variant text-sm">关联云电脑</div>
+                        <div class="w-full sm:w-3/4 text-md-on-surface">{{ ticket.related_cloud_computer.username }}@{{ ticket.related_cloud_computer.product.display_name }}</div>
                     </div>
                     {% endif %}
-                    {% if ticket.related_host %}
+                    {% if ticket.related_request %}
                     <div class="flex flex-wrap mb-3">
-                        <div class="w-full sm:w-1/4 text-md-on-surface-variant text-sm">关联主机</div>
-                        <div class="w-full sm:w-3/4 text-md-on-surface">{{ ticket.related_host.name }}</div>
+                        <div class="w-full sm:w-1/4 text-md-on-surface-variant text-sm">关联申请</div>
+                        <div class="w-full sm:w-3/4 text-md-on-surface">{{ ticket.related_request }} ({{ ticket.related_request.get_status_display }})</div>
                     </div>
                     {% endif %}
                     <hr class="border-md-outline-variant/30 my-4">

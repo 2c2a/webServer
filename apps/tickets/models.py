@@ -225,23 +225,23 @@ class Ticket(models.Model):
         verbose_name=_('处理组'),
         help_text=_('负责处理此工单的用户组')
     )
-    related_product = models.ForeignKey(
-        'operations.Product',
+    related_cloud_computer = models.ForeignKey(
+        'operations.CloudComputerUser',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='tickets',
-        verbose_name=_('关联产品'),
-        help_text=_('工单关联的云电脑产品')
+        verbose_name=_('关联云电脑'),
+        help_text=_('工单关联的我拥有的云电脑')
     )
-    related_host = models.ForeignKey(
-        'hosts.Host',
+    related_request = models.ForeignKey(
+        'operations.AccountOpeningRequest',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='tickets',
-        verbose_name=_('关联主机'),
-        help_text=_('工单关联的主机')
+        verbose_name=_('关联申请'),
+        help_text=_('工单关联的我提交的申请')
     )
     due_at = models.DateTimeField(
         null=True,

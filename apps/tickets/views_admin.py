@@ -40,12 +40,11 @@ def _ticket_filter_for_user(user, site_group):
         return Q()
     if site_group and user.is_site_group_admin(site_group):
         return (
-            Q(related_product__site_group=site_group)
-            | Q(related_host__site_group=site_group)
+            Q(related_cloud_computer__product__site_group=site_group)
             | Q(creator=user)
         )
     provider_products = get_provider_products(user)
-    return Q(related_product__in=provider_products) | Q(creator=user)
+    return Q(related_cloud_computer__product__in=provider_products) | Q(creator=user)
 
 
 def _category_filter_for_user(user, site_group):
@@ -74,8 +73,10 @@ def admin_ticket_list(request):
         "creator",
         "assignee",
         "assigned_group",
-        "related_product",
-        "related_host",
+        "related_cloud_computer",
+        "related_cloud_computer__product",
+        "related_request",
+        "related_request__target_product",
     )
 
     site_group = getattr(request, "site_group", None)
@@ -157,8 +158,10 @@ def admin_ticket_detail(request, pk):
                 "creator",
                 "assignee",
                 "assigned_group",
-                "related_product",
-                "related_host",
+                "related_cloud_computer",
+                "related_cloud_computer__product",
+                "related_request",
+                "related_request__target_product",
             ).filter(ticket_filter),
             pk=pk,
         )
@@ -169,8 +172,10 @@ def admin_ticket_detail(request, pk):
                 "creator",
                 "assignee",
                 "assigned_group",
-                "related_product",
-                "related_host",
+                "related_cloud_computer",
+                "related_cloud_computer__product",
+                "related_request",
+                "related_request__target_product",
             ),
             pk=pk,
         )

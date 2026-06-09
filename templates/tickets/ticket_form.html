@@ -71,28 +71,28 @@
 
                         <div class="flex flex-wrap -mx-3">
                             <div class="w-full sm:w-1/2 px-3 mb-5">
-                                <label for="{{ form.related_product.id_for_label }}" class="block text-md-on-surface font-medium mb-2">
-                                    {{ form.related_product.label }}
+                                <label for="{{ form.related_cloud_computer.id_for_label }}" class="block text-md-on-surface font-medium mb-2">
+                                    {{ form.related_cloud_computer.label }}
                                 </label>
-                                {{ form.related_product }}
-                                {% if form.related_product.errors %}
+                                {{ form.related_cloud_computer }}
+                                {% if form.related_cloud_computer.errors %}
                                 <div class="text-md-error text-sm mt-1">
-                                    {{ form.related_product.errors }}
+                                    {{ form.related_cloud_computer.errors }}
                                 </div>
                                 {% endif %}
-                                <small class="text-md-on-surface-variant text-sm">{{ form.related_product.help_text }}</small>
+                                <small class="text-md-on-surface-variant text-sm">{{ form.related_cloud_computer.help_text }}</small>
                             </div>
                             <div class="w-full sm:w-1/2 px-3 mb-5">
-                                <label for="{{ form.related_host.id_for_label }}" class="block text-md-on-surface font-medium mb-2">
-                                    {{ form.related_host.label }}
+                                <label for="{{ form.related_request.id_for_label }}" class="block text-md-on-surface font-medium mb-2">
+                                    {{ form.related_request.label }}
                                 </label>
-                                {{ form.related_host }}
-                                {% if form.related_host.errors %}
+                                {{ form.related_request }}
+                                {% if form.related_request.errors %}
                                 <div class="text-md-error text-sm mt-1">
-                                    {{ form.related_host.errors }}
+                                    {{ form.related_request.errors }}
                                 </div>
                                 {% endif %}
-                                <small class="text-md-on-surface-variant text-sm">{{ form.related_host.help_text }}</small>
+                                <small class="text-md-on-surface-variant text-sm">{{ form.related_request.help_text }}</small>
                             </div>
                         </div>
 

@@ -89,16 +89,16 @@
                         {% endif %}
                     </p>
                 </div>
-                {% if ticket.related_product %}
+                {% if ticket.related_cloud_computer %}
                 <div>
-                    <p class="text-sm text-white/70">关联产品</p>
-                    <p class="text-white font-medium">{{ ticket.related_product.display_name }}</p>
+                    <p class="text-sm text-white/70">关联云电脑</p>
+                    <p class="text-white font-medium">{{ ticket.related_cloud_computer.username }}@{{ ticket.related_cloud_computer.product.display_name }}</p>
                 </div>
                 {% endif %}
-                {% if ticket.related_host %}
+                {% if ticket.related_request %}
                 <div>
-                    <p class="text-sm text-white/70">关联主机</p>
-                    <p class="text-white font-medium">{{ ticket.related_host.name }}</p>
+                    <p class="text-sm text-white/70">关联申请</p>
+                    <p class="text-white font-medium">{{ ticket.related_request }} ({{ ticket.related_request.get_status_display }})</p>
                 </div>
                 {% endif %}
                 <div>
