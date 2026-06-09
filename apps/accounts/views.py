@@ -98,7 +98,7 @@ class RegisterView(CreateView):
         response = super().form_valid(form)
 
         # 注册成功后创建 UserEmail 记录
-        user = response.context_data.get("object") or self.object
+        user = self.object
         if user:
             from .models import UserEmail
 
