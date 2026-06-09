@@ -98,7 +98,7 @@ def admin_dashboard(request):
             Ticket.objects.filter(
                 status__in=["pending", "processing", "waiting_feedback"],
             )
-            .filter(Q(related_product__site_group=sg) | Q(related_host__site_group=sg))
+            .filter(Q(related_cloud_computer__product__site_group=sg))
             .count()
         )
         total_categories = TicketCategory.objects.count()
@@ -141,7 +141,7 @@ def admin_dashboard(request):
         ).count()
         open_tickets = Ticket.objects.filter(
             status__in=["pending", "processing", "waiting_feedback"],
-            related_product__in=provider_products,
+            related_cloud_computer__product__in=provider_products,
         ).count()
         total_categories = TicketCategory.objects.filter(
             created_by=request.user
