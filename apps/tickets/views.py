@@ -211,7 +211,8 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
         """获取查询集"""
         return Ticket.objects.select_related(
             'creator', 'assignee', 'assigned_group', 'category',
-            'related_product', 'related_host'
+            'related_cloud_computer', 'related_cloud_computer__product',
+            'related_request', 'related_request__target_product'
         ).prefetch_related('comments', 'activities')
 
     def get_context_data(self, **kwargs):

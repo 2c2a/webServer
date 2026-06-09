@@ -71,15 +71,14 @@ class ProviderTicketMixin(ProviderContextMixin):
         获取当前提供商可见的工单查询集
 
         提供商可以看到:
-        - 关联产品由自己创建的工单
-        - 关联主机中自己为管理员的工单
+        - 关联云电脑所属产品由自己创建的工单
         """
         return Ticket.objects.filter(
-            Q(related_product__created_by=self.request.user)
-            | Q(related_host__administrators=self.request.user)
+            Q(related_cloud_computer__product__created_by=self.request.user)
         ).distinct().select_related(
             'category', 'creator', 'assignee', 'assigned_group',
-            'related_product', 'related_host',
+            'related_cloud_computer', 'related_cloud_computer__product',
+            'related_request', 'related_request__target_product',
         )
 
     def get_provider_category_queryset(self):
@@ -97,8 +96,7 @@ class ProviderTicketMixin(ProviderContextMixin):
         获取当前提供商可见的活动记录查询集
         """
         return TicketActivity.objects.filter(
-            Q(ticket__related_product__created_by=self.request.user)
-            | Q(ticket__related_host__administrators=self.request.user)
+            Q(ticket__related_cloud_computer__product__created_by=self.request.user)
         ).distinct().select_related(
             'ticket', 'actor',
         ).order_by('-created_at')
