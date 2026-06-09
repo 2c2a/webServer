@@ -3,6 +3,7 @@ import ssl
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from typing import Optional, List
 from django.core.exceptions import ValidationError
 
@@ -48,11 +49,12 @@ class EmailService:
             raise ValidationError("SMTP配置不完整")
 
         sender = from_email or self.smtp_from_email
+        sender_name = self.smtp_from_name
 
-        msg = MIMEMultipart("alternative")
-        msg["From"] = sender
-        msg["To"] = ", ".join(to_emails)
-        msg["Subject"] = subject
+        msg = MIMEMultipart('alternative')
+        msg['From'] = formataddr((sender_name, sender)) if sender_name else sender
+        msg['To'] = ', '.join(to_emails)
+        msg['Subject'] = subject
 
         part1 = MIMEText(text_body, "plain", "utf-8")
         msg.attach(part1)
@@ -61,11 +63,17 @@ class EmailService:
             part2 = MIMEText(html_body, "html", "utf-8")
             msg.attach(part2)
 
-        server = smtplib.SMTP(self.smtp_host, self.smtp_port)
+        timeout = 15
+
+        if self.smtp_encryption == "SSL":
+            server = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=timeout)
+        else:
+            server = smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=timeout)
+
         try:
             server.ehlo()
 
-            if self.smtp_use_tls:
+            if self.smtp_encryption == "TLS":
                 context = ssl.create_default_context()
                 server.starttls(context=context)
                 server.ehlo()
