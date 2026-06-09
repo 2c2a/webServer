@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
 from .models import Ticket, TicketComment, TicketCategory
+from apps.accounts.models import UserBan
 
 User = get_user_model()
 

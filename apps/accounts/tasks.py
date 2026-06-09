@@ -17,6 +17,7 @@ def send_email_task(
     text_body,
     html_body=None,
     from_email=None,
+    site_group_id=None,
 ):
     """
     异步发送邮件任务
@@ -27,13 +28,21 @@ def send_email_task(
         text_body: 纯文本内容
         html_body: HTML 内容（可选）
         from_email: 发件人（可选，默认使用系统配置）
+        site_group_id: 站点组ID（可选，用于使用站点组SMTP配置）
     """
     from apps.accounts.email_service import EmailService
-    from apps.dashboard.models import SystemConfig
+    from utils.site_group import get_effective_config
+    from apps.dashboard.models import SiteGroup
 
     try:
-        config = SystemConfig.get_config()
-        email_service = EmailService.from_system_config(config)
+        site_group = None
+        if site_group_id:
+            try:
+                site_group = SiteGroup.objects.get(pk=site_group_id)
+            except SiteGroup.DoesNotExist:
+                pass
+        ec = get_effective_config(site_group)
+        email_service = EmailService.from_effective_config(ec)
         email_service.send_email(
             to_emails=to_emails,
             subject=subject,
@@ -164,7 +173,7 @@ def send_test_email_task(self, async_task_id):
 
         _log(
             f'SMTP 配置: {config.smtp_host}:{config.smtp_port}, '
-            f'TLS={config.smtp_use_tls}, '
+            f'加密={config.smtp_encryption}, '
             f'from={config.smtp_from_email}'
         )
 

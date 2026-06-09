@@ -86,6 +86,17 @@ class TicketCategoryForm(forms.ModelForm):
         label=_('是否启用'),
     )
 
+    allow_banned_users = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'w-5 h-5 rounded border-md-outline/50 bg-md-surface/50 '
+                     'text-md-primary focus:ring-md-primary focus:ring-2 '
+                     'transition cursor-pointer accent-md-primary',
+        }),
+        label=_('允许封禁用户提交'),
+        help_text=_('勾选后，被封禁的用户可以在此分类下提交工单'),
+    )
+
     display_order = forms.IntegerField(
         initial=0,
         widget=forms.NumberInput(attrs={
@@ -103,7 +114,7 @@ class TicketCategoryForm(forms.ModelForm):
         fields = [
             'name', 'description', 'icon',
             'default_priority', 'sla_hours',
-            'is_active', 'display_order',
+            'is_active', 'allow_banned_users', 'display_order',
         ]
 
 

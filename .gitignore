@@ -149,3 +149,4 @@ static/vendor/**/node
 tools/*
 # attack
 attack/*
+docs/architecture-scan.md

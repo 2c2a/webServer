@@ -1,0 +1,196 @@
+{% load static cotton %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>站点迁移 - {{ site_name }}</title>
+        <link rel="stylesheet"
+              href="/static/vendor/material-icons/material-icons.css">
+        <link rel="stylesheet"
+              href="/static/vendor/material-symbols-rounded/material-symbols-rounded.css">
+        <link href="/static/css/provider.css" rel="stylesheet">
+        <link rel="icon" type="image/svg+xml" href="{{ site_icon }}">
+    </head>
+    <body class="min-h-screen flex items-center justify-center bg-fixed bg-center bg-cover transition-[background] duration-300 bg-[url('/static/img/bgimg.jpg')]">
+        <div class="fixed inset-0 pointer-events-none z-0 bg-gradient-to-br from-slate-950/70 via-slate-900/50 to-slate-950/80">
+        </div>
+        <div class="relative z-10 w-full max-w-[480px] p-6 sm:p-4">
+            <div class="bg-md-surface-container/70 backdrop-blur-xl border border-white/10 rounded-md-lg shadow-2xl p-10 sm:p-6 overflow-hidden transition">
+                <div class="text-center mb-8">
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-md-primary-container flex items-center justify-center mb-3">
+                            <span class="material-icons text-md-primary text-3xl">sync_alt</span>
+                        </div>
+                    </div>
+                    <h1 class="text-2xl font-medium text-md-on-surface mb-2">站点迁移</h1>
+                    <p class="text-sm text-md-on-surface-variant">您正在访问站点组「{{ site_group_name }}」</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <x-md-alert variant="{{ message.tags|default:'info' }}" dismissible="true">{{ message }}</x-md-alert>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="space-y-4">
+                    <div class="p-4 bg-md-secondary-container/30 border border-md-outline-variant/50 rounded-md">
+                        <div class="flex items-start gap-3">
+                            <span class="material-icons text-md-on-secondary-container text-xl mt-0.5">info</span>
+                            <div class="text-sm text-md-on-surface-variant space-y-2">
+                                <p class="m-0">
+                                    您的账户 <strong class="text-md-on-surface">{{ username }}</strong> 尚未加入该站点组。
+                                </p>
+                                <p class="m-0">
+                                    迁移后，该站点组的管理员可以查看并管理您的账户数据，但不影响您在其他站点的使用。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if email_not_compliant %}
+                    <div class="p-4 bg-md-error-container/30 border border-md-error/30 rounded-md">
+                        <div class="flex items-start gap-3">
+                            <span class="material-icons text-md-error text-xl mt-0.5">warning</span>
+                            <div class="text-sm text-md-on-surface-variant space-y-2">
+                                <p class="m-0 text-md-error font-medium">邮箱后缀不符合要求</p>
+                                <p class="m-0">该站点组要求邮箱后缀在白名单中，您当前的邮箱不满足条件。请先绑定符合条件的邮箱。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-md-surface/50 border border-md-outline-variant/50 rounded-md space-y-3">
+                        <p class="text-sm font-medium text-md-on-surface m-0">绑定合规邮箱</p>
+                        <form method="post"
+                              action="{% url 'accounts:email_bind' %}"
+                              class="space-y-3"
+                              id="bindEmailForm">
+                            {% csrf_token %}
+                            <div class="flex gap-2">
+                                <input type="email"
+                                       name="email"
+                                       id="bind-email"
+                                       placeholder="输入合规邮箱地址"
+                                       required
+                                       class="flex-1 bg-md-surface/50 border border-md-outline/50 rounded-md px-3 py-2 text-sm text-md-on-surface placeholder-md-outline focus:outline-none focus:ring-2 focus:ring-md-primary transition">
+                                <button type="button"
+                                        id="send-code-btn"
+                                        class="shrink-0 bg-md-secondary-container text-md-on-secondary-container rounded-md px-3 py-2 text-sm font-medium hover:bg-md-secondary-container/80 transition cursor-pointer border-none">
+                                    发送验证码
+                                </button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text"
+                                       name="email_code"
+                                       id="bind-code"
+                                       placeholder="输入验证码"
+                                       required
+                                       class="flex-1 bg-md-surface/50 border border-md-outline/50 rounded-md px-3 py-2 text-sm text-md-on-surface placeholder-md-outline focus:outline-none focus:ring-2 focus:ring-md-primary transition">
+                            </div>
+                            <button type="submit"
+                                    class="w-full bg-md-primary text-md-on-primary rounded-md px-4 py-2 text-sm font-medium hover:bg-md-primary/90 transition cursor-pointer border-none">
+                                绑定邮箱
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'accounts:migrate' %}">
+                        {% csrf_token %}
+                        <div class="space-y-3 mt-4">
+                            {% if not email_not_compliant %}
+                            <button type="submit"
+                                    name="action"
+                                    value="confirm"
+                                    class="w-full inline-flex items-center justify-center gap-2 bg-md-primary text-md-on-primary rounded-md px-6 py-3 hover:bg-md-primary/90 transition font-medium cursor-pointer border-none">
+                                <span class="material-icons text-xl">check</span>
+                                确认迁移到「{{ site_group_name }}」
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'accounts:logout' %}"
+                                    class="w-full inline-flex items-center justify-center gap-2 bg-md-surface text-md-on-surface border border-md-outline rounded-md px-6 py-3 hover:bg-md-surface/80 transition font-medium cursor-pointer no-underline">
+                                <span class="material-icons text-xl">logout</span>
+                                暂不迁移，退出登录
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script src="/static/vendor/jquery-3.6.0/jquery.min.js"></script>
+        <script src="/static/js/base.js"></script>
+        <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+
+        // 发送验证码倒计时
+        $('#send-code-btn').on('click', function() {
+            var email = $('#bind-email').val();
+            if (!email) return;
+            var btn = $(this);
+            btn.prop('disabled', true);
+            $.ajax({
+                url: '{% url "accounts:send_bind_email_code" %}',
+                method: 'POST',
+                data: {email: email, csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').first().val()},
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.status === 'ok') {
+                        var sec = 60;
+                        btn.text(sec + 's');
+                        var timer = setInterval(function() {
+                            sec--;
+                            if (sec <= 0) {
+                                clearInterval(timer);
+                                btn.text('发送验证码').prop('disabled', false);
+                            } else {
+                                btn.text(sec + 's');
+                            }
+                        }, 1000);
+                    } else {
+                        alert(resp.message || '发送失败');
+                        btn.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    alert('发送失败，请重试');
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // 绑定邮箱
+        $('#bindEmailForm').on('submit', function(e) {
+            e.preventDefault();
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.status === 'ok') {
+                        location.reload();
+                    } else if (resp.action === 'merge_required') {
+                        alert(resp.message);
+                    } else {
+                        alert(resp.message || '绑定失败');
+                    }
+                },
+                error: function(xhr) {
+                    var msg = '绑定失败';
+                    try { msg = JSON.parse(xhr.responseText).message || msg; } catch(e) {}
+                    alert(msg);
+                }
+            });
+        });
+        </script>
+    </body>
+</html>

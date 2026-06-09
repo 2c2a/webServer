@@ -114,16 +114,14 @@
                             {% endfor %}
                         </div>
                         <div class="mb-4">
-                            <div class="flex items-center gap-2 mt-8">
-                                {{ form.smtp_use_tls }}
-                                <label class="text-sm text-slate-400" for="{{ form.smtp_use_tls.id_for_label }}">
-                                    {{ form.smtp_use_tls.label }}
-                                </label>
-                            </div>
-                            {% if form.smtp_use_tls.help_text %}
-                            <small class="block text-xs text-slate-500 mt-1">{{ form.smtp_use_tls.help_text }}</small>
+                            <label class="block text-sm text-slate-300 mb-1" for="{{ form.smtp_encryption.id_for_label }}">
+                                {{ form.smtp_encryption.label }}
+                            </label>
+                            {{ form.smtp_encryption }}
+                            {% if form.smtp_encryption.help_text %}
+                            <small class="block text-xs text-slate-500 mt-1">{{ form.smtp_encryption.help_text }}</small>
                             {% endif %}
-                            {% for error in form.smtp_use_tls.errors %}
+                            {% for error in form.smtp_encryption.errors %}
                             <div class="text-red-400 text-sm mt-1">{{ error }}</div>
                             {% endfor %}
                         </div>

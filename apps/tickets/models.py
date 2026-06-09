@@ -92,6 +92,11 @@ class TicketCategory(models.Model):
         verbose_name=_('是否启用'),
         help_text=_('是否在前端展示此分类')
     )
+    allow_banned_users = models.BooleanField(
+        default=False,
+        verbose_name=_('允许封禁用户提交'),
+        help_text=_('封禁用户是否可以在此分类下提交工单')
+    )
     display_order = models.IntegerField(
         default=0,
         verbose_name=_('显示顺序'),

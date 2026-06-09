@@ -12,6 +12,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 
 from apps.accounts.provider_decorators import superadmin_required
+from apps.accounts.models import UserBan
+from apps.accounts.user_service import ban_user, unban_user
 from .forms_admin import (
     AdminUserCreateForm,
     AdminUserUpdateForm,
@@ -31,7 +33,7 @@ def user_list(request):
     """
     queryset = User.objects.prefetch_related(
         'groups'
-    ).order_by('-created_at')
+    ).select_related('active_ban').order_by('-created_at')
 
     search = request.GET.get('search', '').strip()
     if search:
@@ -143,20 +145,24 @@ def user_delete(request, pk):
 
 @superadmin_required
 def user_toggle_active(request, pk):
-    """切换用户激活状态（POST 操作，完成后重定向回列表）"""
+    """切换用户封禁状态（POST 操作，完成后重定向回列表）"""
     user = get_object_or_404(User, pk=pk)
 
     if user.pk == request.user.pk:
-        messages.error(request, '不能禁用自己的账号')
+        messages.error(request, '不能封禁自己的账号')
         return redirect('admin:admin_users:user_list')
 
     if request.method == 'POST':
-        user.is_active = not user.is_active
-        user.save(update_fields=['is_active'])
-        status_text = '启用' if user.is_active else '禁用'
-        messages.success(
-            request, f'用户「{user.username}」已{status_text}'
-        )
+        is_banned = UserBan.objects.filter(user=user).exists()
+        if is_banned:
+            # 解封
+            unban_user(user, unbanned_by=request.user)
+            messages.success(request, f'用户「{user.username}」已解封')
+        else:
+            # 封禁
+            reason = request.POST.get('ban_reason', '').strip()
+            ban_user(user, reason=reason, banned_by=request.user)
+            messages.success(request, f'用户「{user.username}」已封禁')
 
     return redirect('admin:admin_users:user_list')
 

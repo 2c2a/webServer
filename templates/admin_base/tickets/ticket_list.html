@@ -206,9 +206,6 @@
 
         {% else %}
         <x-admin-empty icon="confirmation_number" title="暂无工单" description="系统中暂无工单记录">
-            <a href="{% url 'admin:admin_tickets:ticket_create' %}">
-                <x-admin-button variant="filled" icon="add">创建工单</x-admin-button>
-            </a>
         </x-admin-empty>
         {% endif %}
     </form>

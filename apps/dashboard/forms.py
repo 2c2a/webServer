@@ -118,7 +118,7 @@ class SystemConfigForm(forms.ModelForm):
             'police_number',
             'smtp_host',
             'smtp_port',
-            'smtp_use_tls',
+            'smtp_encryption',
             'smtp_username',
             'smtp_password',
             'smtp_from_email',
@@ -154,8 +154,8 @@ class SystemConfigForm(forms.ModelForm):
                 'class': MD_INPUT_CLASS,
                 'placeholder': '请输入SMTP端口'
             }),
-            'smtp_use_tls': forms.CheckboxInput(attrs={
-                'class': MD_CHECKBOX_CLASS
+            'smtp_encryption': forms.Select(attrs={
+                'class': MD_INPUT_CLASS
             }),
             'smtp_username': forms.EmailInput(attrs={
                 'class': MD_INPUT_CLASS,

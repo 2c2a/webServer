@@ -3,6 +3,7 @@ import ssl
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from typing import Optional, List
 from django.core.exceptions import ValidationError
 
@@ -10,15 +11,23 @@ logger = logging.getLogger(__name__)
 
 
 class EmailService:
-    def __init__(self, smtp_host: str, smtp_port: int,
-                 smtp_username: str, smtp_password: str,
-                 smtp_from_email: str, smtp_use_tls: bool = False):
+    def __init__(
+        self,
+        smtp_host: str,
+        smtp_port: int,
+        smtp_username: str,
+        smtp_password: str,
+        smtp_from_email: str,
+        smtp_encryption: str = "TLS",
+        smtp_from_name: Optional[str] = None,
+    ):
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
         self.smtp_username = smtp_username
         self.smtp_password = smtp_password
         self.smtp_from_email = smtp_from_email
-        self.smtp_use_tls = smtp_use_tls
+        self.smtp_encryption = smtp_encryption
+        self.smtp_from_name = smtp_from_name
 
     def send_email(
         self,
@@ -28,30 +37,43 @@ class EmailService:
         html_body: Optional[str] = None,
         from_email: Optional[str] = None,
     ) -> bool:
-        if not all([self.smtp_host, self.smtp_port,
-                    self.smtp_username, self.smtp_password,
-                    self.smtp_from_email]):
-            raise ValidationError('SMTP配置不完整')
+        if not all(
+            [
+                self.smtp_host,
+                self.smtp_port,
+                self.smtp_username,
+                self.smtp_password,
+                self.smtp_from_email,
+            ]
+        ):
+            raise ValidationError("SMTP配置不完整")
 
         sender = from_email or self.smtp_from_email
+        sender_name = self.smtp_from_name
 
         msg = MIMEMultipart('alternative')
-        msg['From'] = sender
+        msg['From'] = formataddr((sender_name, sender)) if sender_name else sender
         msg['To'] = ', '.join(to_emails)
         msg['Subject'] = subject
 
-        part1 = MIMEText(text_body, 'plain', 'utf-8')
+        part1 = MIMEText(text_body, "plain", "utf-8")
         msg.attach(part1)
 
         if html_body:
-            part2 = MIMEText(html_body, 'html', 'utf-8')
+            part2 = MIMEText(html_body, "html", "utf-8")
             msg.attach(part2)
 
-        server = smtplib.SMTP(self.smtp_host, self.smtp_port)
+        timeout = 15
+
+        if self.smtp_encryption == "SSL":
+            server = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=timeout)
+        else:
+            server = smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=timeout)
+
         try:
             server.ehlo()
 
-            if self.smtp_use_tls:
+            if self.smtp_encryption == "TLS":
                 context = ssl.create_default_context()
                 server.starttls(context=context)
                 server.ehlo()
@@ -75,7 +97,21 @@ class EmailService:
             smtp_username=config.smtp_username,
             smtp_password=config.smtp_password,
             smtp_from_email=config.smtp_from_email,
-            smtp_use_tls=config.smtp_use_tls,
+            smtp_encryption=config.smtp_encryption,
+            smtp_from_name=config.smtp_from_name,
+        )
+
+    @classmethod
+    def from_effective_config(cls, ec):
+        """从 EffectiveConfig 实例创建 EmailService"""
+        return cls(
+            smtp_host=ec.smtp_host,
+            smtp_port=ec.smtp_port,
+            smtp_username=ec.smtp_username,
+            smtp_password=ec.smtp_password,
+            smtp_from_email=ec.smtp_from_email,
+            smtp_encryption=ec.smtp_encryption,
+            smtp_from_name=ec.smtp_from_name,
         )
 
     @staticmethod
@@ -85,13 +121,16 @@ class EmailService:
         text_body,
         html_body=None,
         from_email=None,
+        site_group_id=None,
     ):
         """异步发送邮件，通过 Celery 任务执行"""
         from .tasks import send_email_task
+
         send_email_task.delay(
             to_emails=to_emails,
             subject=subject,
             text_body=text_body,
             html_body=html_body,
             from_email=from_email,
+            site_group_id=site_group_id,
         )

@@ -12,13 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 def generate_secure_password(length=16):
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    # 排除 PowerShell 双引号字符串中有歧义的字符: " $ `
+    _special = "!@#%^&*()_+-=[]{}|;:,.<>?"
+    alphabet = string.ascii_letters + string.digits + _special
     while True:
         password = ''.join(secrets.choice(alphabet) for _ in range(length))
         has_upper = any(c.isupper() for c in password)
         has_lower = any(c.islower() for c in password)
         has_digit = any(c.isdigit() for c in password)
-        has_special = any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in password)
+        has_special = any(c in _special for c in password)
         if has_upper and has_lower and has_digit and has_special:
             return password
 
