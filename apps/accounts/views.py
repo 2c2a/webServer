@@ -87,6 +87,25 @@ class RegisterView(CreateView):
         cache.delete(cache_key)
 
         response = super().form_valid(form)
+
+        # 注册成功后创建 UserEmail 记录
+        user = self.object
+        if user:
+            from .models import UserEmail
+
+            UserEmail.objects.get_or_create(
+                email=email,
+                defaults={
+                    "user": user,
+                    "is_primary": True,
+                    "is_verified": True,
+                },
+            )
+            # 如果通过子站点注册，自动加入该站点组
+            site_group = getattr(request, "site_group", None)
+            if site_group:
+                user.site_groups.add(site_group)
+
         messages.success(
             self.request,
             '注册成功！请登录您的账户。'
