@@ -1,0 +1,22 @@
+{# 我的云电脑片段（HTMX 动态、不可缓存） #}
+{% if cloud_computers %}
+<table class="table">
+    <thead>
+        <tr><th>用户名</th><th>产品</th><th>状态</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+        {% for cc in cloud_computers %}
+        <tr>
+            <td>{{ cc.username }}</td>
+            <td>{{ cc.product_name|default('-') }}</td>
+            <td><span class="badge badge-{{ cc.status }}">{{ cc.status }}</span></td>
+            <td>
+                <a href="/operations/my-cloud-computers/{{ cc.id }}" class="btn btn-link btn-sm">详情</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">暂无云电脑</div>
+{% endif %}

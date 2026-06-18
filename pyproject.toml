@@ -1,81 +1,69 @@
 [project]
 name = "2c2a"
-version = "1.0.0"
-description = "2c2a - Django Web Application"
-license = "AGPL-3.0-only"
+version = "2.0.0"
+description = "Zero Agent Security Control Architecture - async rewrite (Granian + FastAPI + SQLAlchemy 2.0 Async + HTMX OOB + RedisHuey + JinjaX + aiohttp)"
+requires-python = ">=3.12"
 readme = "README.md"
-requires-python = ">=3.10"
+license = { text = "AGPL-3.0" }
+
 dependencies = [
-    "celery==5.4.0",
-    "cryptography==46.0.3",
-    "django-cors-headers==4.3.1",
-    "django-formtools>=2.5.1",
-    "Django==4.2.27",
-    "djangorestframework==3.15.2",
-    "idna==3.15",
-    "kombu==5.6.2",
-    "Markdown==3.10.1",
-    "pillow==12.1.0",
-    "PyJWT>=2.8.0",
-    "pyotp",
-    "python-dotenv==1.2.1",
-    "pywinrm==0.4.3",
-    "redis>=5.0.0",
-    "requests==2.32.3",
-    "toml",
-    "django-cotton @ git+https://github.com/2c2a/django-cotton.git@feature/x-prefix-tag-support",
-    "djlint>=1.36.4",
-    "heroicons>=2.14.0",
-    "cotton-icons>=0.2.0",
-    "whitenoise>=6.12.0",
-    "django-tianai-captcha",
+    # ASGI 服务器
+    "granian>=1.6.0",
+    # Web 框架
+    "fastapi>=0.115.0",
+    "starlette>=0.38.0",
+    # ORM (SQLAlchemy 2.0 异步)
+    "sqlalchemy[asyncio]>=2.0.32",
+    "aiosqlite>=0.20.0",
+    "asyncpg>=0.29.0",
+    "aiomysql>=0.2.0",
+    # 迁移
+    "alembic>=1.13.0",
+    # 模板 (JinjaX)
+    "jinja2>=3.1.4",
+    "jinjax>=0.5.0",
+    # HTMX 服务端无直接依赖，仅前端 JS
+    # Redis (异步 + Huey)
+    "redis[hiredis]>=5.0.0",
+    "huey[redis]>=2.5.0",
+    # 异步 HTTP (替代同步 winrm)
+    "aiohttp>=3.10.0",
+    # 安全 / 加密
+    "argon2-cffi>=23.1.0",
+    "pyjwt>=2.9.0",
+    "cryptography>=43.0.0",
+    # 配置
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.0",
+    # 工具
+    "python-multipart>=0.0.9",
+    "itsdangerous>=2.2.0",
+    "httpx>=0.27.0",
+    "structlog>=24.4.0",
+    "python-dotenv>=1.0.1",
 ]
 
 [project.optional-dependencies]
-kerberos = [
-    "gssapi>=1.11.1",
-    "krb5>=0.9.0",
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.27.0",
+    "ruff>=0.6.0",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[dependency-groups]
-dev = [
-    "pytest>=9.0.3",
-    "pytest-django",
-    "black",
-    "django-stubs>=6.0.2",
-    "flake8",
-    "pyrefly>=0.60.0",
-    "pytest",
-    "pytest-django",
-    "redis>=7.4.0",
-]
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
 [tool.hatch.build.targets.wheel]
-packages = ["."]
+packages = ["app"]
 
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings"
-pythonpath = ["."]
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "-v --tb=short --import-mode=importlib"
+[tool.ruff]
+target-version = "py312"
+line-length = 110
 
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
-pythonVersion = "3.13"
-typeCheckingMode = "basic"
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
 
-[tool.pyrefly]
-python-version = "3.13"
-
-[tool.uv.sources]
-django-tianai-captcha = { git = "https://github.com/trustedinster/django-tianai-captcha.git" }
+[tool.granian]
+# 仅文档用，实际参数由命令行传入

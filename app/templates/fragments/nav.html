@@ -1,0 +1,27 @@
+{# 导航片段（HTMX 动态、不可缓存、基于用户状态）。
+   由 App Shell 在页面加载后通过 hx-get="/fragments/nav" 获取。 #}
+{% if user %}
+<ul class="nav-list">
+    <li><a href="/">仪表盘</a></li>
+    <li><a href="/operations/my-cloud-computers">我的云电脑</a></li>
+    <li><a href="/operations/account-openings">开户申请</a></li>
+    <li><a href="/tickets">工单</a></li>
+    {% if user.is_staff or user.is_superuser %}
+    <li><a href="/admin/">管理后台</a></li>
+    {% endif %}
+    {% if user.is_superuser %}
+    <li><a href="/admin/sitegroups">站点管理</a></li>
+    {% endif %}
+    <li class="nav-right">
+        <span class="nav-user">{{ user.username }}</span>
+        <button class="btn btn-link" onclick="logout()">退出</button>
+    </li>
+</ul>
+{% else %}
+<ul class="nav-list">
+    <li><a href="/login">登录</a></li>
+    {% if enable_registration %}
+    <li><a href="/register">注册</a></li>
+    {% endif %}
+</ul>
+{% endif %}
