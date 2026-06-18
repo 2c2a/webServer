@@ -150,3 +150,7 @@ tools/*
 # attack
 attack/*
 docs/architecture-scan.md
+
+# New plan drafts (not ready for repository)
+docs/new_plan/
+docs/new.txt

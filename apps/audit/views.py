@@ -22,14 +22,16 @@ DATE_FORMAT = '%Y-%m-%d'
 
 
 def _validate_int_param(value, default=1, min_val=1, max_val=None):
+    if value is None or value == '':
+        return default
     try:
         result = int(value)
-        result = max(min_val, result)
-        if max_val:
-            result = min(max_val, result)
-        return result
     except (ValueError, TypeError):
-        return default
+        raise ValueError("Invalid parameter value")
+    result = max(min_val, result)
+    if max_val:
+        result = min(max_val, result)
+    return result
 
 
 def _validate_date_param(value):

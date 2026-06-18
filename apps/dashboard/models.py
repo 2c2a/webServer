@@ -355,6 +355,21 @@ class SiteGroup(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        result = super().save(*args, **kwargs)
+        for hostname in self.hostnames.values_list('hostname', flat=True):
+            cache.delete(f'site_group:hostname:{hostname}')
+        return result
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        hostnames = list(self.hostnames.values_list('hostname', flat=True))
+        result = super().delete(*args, **kwargs)
+        for hostname in hostnames:
+            cache.delete(f'site_group:hostname:{hostname}')
+        return result
+
 
 class SiteGroupConfig(models.Model):
     """
@@ -538,3 +553,16 @@ class SiteGroupHostname(models.Model):
 
     def __str__(self):
         return f'{self.hostname} -> {self.site_group.name}'
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        result = super().save(*args, **kwargs)
+        cache.delete(f'site_group:hostname:{self.hostname}')
+        return result
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        hostname = self.hostname
+        result = super().delete(*args, **kwargs)
+        cache.delete(f'site_group:hostname:{hostname}')
+        return result
