@@ -30,9 +30,9 @@
 
 ## 快速参考
 
-- **运行命令**：所有 Python 命令用 `uv run`（见 `01-iron-laws.md`）
-- **CLI 入口**：`uv run 2c2a --help` 或 `uv run python -m app.cli`
-- **启动服务器**：`uv run 2c2a serve serve` 或 `uv run granian --interface asgi app.main:app`
-- **生成密钥**：`uv run 2c2a keys generate`
-- **数据库迁移**：`uv run 2c2a db upgrade`
+- **运行命令**：直接用 `python`、`pip`、`2c2a` 等命令（见 `01-iron-laws.md`）
+- **CLI 入口**：`2c2a --help` 或 `python -m app.cli`
+- **启动服务器**：`2c2a serve serve` 或 `granian --interface asgi app.main:app`
+- **生成密钥**：`2c2a keys generate`
+- **数据库迁移**：`2c2a db upgrade`
 - **项目文档**：`docs/` 目录下有架构、API、数据库 Schema、部署运维等文档
