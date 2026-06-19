@@ -136,9 +136,6 @@ templates/components/input_simple.html
 # Old project copies
 zacs/
 
-# trae
-.trae/
-
 # Tailwind CSS standalone CLI executables
 static/vendor/tailwindcss
 tools/tailwindcss
