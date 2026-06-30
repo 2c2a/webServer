@@ -479,20 +479,48 @@
 
   function showSuccess(root, msg) {
     // 简单地替换为成功状态显示
-    let successHtml =
-      '<div class="captcha-state captcha-state-success" ' +
-      'style="display:flex;align-items:center;justify-content:center;gap:8px;' +
+    const state = document.createElement('div');
+    state.className = 'captcha-state captcha-state-success';
+    state.style.cssText =
+      'display:flex;align-items:center;justify-content:center;gap:8px;' +
       'padding:12px;border:1px solid var(--c-success,#22c55e);' +
       'border-radius:8px;background:rgba(34,197,94,0.08);' +
-      'color:var(--c-success,#22c55e);font-size:14px;">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
-      '<span>' + (msg || '验证通过') + '</span></div>';
+      'color:var(--c-success,#22c55e);font-size:14px;';
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const icon = document.createElementNS(svgNS, 'svg');
+    icon.setAttribute('width', '18');
+    icon.setAttribute('height', '18');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('fill', 'none');
+    icon.setAttribute('stroke', 'currentColor');
+    icon.setAttribute('stroke-width', '2.5');
+    icon.setAttribute('stroke-linecap', 'round');
+    icon.setAttribute('stroke-linejoin', 'round');
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', 'M20 6L9 17l-5-5');
+    icon.appendChild(path);
+
+    const text = document.createElement('span');
+    text.textContent = msg || '验证通过';
+    state.appendChild(icon);
+    state.appendChild(text);
+
     // 保留隐藏字段
-    const captchaId = root.getAttribute('data-captcha-id');
-    successHtml +=
-      '<input type="hidden" name="captcha_id" value="' + captchaId + '" data-captcha-id-input>' +
-      '<input type="hidden" name="captcha" value="verified" data-captcha-answer-input>';
-    root.innerHTML = successHtml;
+    const captchaId = root.getAttribute('data-captcha-id') || '';
+    const captchaIdInput = document.createElement('input');
+    captchaIdInput.type = 'hidden';
+    captchaIdInput.name = 'captcha_id';
+    captchaIdInput.value = captchaId;
+    captchaIdInput.setAttribute('data-captcha-id-input', '');
+
+    const captchaAnswerInput = document.createElement('input');
+    captchaAnswerInput.type = 'hidden';
+    captchaAnswerInput.name = 'captcha';
+    captchaAnswerInput.value = 'verified';
+    captchaAnswerInput.setAttribute('data-captcha-answer-input', '');
+
+    root.replaceChildren(state, captchaIdInput, captchaAnswerInput);
   }
 
   function showError(root, msg) {
