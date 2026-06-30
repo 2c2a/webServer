@@ -101,13 +101,6 @@ rcssmin.*
 rjsmin.*
 *.zip
 
-# Plugins (moved to separate repos)
-plugins/qq_verification/
-plugins/gateway/
-plugins/sample_plugins/
-plugins/plugins.toml
-plugins/example_plugin.py
-
 # Private test files
 test_qq_plugin.py
 test_qq_verification_complete.py
@@ -157,7 +150,7 @@ _*.py
 _*.txt
 _*.json
 _test_shots/
-
+!**/__init__.py
 # 临时测试页面
 app/templates/pages/test123.html
 app/templates/pages/captcha_demo.html
