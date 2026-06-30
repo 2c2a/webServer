@@ -596,18 +596,6 @@ ruff format app/
 
 ---
 
-## 文档
-
-| 文档 | 说明 |
-| --- | --- |
-| [docs/01_项目架构与设计.md](docs/01_项目架构与设计.md) | 架构详解 |
-| [docs/02_API接口文档.md](docs/02_API接口文档.md) | API 文档 |
-| [docs/03_Database_Schema.md](docs/03_Database_Schema.md) | 数据库 Schema |
-| [docs/04_部署运维手册.md](docs/04_部署运维手册.md) | 部署运维 |
-| [docs/06_安全配置指南.md](docs/06_安全配置指南.md) | 安全配置 |
-
----
-
 ## License
 
 AGPL-3.0
