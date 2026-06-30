@@ -1,0 +1,189 @@
+{# 后台产品创建/编辑表单片段（对齐 2c2a-admin-console/pages/product-form.html 设计稿）。
+   toggle 开关使用纯 CSS peer-checked: 模式，无需 JavaScript。 #}
+<div class="mx-auto max-w-[720px]">
+    <h1 class="text-base font-semibold tracking-tight text-[var(--vercel-text-foreground)]">{% if product %}编辑产品{% else %}新增产品{% endif %}</h1>
+    <p class="mt-1 text-sm text-[var(--vercel-text-muted-foreground)]">{% if product %}修改产品配置{% else %}创建可被用户申请的云电脑产品{% endif %}</p>
+
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <form class="p-5 sm:p-6"
+              {% if product %}
+              hx-put="/fragments/admin/products/{{ product.id }}"
+              {% else %}
+              hx-post="/fragments/admin/products/create"
+              {% endif %}
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+
+            <!-- Section: 基本信息 -->
+            <fieldset>
+                <legend class="text-sm font-semibold text-[var(--vercel-text-foreground)] mb-4">基本信息</legend>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                    <!-- 名称 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                            名称 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                        </label>
+                        <input type="text" name="name" required
+                               value="{{ product.name | default('') }}"
+                               placeholder="product-name"
+                               class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                    </div>
+
+                    <!-- 展示名 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">展示名</label>
+                        <input type="text" name="display_name"
+                               value="{{ product.display_name | default('') }}"
+                               placeholder="用户可见的名称"
+                               class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                    </div>
+
+                    <!-- 描述 -->
+                    <div class="sm:col-span-2 space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">描述</label>
+                        <textarea name="description" rows="2" placeholder="内部描述，不可面向用户"
+                                  class="w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] resize-y">{{ product.description | default('') }}</textarea>
+                    </div>
+
+                    <!-- 展示描述 -->
+                    <div class="sm:col-span-2 space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">展示描述</label>
+                        <textarea name="display_description" rows="2" placeholder="面向用户的描述信息"
+                                  class="w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] resize-y">{{ product.display_description | default('') }}</textarea>
+                    </div>
+
+                    <!-- 产品组 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">所属产品组</label>
+                        <select name="product_group_id"
+                                class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                            <option value="">请选择产品组</option>
+                            {% for g in groups %}
+                            <option value="{{ g.id }}" {% if product and product.product_group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- 主机 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                            关联主机 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                        </label>
+                        <select name="host_id" required
+                                class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                            <option value="">请选择主机</option>
+                            {% for h in hosts %}
+                            <option value="{{ h.id }}" {% if product and product.host_id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.hostname }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- RDP 端口 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">RDP 端口</label>
+                        <input type="number" name="rdp_port" value="{{ product.rdp_port | default(3389) }}"
+                               class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                    </div>
+
+                    <!-- 展示主机名 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">展示主机名</label>
+                        <input type="text" name="display_hostname"
+                               value="{{ product.display_hostname | default('') }}"
+                               placeholder="user-desktop"
+                               class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                    </div>
+
+                    <!-- 所需积分 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                            所需积分 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                        </label>
+                        <input type="number" name="required_points" required
+                               value="{{ product.required_points | default(0) }}"
+                               class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                        <p class="text-xs text-[var(--vercel-text-muted-foreground)]">用户申请此产品需消耗的积分</p>
+                    </div>
+
+                    <!-- 可见性 -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">可见性</label>
+                        <select name="visibility"
+                                class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                            <option value="public" {% if product and product.visibility == 'public' %}selected{% endif %}>公开</option>
+                            <option value="private" {% if product and product.visibility == 'private' %}selected{% endif %}>私有</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Divider -->
+            <hr class="my-6 border-[var(--vercel-border)]">
+
+            <!-- Section: 配置开关 -->
+            <fieldset>
+                <legend class="text-sm font-semibold text-[var(--vercel-text-foreground)] mb-4">配置开关</legend>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                    <!-- 是否可用 -->
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-sm text-[var(--vercel-text-foreground)]">是否可用</span>
+                        <div class="relative">
+                            <input type="checkbox" name="is_available" value="true" class="peer sr-only" {% if not product or product.is_available %}checked{% endif %}>
+                            <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                            <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                        </div>
+                    </label>
+
+                    <!-- 自动审批 -->
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-sm text-[var(--vercel-text-foreground)]">自动审批</span>
+                        <div class="relative">
+                            <input type="checkbox" name="auto_approval" value="true" class="peer sr-only" {% if product and product.auto_approval %}checked{% endif %}>
+                            <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                            <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                        </div>
+                    </label>
+
+                    <!-- 每用户限一个 -->
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-sm text-[var(--vercel-text-foreground)]">每用户限一个</span>
+                        <div class="relative">
+                            <input type="checkbox" name="limit_one_per_user" value="true" class="peer sr-only" {% if product and product.limit_one_per_user %}checked{% endif %}>
+                            <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                            <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                        </div>
+                    </label>
+                </div>
+            </fieldset>
+
+            <!-- Separator -->
+            <div class="my-5 border-t border-[var(--vercel-border)]"></div>
+
+            <!-- Section: 使用条款 -->
+            <fieldset>
+                <legend class="text-sm font-semibold text-[var(--vercel-text-foreground)] mb-4">使用条款</legend>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">条款内容</label>
+                    <textarea name="terms" rows="5"
+                              placeholder="用户开通此产品前需同意的使用条款，留空则不展示&#10;&#10;例如：&#10;1. 本产品仅限个人学习与研究使用&#10;2. 禁止用于挖矿、破解等违规行为&#10;3. 违规使用将被封禁账户并扣除全部积分"
+                              class="w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] resize-y">{{ product.terms | default('') }}</textarea>
+                    <p class="text-xs text-[var(--vercel-text-muted-foreground)]">留空则不向用户展示必读条款卡片</p>
+                </div>
+            </fieldset>
+
+            <!-- Separator -->
+            <div class="my-5 border-t border-[var(--vercel-border)]"></div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3">
+                <a href="/admin/products" class="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                    取消
+                </a>
+                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--vercel-accent-primary)] px-4 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    保存
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,142 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "points" %}
+{% set page_title = "积分管理" %}
+
+{% block content %}
+                <!-- Page title -->
+                <div class="mb-6">
+                    <h1 class="text-lg font-semibold tracking-tight text-[var(--vercel-text-foreground)]">积分管理</h1>
+                    <p class="mt-1 text-sm text-[var(--vercel-text-muted-foreground)]">积分任务配置、交易明细与手动调整</p>
+                </div>
+
+                <!-- Section 1: 积分任务配置 (HTMX) -->
+                <section class="mb-6"
+                         hx-get="/fragments/admin/points/tasks"
+                         hx-trigger="load"
+                         hx-target="this"
+                         hx-swap="innerHTML">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">加载中...</span>
+                </section>
+
+                <!-- Section 2: 积分明细 (HTMX) -->
+                <section id="points-records-section" class="mb-6"
+                         hx-get="/fragments/admin/points/records"
+                         hx-trigger="load"
+                         hx-target="this"
+                         hx-swap="innerHTML">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">加载中...</span>
+                </section>
+
+                <!-- Section 3: 手动调整 -->
+                <section class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+                    <div class="border-b border-[var(--vercel-border)] px-4 py-3 sm:px-5">
+                        <h2 class="text-sm font-semibold tracking-tight text-[var(--vercel-text-foreground)]">手动发放/扣减</h2>
+                    </div>
+                    <div class="p-4 sm:p-6">
+                        <form id="points-adjust-form"
+                              class="max-w-lg space-y-4"
+                              hx-post="/fragments/admin/points/adjust"
+                              hx-target="#points-records-section"
+                              hx-swap="innerHTML">
+                            <!-- 用户搜索 -->
+                            <div>
+                                <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">用户</label>
+                                <!-- 已选用户 Chip -->
+                                <div id="selected-user-chip"
+                                     class="mb-1.5 hidden items-center justify-between rounded-md border px-3 py-1.5 text-sm"
+                                     style="border-color: var(--vercel-accent-ring); background: var(--vercel-bg-muted);">
+                                    <span id="selected-user-name" class="font-medium text-[var(--vercel-text-foreground)]"></span>
+                                    <button type="button"
+                                            onclick="clearPointsUser()"
+                                            class="text-xs text-[var(--vercel-text-muted-foreground)] hover:text-[var(--vercel-text-foreground)]">×</button>
+                                </div>
+                                <!-- 搜索输入 -->
+                                <input id="user-search-input"
+                                       type="text"
+                                       placeholder="输入用户名搜索..."
+                                       autocomplete="off"
+                                       class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]"
+                                       hx-get="/fragments/admin/points/users/search"
+                                       hx-trigger="keyup changed delay:300ms"
+                                       hx-target="#user-search-dropdown"
+                                       hx-swap="innerHTML"
+                                       hx-include="this"
+                                       name="q" />
+                                <!-- 隐藏字段：选中用户的 ID -->
+                                <input type="hidden" id="selected-user-id" name="user_id" value="" required />
+                                <!-- 下拉候选容器 -->
+                                <div id="user-search-dropdown" class="relative z-10"></div>
+                            </div>
+                            <!-- 变动数额 -->
+                            <div>
+                                <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">变动数额</label>
+                                <input type="number" name="delta" placeholder="0" required
+                                       class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" />
+                                <p class="mt-1 text-xs text-[var(--vercel-text-muted-foreground)]">正数为发放，负数为扣减</p>
+                            </div>
+                            <!-- 备注 -->
+                            <div>
+                                <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">备注</label>
+                                <input type="text" name="description" placeholder="调整原因..."
+                                       class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" />
+                            </div>
+                            <!-- 提交 -->
+                            <div>
+                                <button type="submit"
+                                        class="inline-flex items-center rounded-md bg-[var(--vercel-accent-primary)] px-4 py-2 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                                    提交
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- OOB toast 容器（用于 hx-swap-oob） -->
+                <div id="toast-outlet"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 选择用户（来自搜索下拉）
+function selectPointsUser(id, username, isActive, isStaff, isSuperuser) {
+    var hidden = document.getElementById('selected-user-id');
+    var chip = document.getElementById('selected-user-chip');
+    var name = document.getElementById('selected-user-name');
+    var input = document.getElementById('user-search-input');
+    var dropdown = document.getElementById('user-search-dropdown');
+
+    hidden.value = id;
+    if (name) {
+        var badges = '';
+        if (!isActive) badges += ' <span class="text-xs text-[var(--vercel-status-destructive)]">(已禁用)</span>';
+        if (isSuperuser) badges += ' <span class="text-xs text-[var(--vercel-status-warning)]">(超管)</span>';
+        else if (isStaff) badges += ' <span class="text-xs text-[var(--vercel-text-muted-foreground)]">(员工)</span>';
+        name.innerHTML = username + badges;
+    }
+    chip.classList.remove('hidden');
+    chip.classList.add('flex');
+    if (input) input.value = '';
+    if (dropdown) dropdown.innerHTML = '';
+}
+
+// 清空已选用户
+function clearPointsUser() {
+    var hidden = document.getElementById('selected-user-id');
+    var chip = document.getElementById('selected-user-chip');
+    hidden.value = '';
+    chip.classList.add('hidden');
+    chip.classList.remove('flex');
+}
+
+// 提交前校验：必须选中用户
+document.addEventListener('htmx:configRequest', function(evt) {
+    var form = document.getElementById('points-adjust-form');
+    if (!form || !form.contains(evt.detail.elt)) return;
+    var hidden = document.getElementById('selected-user-id');
+    if (hidden && !hidden.value) {
+        evt.preventDefault();
+        window.alert('请先选择用户');
+    }
+});
+</script>
+{% endblock %}

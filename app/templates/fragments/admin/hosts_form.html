@@ -1,0 +1,155 @@
+{# 后台主机创建/编辑表单片段（对齐 2c2a-admin-console/pages/host-form.html 设计稿）。
+   toggle 开关使用纯 CSS peer-checked: 模式，无需 JavaScript。 #}
+<div class="mx-auto max-w-[720px]">
+    <h1 class="text-base font-semibold tracking-tight text-[var(--vercel-text-foreground)]">{% if host %}编辑主机{% else %}新增主机{% endif %}</h1>
+    <p class="mt-1 text-sm text-[var(--vercel-text-muted-foreground)]">{% if host %}修改主机连接配置{% else %}添加可被产品调用的远程主机{% endif %}</p>
+
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <form class="p-5 sm:p-6"
+              {% if host %}
+              hx-put="/fragments/admin/hosts/{{ host.id }}"
+              {% else %}
+              hx-post="/fragments/admin/hosts/create"
+              {% endif %}
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                <!-- 名称 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        名称 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="text" name="name" required
+                           value="{{ host.name | default('') }}"
+                           placeholder="web-01"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 主机名/IP -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        主机名/IP <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="text" name="hostname" required
+                           value="{{ host.hostname | default('') }}"
+                           placeholder="192.168.1.100"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm font-mono text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 连接方式 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">连接方式</label>
+                    <select name="connection_type"
+                            class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                        <option value="winrm" {% if host and host.connection_type == 'winrm' %}selected{% endif %}>WinRM</option>
+                        <option value="localwinserver" {% if host and host.connection_type == 'localwinserver' %}selected{% endif %}>本地 WinServer</option>
+                        <option value="ssh" {% if host and host.connection_type == 'ssh' %}selected{% endif %}>SSH</option>
+                    </select>
+                </div>
+
+                <!-- 认证方式 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">认证方式</label>
+                    <select name="auth_method"
+                            class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                        <option value="ntlm" {% if host and host.auth_method == 'ntlm' %}selected{% endif %}>NTLM</option>
+                        <option value="certificate" {% if host and host.auth_method == 'certificate' %}selected{% endif %}>证书</option>
+                    </select>
+                </div>
+
+                <!-- 端口 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        端口 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="number" name="port" required value="{{ host.port | default(5985) }}"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- RDP 端口 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">RDP 端口</label>
+                    <input type="number" name="rdp_port" value="{{ host.rdp_port | default(3389) }}"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 用户名 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">用户名</label>
+                    <input type="text" name="username"
+                           value="{{ host.username | default('') }}"
+                           placeholder="administrator"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 密码 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        密码 {% if host %}<span class="text-[var(--vercel-text-muted-foreground)]">(留空不修改)</span>{% else %}<span class="text-[var(--vercel-status-destructive)]">*</span>{% endif %}
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="password"
+                               {% if not host %}required{% endif %}
+                               placeholder="{% if host %}留空表示不修改{% else %}请输入密码{% endif %}"
+                               class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 pr-9 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                        <button type="button" class="absolute right-2 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[var(--vercel-text-muted-foreground)] transition-colors hover:text-[var(--vercel-text-foreground)]" onclick="const inp=this.previousElementSibling;inp.type=inp.type==='password'?'text':'password';const i=this.querySelector('i');i.setAttribute('data-lucide',inp.type==='password'?'eye':'eye-off');lucide.createIcons()" aria-label="切换密码可见性">
+                            <i data-lucide="eye" class="h-3.5 w-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 描述 -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">描述</label>
+                    <textarea name="description" rows="2" placeholder="可选的主机描述"
+                              class="w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] resize-y">{{ host.description | default('') }}</textarea>
+                </div>
+
+                <!-- Separator -->
+                <div class="sm:col-span-2"><hr class="border-[var(--vercel-border)]"></div>
+
+                <!-- 配置开关分区 -->
+                <div class="sm:col-span-2">
+                    <legend class="text-sm font-semibold text-[var(--vercel-text-foreground)] mb-4">配置开关</legend>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                        <!-- 使用 SSL -->
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">使用 SSL</span>
+                            <div class="relative">
+                                <input type="checkbox" name="use_ssl" value="true" class="peer sr-only" {% if host and host.use_ssl %}checked{% endif %}>
+                                <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+
+                        {% if host %}
+                        <!-- 状态（仅编辑态） -->
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">启用主机</span>
+                            <div class="relative">
+                                <input type="checkbox" name="is_active" value="true" class="peer sr-only" {% if host.status == 'active' %}checked{% endif %}>
+                                <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="my-5 border-t border-[var(--vercel-border)]"></div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3">
+                <a href="/admin/hosts" class="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                    取消
+                </a>
+                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--vercel-accent-primary)] px-4 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    保存
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

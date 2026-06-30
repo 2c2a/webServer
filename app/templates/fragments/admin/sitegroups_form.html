@@ -1,0 +1,93 @@
+{# 后台站点组创建/编辑表单片段 #}
+<div class="mx-auto max-w-[720px]">
+    <h1 class="text-lg font-semibold tracking-tight text-[var(--vercel-text-foreground)]">{% if item %}编辑站点组{% else %}新增站点组{% endif %}</h1>
+    <p class="mt-1 text-sm text-[var(--vercel-text-muted-foreground)]">{% if item %}修改站点组配置{% else %}创建新的站点组以实现多租户隔离{% endif %}</p>
+
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <form class="p-5 sm:p-6"
+              {% if item %}
+              hx-put="/fragments/admin/sitegroups/{{ item.id }}"
+              {% else %}
+              hx-post="/fragments/admin/sitegroups/create"
+              {% endif %}
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                <!-- 站点名称 -->
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">
+                        站点名称 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="text" name="name" required
+                           value="{{ item.name | default('') }}"
+                           placeholder="请输入站点名称"
+                           class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- Slug -->
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">
+                        Slug <span class="text-[var(--vercel-text-muted-foreground)]">(留空自动生成)</span>
+                    </label>
+                    <input type="text" name="slug"
+                           value="{{ item.slug | default('') }}"
+                           {% if item %}readonly{% endif %}
+                           placeholder="my-site"
+                           class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)] {% if item %}bg-[var(--vercel-bg-muted)] cursor-not-allowed{% endif %}">
+                    {% if item %}<p class="mt-1 text-xs text-[var(--vercel-text-muted-foreground)]">Slug 创建后不可修改</p>{% endif %}
+                </div>
+
+                <!-- 显示名 -->
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">显示名</label>
+                    <input type="text" name="site_name"
+                           value="{{ item.site_name | default('') }}"
+                           placeholder="对外展示的站点名"
+                           class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 站点图标 -->
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">站点图标 URL</label>
+                    <input type="text" name="site_icon"
+                           value="{{ item.site_icon | default('') }}"
+                           placeholder="https://..."
+                           class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 状态开关 -->
+                <div class="sm:col-span-2">
+                    <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">启用状态</label>
+                    <div class="flex items-center gap-3">
+                        <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors" style="background: {% if not item or item.is_active %}var(--vercel-status-success){% else %}var(--vercel-accent-input){% endif %}">
+                            <input type="checkbox" name="is_active" value="true" class="peer sr-only" {% if not item or item.is_active %}checked{% endif %} onchange="const t=this.parentElement;t.style.background=this.checked?'var(--vercel-status-success)':'var(--vercel-accent-input)';const d=t.querySelector('span');d.style.transform=this.checked?'translateX(24px)':'translateX(0)'">
+                            <span class="pointer-events-none inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200" style="transform: {% if not item or item.is_active %}translateX(24px){% else %}translateX(0){% endif %}"></span>
+                        </label>
+                        <span class="text-sm text-[var(--vercel-text-foreground)]">启用此站点组</span>
+                    </div>
+                </div>
+
+                <!-- 描述 -->
+                <div class="sm:col-span-2">
+                    <label class="mb-1.5 block text-sm font-medium text-[var(--vercel-text-foreground)]">描述</label>
+                    <textarea name="description" rows="3" placeholder="可选的站点组描述"
+                              class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]">{{ item.description | default('') }}</textarea>
+                </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="my-6 border-t border-[var(--vercel-border)]"></div>
+
+            <!-- Actions -->
+            <div class="flex justify-end gap-3">
+                <a href="/admin/sitegroups" class="inline-flex items-center rounded-md border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 py-2 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                    取消
+                </a>
+                <button type="submit" class="inline-flex items-center rounded-md bg-[var(--vercel-accent-primary)] px-4 py-2 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    保存
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

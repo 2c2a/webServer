@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>站内信</title>
+    <style id="theme-vars">
+{"color":{"bg-brand":{"bg-brand":{"hex":"#4b3fe3","opacity":"1"},"bg-brand-hover":{"hex":"#6a6fff","opacity":"1"},"bg-brand-active":{"hex":"#3f31c6","opacity":"1"},"bg-brand-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"bg-brand-popup":{"hex":"#aab7ff","opacity":"0.36"},"color-primary":{"hex":"#4b3fe3","opacity":"1"},"color-primary-hover":{"hex":"#6a6fff","opacity":"1"},"color-primary-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"color-primary-soft":{"hex":"#aab7ff","opacity":"0.36"},"color-accent":{"hex":"#4b3fe3","opacity":"1"}},"bg":{"bg-base-default":{"hex":"#ffffff","opacity":"1"},"bg-base-secondary":{"hex":"#f5f5f5","opacity":"1"},"bg-base-tertiary":{"hex":"#e5e5e5","opacity":"1"},"bg-overlay-l1":{"hex":"#737373","opacity":"0.08"},"bg-overlay-l2":{"hex":"#737373","opacity":"0.12"},"bg-overlay-l3":{"hex":"#737373","opacity":"0.16"},"bg-overlay-l4":{"hex":"#737373","opacity":"0.2"},"bg-white":{"hex":"#ffffff","opacity":"1"},"bg-menu":{"hex":"#ffffff","opacity":"1"},"bg-tooltip":{"hex":"#ffffff","opacity":"1"},"bg-invert":{"hex":"#262626","opacity":"1"},"bg-invert-hover":{"hex":"#404040","opacity":"1"},"bg-invert-active":{"hex":"#171717","opacity":"1"},"bg-invert-disabled":{"hex":"#737373","opacity":"0.2"},"color-background":{"hex":"#ffffff","opacity":"1"},"color-surface":{"hex":"#f5f5f5","opacity":"1"},"color-surface-variant":{"hex":"#e5e5e5","opacity":"1"},"color-overlay-1":{"hex":"#737373","opacity":"0.08"},"color-overlay-2":{"hex":"#737373","opacity":"0.12"},"color-overlay-3":{"hex":"#737373","opacity":"0.16"},"color-overlay-4":{"hex":"#737373","opacity":"0.2"},"color-card":{"hex":"#f5f5f5","opacity":"1"},"color-tooltip":{"hex":"#ffffff","opacity":"1"},"color-menu":{"hex":"#ffffff","opacity":"1"}},"icon":{"icon-default":{"hex":"#262626","opacity":"1"},"icon-default-hover":{"hex":"#171717","opacity":"1"},"icon-default-active":{"hex":"#171717","opacity":"1"},"icon-secondary":{"hex":"#404040","opacity":"1"},"icon-secondary-hover":{"hex":"#262626","opacity":"1"},"icon-tertiary":{"hex":"#737373","opacity":"1"}},"text":{"text-default":{"hex":"#171717","opacity":"1"},"text-secondary":{"hex":"#404040","opacity":"1"},"text-tertiary":{"hex":"#737373","opacity":"1"},"text-quaternary":{"hex":"#a3a3a3","opacity":"1"},"text-disabled":{"hex":"#a3a3a3","opacity":"0.5"},"text-inverse":{"hex":"#ffffff","opacity":"1"},"text-link":{"hex":"#4b3fe3","opacity":"1"}},"border":{"border-default":{"hex":"#171717","opacity":"0.08"},"border-secondary":{"hex":"#171717","opacity":"0.15"},"border-tertiary":{"hex":"#171717","opacity":"0.22"}},"status":{"status-success":{"hex":"#00b983","opacity":"1"},"status-warning":{"hex":"#f2a90c","opacity":"1"},"status-error":{"hex":"#ff4757","opacity":"1"},"status-info":{"hex":"#3f85ff","opacity":"1"}}}
+    </style>
+    <style>:root{--c-brand:#4b3fe3;--c-brand-hover:#6a6fff;--c-brand-active:#3f31c6;--c-brand-disabled:rgba(75,63,227,0.22);--c-brand-soft:rgba(170,183,255,0.36);--c-bg:#ffffff;--c-bg-secondary:#f5f5f5;--c-bg-tertiary:#e5e5e5;--c-text-primary:#171717;--c-text-default:#262626;--c-text-secondary:#404040;--c-text-tertiary:#737373;--c-border:rgba(115,115,115,0.12);--c-success:#00b983;--c-warning:#f2a90c;--c-error:#ff4757;--c-info:#3f85ff}</style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+
+  @layer base {
+    body { background: var(--c-bg); color: var(--c-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--c-bg-secondary); color: var(--c-text-primary); font-family: 'SF Pro Text', 'PingFang SC', system-ui, sans-serif; overflow-y: auto;">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-[44px] flex items-center px-4"
+            style="background: var(--c-bg); border-bottom: 1px solid var(--c-border);">
+        <a href="dashboard.html" data-dom-id="back-dashboard" class="flex items-center" style="color: var(--c-text-primary); text-decoration: none; margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </a>
+        <span style="font-size: 17px; font-weight: 600; color: var(--c-text-primary); flex: 1;">站内信</span>
+        <a href="#" data-dom-id="btn-mark-all-read" style="font-size: 13px; color: var(--c-brand); text-decoration: none; flex-shrink: 0;">全部已读</a>
+    </header>
+
+    <!-- Main Content -->
+    <main style="padding-top: 44px; padding-bottom: 24px;">
+
+        <!-- Filter Tabs -->
+        <div style="margin: 12px 16px 0; display: flex; gap: 8px; overflow-x: auto;" class="no-scrollbar">
+            <button data-dom-id="filter-all" style="height: 32px; padding: 0 14px; border-radius: 9999px; font-size: 13px; white-space: nowrap; border: none; cursor: pointer; background: var(--c-brand); color: var(--c-bg); font-weight: 500;">全部</button>
+            <button style="height: 32px; padding: 0 14px; border-radius: 9999px; font-size: 13px; white-space: nowrap; border: 1px solid var(--c-border); cursor: pointer; background: var(--c-bg); color: var(--c-text-secondary); font-weight: 400;">未读</button>
+            <button style="height: 32px; padding: 0 14px; border-radius: 9999px; font-size: 13px; white-space: nowrap; border: 1px solid var(--c-border); cursor: pointer; background: var(--c-bg); color: var(--c-text-secondary); font-weight: 400;">系统</button>
+            <button style="height: 32px; padding: 0 14px; border-radius: 9999px; font-size: 13px; white-space: nowrap; border: 1px solid var(--c-border); cursor: pointer; background: var(--c-bg); color: var(--c-text-secondary); font-weight: 400;">工单</button>
+        </div>
+
+        <!-- Notification List -->
+        <div style="margin: 12px 16px 0;">
+
+            <!-- 1. 工单回复 - 未读 -->
+            <div style="background: var(--c-bg); border-radius: 10px; margin-bottom: 8px; padding: 14px 16px; display: flex; gap: 12px; position: relative; overflow: hidden;">
+                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c-info); border-radius: 10px 0 0 10px;"></div>
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(63,133,255,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <p style="font-size: 14px; font-weight: 600; color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">工单回复</p>
+                        <span style="font-size: 11px; color: var(--c-text-tertiary); flex-shrink: 0; margin-left: 8px;">2小时前</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--c-text-tertiary); margin: 0; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">您提交的工单 #1024 已有新回复</p>
+                </div>
+            </div>
+
+            <!-- 2. 账户安全 - 已读 -->
+            <div style="background: var(--c-bg); border-radius: 10px; margin-bottom: 8px; padding: 14px 16px; display: flex; gap: 12px; position: relative; overflow: hidden;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0,185,131,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <p style="font-size: 14px; font-weight: 400; color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">账户安全</p>
+                        <span style="font-size: 11px; color: var(--c-text-tertiary); flex-shrink: 0; margin-left: 8px;">昨天</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--c-text-tertiary); margin: 0; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">您的密码已成功修改</p>
+                </div>
+            </div>
+
+            <!-- 3. 维护通知 - 已读 -->
+            <div style="background: var(--c-bg); border-radius: 10px; margin-bottom: 8px; padding: 14px 16px; display: flex; gap: 12px; position: relative; overflow: hidden;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(242,169,12,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <p style="font-size: 14px; font-weight: 400; color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">维护通知</p>
+                        <span style="font-size: 11px; color: var(--c-text-tertiary); flex-shrink: 0; margin-left: 8px;">2天前</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--c-text-tertiary); margin: 0; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">系统维护通知：6月30日凌晨将进行例行维护</p>
+                </div>
+            </div>
+
+            <!-- 4. 积分到账 - 未读 -->
+            <div style="background: var(--c-bg); border-radius: 10px; margin-bottom: 8px; padding: 14px 16px; display: flex; gap: 12px; position: relative; overflow: hidden;">
+                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c-info); border-radius: 10px 0 0 10px;"></div>
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(75,63,227,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 12 20 22 4 22 4 12"/>
+                        <rect width="20" height="5" x="2" y="3" rx="1"/>
+                        <path d="M12 8v8"/>
+                        <path d="M8 14l4 4 4-4"/>
+                    </svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <p style="font-size: 14px; font-weight: 600; color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">积分到账</p>
+                        <span style="font-size: 11px; color: var(--c-text-tertiary); flex-shrink: 0; margin-left: 8px;">3天前</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--c-text-tertiary); margin: 0; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">每日签到奖励 10 积分已到账</p>
+                </div>
+            </div>
+
+            <!-- 5. 工单状态 - 已读 -->
+            <div style="background: var(--c-bg); border-radius: 10px; margin-bottom: 8px; padding: 14px 16px; display: flex; gap: 12px; position: relative; overflow: hidden;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0,185,131,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <p style="font-size: 14px; font-weight: 400; color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">工单状态</p>
+                        <span style="font-size: 11px; color: var(--c-text-tertiary); flex-shrink: 0; margin-left: 8px;">5天前</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--c-text-tertiary); margin: 0; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">工单 #1023 已被标记为已解决</p>
+                </div>
+            </div>
+
+            <!-- 6. 产品上架 - 已读 -->
+            <div style="background: var(--c-bg); border-radius: 10px; margin-bottom: 8px; padding: 14px 16px; display: flex; gap: 12px; position: relative; overflow: hidden;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(75,63,227,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m7.5 4.27 9 5.15"/>
+                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                        <path d="m3.3 7 8.7 5 8.7-5"/>
+                        <path d="M12 22V12"/>
+                    </svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                        <p style="font-size: 14px; font-weight: 400; color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">产品上架</p>
+                        <span style="font-size: 11px; color: var(--c-text-tertiary); flex-shrink: 0; margin-left: 8px;">1周前</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--c-text-tertiary); margin: 0; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">新产品 Ubuntu 24.04 LTS 已上架</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Empty State / Bottom Tip -->
+        <div style="text-align: center; font-size: 12px; color: var(--c-text-tertiary); padding: 16px;">暂无更多通知</div>
+
+    </main>
+
+</body>
+</html>

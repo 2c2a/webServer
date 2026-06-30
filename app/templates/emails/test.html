@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP 测试邮件 - {{ site_name }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'SF Pro Text','PingFang SC',system-ui,-apple-system,sans-serif;color:#171717;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;min-height:100vh;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="100%" style="max-width:480px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                    <tr>
+                        <td style="padding:28px 32px 20px;border-bottom:1px solid #f0f0f0;">
+                            <h1 style="margin:0;font-size:18px;font-weight:600;color:#171717;">SMTP 测试邮件</h1>
+                            <p style="margin:6px 0 0;font-size:13px;color:#737373;">{{ site_name }}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:24px 32px;">
+                            <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#404040;">
+                                这是一封由 <strong style="color:#171717;">2c2a mail test</strong> 命令发送的测试邮件。
+                            </p>
+                            <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#404040;">
+                                如果您收到此邮件，说明 SMTP 配置正确且可达。
+                            </p>
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;font-size:12px;color:#737373;">
+                                <tr><td style="padding:4px 0;">SMTP 主机：</td><td style="padding:4px 0;color:#404040;">{{ smtp_host }}:{{ smtp_port }}</td></tr>
+                                <tr><td style="padding:4px 0;">加密方式：</td><td style="padding:4px 0;color:#404040;">{{ smtp_encryption }}</td></tr>
+                                <tr><td style="padding:4px 0;">发件人：</td><td style="padding:4px 0;color:#404040;">{{ from_email }}</td></tr>
+                                <tr><td style="padding:4px 0;">发送时间：</td><td style="padding:4px 0;color:#404040;">{{ sent_at }}</td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 32px 24px;border-top:1px solid #f0f0f0;background-color:#fafafa;">
+                            <p style="margin:0;font-size:11px;line-height:1.6;color:#a3a3a3;text-align:center;">
+                                这是一封系统自动发送的测试邮件。<br/>
+                                &copy; {{ year }} {{ site_name }}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

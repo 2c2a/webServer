@@ -1,0 +1,63 @@
+{% extends "frontend_shell.html" %}
+{% set active_nav = "tickets" %}
+{% set page_title = "工单详情" %}
+
+{# 覆盖顶栏：子页返回按钮 + 标题（对齐 2c2a-frontend/pages/ticket-detail.html 设计稿） #}
+{% block header %}
+<header class="fixed top-0 left-0 right-0 z-50 h-[44px] flex items-center justify-between px-4 bg-white"
+        style="border-bottom: 1px solid var(--c-border);">
+    <a href="/tickets"
+       class="flex items-center justify-center w-8 h-8 rounded-md"
+       style="color: var(--c-text-primary);"
+       onmouseenter="this.style.background='var(--c-bg-secondary)'"
+       onmouseleave="this.style.background='transparent'"
+       aria-label="返回工单列表">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
+    </a>
+    <span class="text-base font-medium" style="color: var(--c-text-primary);">工单详情</span>
+    <div class="w-8 h-8"></div>
+</header>
+{% endblock %}
+
+{% block content %}
+
+        {# 工单详情内容容器（HTMX 加载，回复后整体刷新） #}
+        <div id="ticket-detail-container"
+             hx-get="/fragments/tickets/detail?ticket_id={{ ticket_id }}"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div style="text-align:center;padding:48px 16px;color:var(--c-text-tertiary);">加载中...</div>
+        </div>
+
+        {# 占位：避开底部回复输入框 + Tab 栏 #}
+        <div style="height: 140px;"></div>
+
+        {# 底部回复输入区（fixed 在 Tab 栏上方） #}
+        <div class="fixed left-0 right-0 z-40 bg-white p-3"
+             style="bottom: 56px; border-top: 1px solid var(--c-border);">
+            <form hx-post="/fragments/tickets/{{ ticket_id }}/comments"
+                  hx-target="#ticket-detail-container"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="if(event.detail.successful){ this.querySelector('textarea').value=''; }">
+                <textarea name="content" placeholder="输入回复内容..." required
+                          class="w-full rounded-lg resize-none text-sm p-2 outline-none"
+                          style="height: 80px; border: 1px solid var(--c-border); background-color: var(--c-bg); color: var(--c-text-default); box-sizing: border-box; font-family: inherit;"
+                          onfocus="this.style.borderColor='var(--c-brand)'"
+                          onblur="this.style.borderColor='var(--c-border)'"></textarea>
+                <div class="flex items-center justify-end mt-2">
+                    <button type="submit"
+                            class="flex items-center justify-center rounded-lg text-white text-sm font-medium px-5"
+                            style="height: 36px; background-color: var(--c-brand); border: none; cursor: pointer; font-family: inherit;"
+                            onmouseenter="this.style.background='var(--c-brand-hover)'"
+                            onmouseleave="this.style.background='var(--c-brand)'">
+                        发送
+                    </button>
+                </div>
+            </form>
+        </div>
+
+{% endblock %}

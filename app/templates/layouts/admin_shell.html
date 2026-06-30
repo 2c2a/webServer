@@ -1,0 +1,207 @@
+{# 管理后台布局（Vercel 主题，源自 2c2a-admin-console.design）。
+   主题 token 集中在此；页面仅提供 {% block content %}。
+   变量：active_nav（overview/users/hosts/tickets/openings/products/points/audit/sitegroups/settings），
+         page_title，breadcrumbs（可选 [(label, href), ...]），site_name，
+         current_user（CurrentUser，含 username/is_superuser 等）。 #}
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title|default('管理后台') }} — {{ site_name|default('2c2a') }}</title>
+    <style id="theme-vars">
+:root {
+  --vercel-bg-background: #ffffff;
+  --vercel-bg-card: #ffffff;
+  --vercel-bg-popover: #ffffff;
+  --vercel-bg-muted: #f5f5f5;
+  --vercel-text-foreground: #0a0a0a;
+  --vercel-text-card-foreground: #0a0a0a;
+  --vercel-text-popover-foreground: #0a0a0a;
+  --vercel-text-primary-foreground: #fafafa;
+  --vercel-text-secondary-foreground: #171717;
+  --vercel-text-muted-foreground: #858585;
+  --vercel-text-accent-foreground: #171717;
+  --vercel-text-destructive-foreground: #ffffff;
+  --vercel-accent-primary: #121212;
+  --vercel-accent-secondary: #f5f5f5;
+  --vercel-accent-accent: #f5f5f5;
+  --vercel-accent-input: #e5e5e5;
+  --vercel-accent-ring: #0d0d0d;
+  --vercel-border: #e8e8e8;
+  --vercel-status-destructive: #e7000b;
+  --vercel-status-success: #16a34a;
+  --vercel-status-warning: #ca8a04;
+  --vercel-status-info: #2563eb;
+  --vercel-chart-1: #91c5ff;
+  --vercel-chart-2: #3a81f6;
+  --vercel-chart-3: #2563eb;
+  --vercel-chart-4: #1a4eda;
+  --vercel-chart-5: #1f3fad;
+  --vercel-sidebar-bg: #fafafa;
+  --vercel-sidebar-foreground: #0a0a0a;
+  --vercel-sidebar-primary: #171717;
+  --vercel-sidebar-primary-foreground: #fafafa;
+  --vercel-sidebar-accent: #f5f5f5;
+  --vercel-sidebar-accent-foreground: #171717;
+  --vercel-sidebar-border: #e5e5e5;
+  --vercel-sidebar-ring: #a1a1a1;
+  --vercel-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --vercel-font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  --vercel-radius: 0.5rem;
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --vercel-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dark {
+  --vercel-bg-background: #0a0a0a;
+  --vercel-bg-card: #171717;
+  --vercel-bg-popover: #262626;
+  --vercel-bg-muted: #262626;
+  --vercel-text-foreground: #fafafa;
+  --vercel-text-muted-foreground: #a1a1a1;
+  --vercel-accent-primary: #e5e5e5;
+  --vercel-border: #404040;
+  --vercel-status-destructive: #ff3b4a;
+  --vercel-sidebar-bg: #0a0a0a;
+  --vercel-sidebar-foreground: #fafafa;
+  --vercel-sidebar-accent: #262626;
+  --vercel-sidebar-accent-foreground: #fafafa;
+  --vercel-sidebar-border: #262626;
+}
+    </style>
+    <script src="/static/vendor/tailwind-browser.min.js"></script>
+    <script src="/static/vendor/lucide.min.js"></script>
+    <script src="/static/vendor/htmx.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-border: var(--vercel-border);
+    --color-chart-1: var(--vercel-chart-1);
+    --color-chart-2: var(--vercel-chart-2);
+    --color-chart-3: var(--vercel-chart-3);
+    --color-chart-4: var(--vercel-chart-4);
+    --color-chart-5: var(--vercel-chart-5);
+    --color-sidebar-foreground: var(--vercel-sidebar-foreground);
+    --color-sidebar-primary: var(--vercel-sidebar-primary);
+    --color-sidebar-primary-foreground: var(--vercel-sidebar-primary-foreground);
+    --color-sidebar-accent: var(--vercel-sidebar-accent);
+    --color-sidebar-accent-foreground: var(--vercel-sidebar-accent-foreground);
+  }
+  @layer base {
+    body { background: var(--vercel-bg-background); color: var(--vercel-text-foreground); font-family: var(--vercel-font-sans); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--vercel-bg-background); color: var(--vercel-text-foreground);">
+
+    {# Toast 容器：HTMX 错误响应通过 hx-swap-oob="true" 注入此元素 #}
+    <div id="toast"></div>
+
+    {%- macro nav_item(key, label, icon, href, active) -%}
+    <a href="{{ href }}" data-dom-id="nav-{{ key }}"
+       class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {% if active == key %}bg-[var(--vercel-sidebar-accent)] text-[var(--vercel-sidebar-accent-foreground)] font-medium{% else %}text-[var(--vercel-sidebar-foreground)] hover:bg-[var(--vercel-sidebar-accent)]{% endif %}">
+        <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0"></i>
+        <span class="truncate">{{ label }}</span>
+    </a>
+    {%- endmacro -%}
+
+    <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-black/50 transition-opacity lg:hidden" onclick="closeSidebar()"></div>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-[240px] flex-col border-r transition-transform duration-200 -translate-x-full lg:translate-x-0" style="background: var(--vercel-sidebar-bg); border-color: var(--vercel-sidebar-border);">
+            <div class="flex h-14 items-center px-5 border-b" style="border-color: var(--vercel-sidebar-border);">
+                <i data-lucide="shield" class="h-5 w-5 mr-2" style="color: var(--vercel-sidebar-foreground);"></i>
+                <span class="text-sm font-bold tracking-tight" style="color: var(--vercel-sidebar-foreground);">{{ site_name|default('2c2a') }}</span>
+            </div>
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+                {{ nav_item('overview', '概览', 'layout-dashboard', '/admin/', active_nav|default('')) }}
+                {{ nav_item('users', '用户管理', 'users', '/admin/users', active_nav|default('')) }}
+                {{ nav_item('hosts', '主机管理', 'monitor', '/admin/hosts', active_nav|default('')) }}
+                {{ nav_item('tickets', '工单管理', 'ticket', '/admin/tickets', active_nav|default('')) }}
+                {{ nav_item('openings', '开户申请', 'user-plus', '/admin/openings', active_nav|default('')) }}
+                {{ nav_item('products', '产品管理', 'package', '/admin/products', active_nav|default('')) }}
+                {{ nav_item('points', '积分管理', 'coins', '/admin/points', active_nav|default('')) }}
+                {{ nav_item('announcements', '公告管理', 'megaphone', '/admin/announcements', active_nav|default('')) }}
+                {{ nav_item('audit', '审计日志', 'file-text', '/admin/audit', active_nav|default('')) }}
+                {{ nav_item('sitegroups', '站点组管理', 'building', '/admin/sitegroups', active_nav|default('')) }}
+                {{ nav_item('settings', '系统配置', 'settings', '/admin/settings', active_nav|default('')) }}
+            </nav>
+            <div class="border-t px-3 py-3" style="border-color: var(--vercel-sidebar-border);">
+                <div class="flex items-center gap-3 px-3 py-2">
+                    <div class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium" style="background: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">{{ (current_user.username | default('A'))[:1] | upper }}</div>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-xs font-medium" style="color: var(--vercel-sidebar-foreground);">{% if current_user and current_user.is_superuser %}超级管理员{% else %}管理员{% endif %}</p>
+                        <p class="truncate text-xs" style="color: var(--vercel-text-muted-foreground);">{{ current_user.username | default('未登录') }}</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content area -->
+        <div class="flex flex-1 flex-col lg:pl-[240px]">
+            <header class="sticky top-0 z-20 flex h-14 items-center gap-4 border-b px-4 sm:px-6" style="background: var(--vercel-bg-background); border-color: var(--vercel-border);">
+                <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border lg:hidden" style="border-color: var(--vercel-border);" onclick="openSidebar()" aria-label="打开菜单">
+                    <i data-lucide="menu" class="h-4 w-4"></i>
+                </button>
+                <nav class="flex items-center gap-1.5 text-xs" style="color: var(--vercel-text-muted-foreground);">
+                    {% for crumb in (breadcrumbs|default([])) %}
+                        {% if not loop.first %}<i data-lucide="chevron-right" class="h-3 w-3 shrink-0"></i>{% endif %}
+                        {% if crumb.href %}<a href="{{ crumb.href }}" class="truncate hover:underline">{{ crumb.label }}</a>{% else %}<span class="truncate font-medium" style="color: var(--vercel-text-foreground);">{{ crumb.label }}</span>{% endif %}
+                    {% else %}
+                        <span class="truncate">首页</span>
+                        <i data-lucide="chevron-right" class="h-3 w-3 shrink-0"></i>
+                        <span class="truncate font-medium" style="color: var(--vercel-text-foreground);">{{ page_title|default('管理后台') }}</span>
+                    {% endfor %}
+                </nav>
+                <div class="flex-1"></div>
+                {% block topbar_actions %}{% endblock %}
+                <div class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium" style="background: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">{{ (current_user.username | default('A'))[:1] | upper }}</div>
+            </header>
+
+            <main id="admin-content" class="flex-1 overflow-y-auto p-4 sm:p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+    function openSidebar() {
+        document.getElementById('sidebar').classList.remove('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.remove('hidden');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.add('hidden');
+    }
+    </script>
+    <script>
+    lucide.createIcons();
+    // HTMX 加载片段后重新渲染 Lucide 图标
+    document.addEventListener('htmx:afterSwap', function() { lucide.createIcons(); });
+    document.addEventListener('htmx:afterSettle', function() { lucide.createIcons(); });
+
+    // 后台用户列表：重置密码（浏览器原生 prompt 收集新密码 → htmx.ajax POST）
+    function resetUserPassword(userId, username) {
+        var pwd = window.prompt('为用户 ' + username + ' 设置新密码（至少 6 位）：');
+        if (pwd === null) return; // 用户取消
+        if (pwd.length < 6) {
+            window.alert('密码长度至少 6 位');
+            return;
+        }
+        htmx.ajax('POST', '/fragments/admin/users/' + userId + '/reset-password', {
+            target: '#admin-content',
+            swap: 'innerHTML',
+            values: { password: pwd }
+        });
+    }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

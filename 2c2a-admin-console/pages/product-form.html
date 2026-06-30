@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增/编辑产品 — 2c2a</title>
+    <style id="theme-vars">
+/* 2c2a Admin Console — Vercel-inspired design tokens */
+/* Brand prefix: vercel */
+
+:root {
+  /* ── Background ── */
+  --vercel-bg-background: #ffffff;
+  --vercel-bg-card: #ffffff;
+  --vercel-bg-popover: #ffffff;
+  --vercel-bg-muted: #f5f5f5;
+
+  /* ── Text ── */
+  --vercel-text-foreground: #0a0a0a;
+  --vercel-text-card-foreground: #0a0a0a;
+  --vercel-text-popover-foreground: #0a0a0a;
+  --vercel-text-primary-foreground: #fafafa;
+  --vercel-text-secondary-foreground: #171717;
+  --vercel-text-muted-foreground: #858585;
+  --vercel-text-accent-foreground: #171717;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  /* ── Accent ── */
+  --vercel-accent-primary: #121212;
+  --vercel-accent-secondary: #f5f5f5;
+  --vercel-accent-accent: #f5f5f5;
+  --vercel-accent-input: #e5e5e5;
+  --vercel-accent-ring: #0d0d0d;
+
+  /* ── Border ── */
+  --vercel-border: #e8e8e8;
+
+  /* ── Status ── */
+  --vercel-status-destructive: #e7000b;
+  --vercel-status-success: #16a34a;
+  --vercel-status-warning: #ca8a04;
+  --vercel-status-info: #2563eb;
+
+  /* ── Chart ── */
+  --vercel-chart-1: #91c5ff;
+  --vercel-chart-2: #3a81f6;
+  --vercel-chart-3: #2563eb;
+  --vercel-chart-4: #1a4eda;
+  --vercel-chart-5: #1f3fad;
+
+  /* ── Sidebar ── */
+  --vercel-sidebar-bg: #fafafa;
+  --vercel-sidebar-foreground: #0a0a0a;
+  --vercel-sidebar-primary: #171717;
+  --vercel-sidebar-primary-foreground: #fafafa;
+  --vercel-sidebar-accent: #f5f5f5;
+  --vercel-sidebar-accent-foreground: #171717;
+  --vercel-sidebar-border: #e5e5e5;
+  --vercel-sidebar-ring: #a1a1a1;
+
+  /* ── Typography ── */
+  --vercel-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --vercel-font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  --vercel-font-size-xs: 0.75rem;
+  --vercel-font-size-sm: 0.8125rem;
+  --vercel-font-size-base: 0.875rem;
+  --vercel-font-size-lg: 1rem;
+  --vercel-font-size-xl: 1.25rem;
+  --vercel-font-size-2xl: 1.5rem;
+  --vercel-font-size-3xl: 1.875rem;
+  --vercel-line-height-tight: 1.25;
+  --vercel-line-height-normal: 1.5;
+  --vercel-line-height-relaxed: 1.625;
+
+  /* ── Spacing ── */
+  --vercel-spacing-unit: 0.25rem;
+  --vercel-spacing-1: 0.25rem;
+  --vercel-spacing-2: 0.5rem;
+  --vercel-spacing-3: 0.75rem;
+  --vercel-spacing-4: 1rem;
+  --vercel-spacing-5: 1.25rem;
+  --vercel-spacing-6: 1.5rem;
+  --vercel-spacing-8: 2rem;
+  --vercel-spacing-10: 2.5rem;
+  --vercel-spacing-12: 3rem;
+
+  /* ── Radius ── */
+  --vercel-radius: 0.5rem;
+  --vercel-radius-sm: 0.25rem;
+  --vercel-radius-md: 0.5rem;
+  --vercel-radius-lg: 0.5rem;
+  --vercel-radius-full: 9999px;
+
+  /* ── Shadow ── */
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+
+  /* ── Transition ── */
+  --vercel-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --vercel-transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark mode ── */
+.dark {
+  --vercel-bg-background: #0a0a0a;
+  --vercel-bg-card: #171717;
+  --vercel-bg-popover: #262626;
+  --vercel-bg-muted: #262626;
+
+  --vercel-text-foreground: #fafafa;
+  --vercel-text-card-foreground: #fafafa;
+  --vercel-text-popover-foreground: #fafafa;
+  --vercel-text-primary-foreground: #171717;
+  --vercel-text-secondary-foreground: #fafafa;
+  --vercel-text-muted-foreground: #a1a1a1;
+  --vercel-text-accent-foreground: #fafafa;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  --vercel-accent-primary: #e5e5e5;
+  --vercel-accent-secondary: #262626;
+  --vercel-accent-accent: #262626;
+  --vercel-accent-input: #404040;
+  --vercel-accent-ring: #a3a3a3;
+
+  --vercel-border: #404040;
+
+  --vercel-status-destructive: #ff3b4a;
+
+  --vercel-chart-1: #5b9aff;
+  --vercel-chart-2: #5b9aff;
+  --vercel-chart-3: #91c5ff;
+  --vercel-chart-4: #91c5ff;
+  --vercel-chart-5: #5b9aff;
+
+  --vercel-sidebar-bg: #0a0a0a;
+  --vercel-sidebar-foreground: #fafafa;
+  --vercel-sidebar-primary: #e5e5e5;
+  --vercel-sidebar-primary-foreground: #0a0a0a;
+  --vercel-sidebar-accent: #262626;
+  --vercel-sidebar-accent-foreground: #fafafa;
+  --vercel-sidebar-border: #262626;
+  --vercel-sidebar-ring: #525252;
+
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-border: var(--vercel-border);
+    --color-chart-1: var(--vercel-chart-1);
+    --color-chart-2: var(--vercel-chart-2);
+    --color-chart-3: var(--vercel-chart-3);
+    --color-chart-4: var(--vercel-chart-4);
+    --color-chart-5: var(--vercel-chart-5);
+    --color-sidebar-foreground: var(--vercel-sidebar-foreground);
+    --color-sidebar-primary: var(--vercel-sidebar-primary);
+    --color-sidebar-primary-foreground: var(--vercel-sidebar-primary-foreground);
+    --color-sidebar-accent: var(--vercel-sidebar-accent);
+    --color-sidebar-accent-foreground: var(--vercel-sidebar-accent-foreground);
+  }
+  @layer base {
+    body { background: var(--vercel-background); color: var(--vercel-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="hidden lg:flex lg:flex-col lg:w-[240px] lg:fixed lg:inset-y-0 lg:left-0 border-r border-[var(--vercel-sidebar-border)] bg-[var(--vercel-sidebar-bg)]" data-dom-id="sidebar">
+            <!-- Sidebar Header -->
+            <div class="flex items-center gap-2 px-5 h-14 border-b border-[var(--vercel-sidebar-border)]">
+                <span class="text-[var(--vercel-sidebar-primary)] font-bold text-[var(--vercel-font-size-lg)]">2c2a</span>
+                <span class="text-[var(--vercel-text-muted-foreground)] text-[var(--vercel-font-size-xs)]">Admin</span>
+            </div>
+            <!-- Nav -->
+            <nav class="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto no-scrollbar">
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-overview">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i>
+                    <span>概览</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-users">
+                    <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
+                    <span>用户管理</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-hosts">
+                    <i data-lucide="server" class="w-4 h-4 shrink-0"></i>
+                    <span>主机管理</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-tickets">
+                    <i data-lucide="ticket" class="w-4 h-4 shrink-0"></i>
+                    <span>工单管理</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-openings">
+                    <i data-lucide="user-plus" class="w-4 h-4 shrink-0"></i>
+                    <span>开户申请</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] bg-[var(--vercel-sidebar-accent)] text-[var(--vercel-sidebar-accent-foreground)] font-bold text-[var(--vercel-font-size-sm)]" data-dom-id="nav-products">
+                    <i data-lucide="box" class="w-4 h-4 shrink-0"></i>
+                    <span>产品管理</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-points">
+                    <i data-lucide="coins" class="w-4 h-4 shrink-0"></i>
+                    <span>积分管理</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-audit">
+                    <i data-lucide="scroll-text" class="w-4 h-4 shrink-0"></i>
+                    <span>审计日志</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-sitegroups">
+                    <i data-lucide="building-2" class="w-4 h-4 shrink-0"></i>
+                    <span>站点组管理</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-settings">
+                    <i data-lucide="settings" class="w-4 h-4 shrink-0"></i>
+                    <span>系统配置</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Mobile Header -->
+        <div class="lg:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between h-14 px-4 border-b border-[var(--vercel-sidebar-border)] bg-[var(--vercel-sidebar-bg)]">
+            <button class="inline-flex items-center justify-center w-9 h-9 rounded-[var(--vercel-radius)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" aria-label="打开菜单" id="mobile-menu-btn">
+                <i data-lucide="menu" class="w-5 h-5 text-[var(--vercel-sidebar-foreground)]"></i>
+            </button>
+            <span class="text-[var(--vercel-sidebar-primary)] font-bold text-[var(--vercel-font-size-lg)]">2c2a</span>
+            <div class="w-9"></div>
+        </div>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div class="lg:hidden fixed inset-0 z-40 hidden" id="mobile-sidebar-overlay">
+            <div class="absolute inset-0 bg-black/40" id="mobile-sidebar-backdrop"></div>
+            <aside class="absolute left-0 top-0 bottom-0 w-[240px] bg-[var(--vercel-sidebar-bg)] border-r border-[var(--vercel-sidebar-border)] flex flex-col" id="mobile-sidebar">
+                <div class="flex items-center gap-2 px-5 h-14 border-b border-[var(--vercel-sidebar-border)]">
+                    <span class="text-[var(--vercel-sidebar-primary)] font-bold text-[var(--vercel-font-size-lg)]">2c2a</span>
+                    <span class="text-[var(--vercel-text-muted-foreground)] text-[var(--vercel-font-size-xs)]">Admin</span>
+                </div>
+                <nav class="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto no-scrollbar">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-overview">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i>
+                        <span>概览</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-users">
+                        <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
+                        <span>用户管理</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-hosts">
+                        <i data-lucide="server" class="w-4 h-4 shrink-0"></i>
+                        <span>主机管理</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-tickets">
+                        <i data-lucide="ticket" class="w-4 h-4 shrink-0"></i>
+                        <span>工单管理</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-openings">
+                        <i data-lucide="user-plus" class="w-4 h-4 shrink-0"></i>
+                        <span>开户申请</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] bg-[var(--vercel-sidebar-accent)] text-[var(--vercel-sidebar-accent-foreground)] font-bold text-[var(--vercel-font-size-sm)]" data-dom-id="nav-products">
+                        <i data-lucide="box" class="w-4 h-4 shrink-0"></i>
+                        <span>产品管理</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-points">
+                        <i data-lucide="coins" class="w-4 h-4 shrink-0"></i>
+                        <span>积分管理</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-audit">
+                        <i data-lucide="scroll-text" class="w-4 h-4 shrink-0"></i>
+                        <span>审计日志</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-sitegroups">
+                        <i data-lucide="building-2" class="w-4 h-4 shrink-0"></i>
+                        <span>站点组管理</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-[var(--vercel-radius)] text-[var(--vercel-sidebar-foreground)] text-[var(--vercel-font-size-sm)] hover:bg-[var(--vercel-sidebar-accent)] transition-colors duration-150" data-dom-id="nav-settings">
+                        <i data-lucide="settings" class="w-4 h-4 shrink-0"></i>
+                        <span>系统配置</span>
+                    </a>
+                </nav>
+            </aside>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 lg:ml-[240px] pt-14 lg:pt-0">
+            <div class="max-w-[720px] mx-auto px-4 sm:px-6 py-6 lg:py-10">
+                <!-- Breadcrumb -->
+                <nav class="flex items-center gap-1.5 text-[var(--vercel-font-size-sm)] mb-6">
+                    <a href="#" class="text-[var(--vercel-text-muted-foreground)] hover:text-[var(--vercel-text-foreground)] transition-colors" data-dom-id="nav-products">产品管理</a>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-[var(--vercel-text-muted-foreground)]"></i>
+                    <span class="text-[var(--vercel-text-foreground)] font-medium">新增产品</span>
+                </nav>
+
+                <!-- Form Card -->
+                <div class="border border-[var(--vercel-border)] rounded-[var(--vercel-radius)] bg-[var(--vercel-bg-card)] shadow-[var(--vercel-shadow)]">
+                    <!-- Card Title -->
+                    <div class="px-6 py-5 border-b border-[var(--vercel-border)]">
+                        <h1 class="text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-xl)] font-semibold tracking-tight">新增产品</h1>
+                    </div>
+
+                    <form class="px-6 py-6 space-y-8" onsubmit="return false;">
+                        <!-- Section: 基本信息 -->
+                        <fieldset>
+                            <legend class="text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-base)] font-semibold mb-4">基本信息</legend>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                                <!-- 名称 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-name" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">
+                                        名称 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                                    </label>
+                                    <input type="text" id="field-name" required class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150" placeholder="product-name">
+                                    <p class="text-[var(--vercel-text-muted-foreground)] text-[var(--vercel-font-size-xs)]">slug: <span id="slug-preview">product-name</span></p>
+                                </div>
+
+                                <!-- 显示名称 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-display-name" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">显示名称</label>
+                                    <input type="text" id="field-display-name" class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150" placeholder="用户可见的名称">
+                                </div>
+
+                                <!-- 描述 -->
+                                <div class="sm:col-span-2 space-y-1.5">
+                                    <label for="field-desc" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">描述</label>
+                                    <textarea id="field-desc" rows="2" class="w-full px-3 py-2 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150 resize-y" placeholder="内部描述，不可面向用户"></textarea>
+                                </div>
+
+                                <!-- 显示描述 -->
+                                <div class="sm:col-span-2 space-y-1.5">
+                                    <label for="field-display-desc" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">显示描述</label>
+                                    <textarea id="field-display-desc" rows="2" class="w-full px-3 py-2 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150 resize-y" placeholder="面向用户的描述信息"></textarea>
+                                </div>
+
+                                <!-- 所属产品组 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-group" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">
+                                        所属产品组 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                                    </label>
+                                    <select id="field-group" required class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23858585%22%20d%3D%22M3%204.5L6%207.5L9%204.5%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_10px_center] bg-no-repeat pr-8">
+                                        <option value="">请选择产品组</option>
+                                        <option value="basic">基础云电脑</option>
+                                        <option value="performance">高性能套餐</option>
+                                        <option value="gpu">GPU 专属</option>
+                                        <option value="education">教育专区</option>
+                                    </select>
+                                </div>
+
+                                <!-- 关联主机 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-host" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">
+                                        关联主机 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                                    </label>
+                                    <select id="field-host" required class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23858585%22%20d%3D%22M3%204.5L6%207.5L9%204.5%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_10px_center] bg-no-repeat pr-8">
+                                        <option value="">请选择主机</option>
+                                        <option value="rdp-east-01">rdp-east-01</option>
+                                        <option value="rdp-west-02">rdp-west-02</option>
+                                        <option value="gpu-node-03">gpu-node-03</option>
+                                        <option value="gpu-node-04">gpu-node-04</option>
+                                        <option value="rdp-south-05">rdp-south-05</option>
+                                    </select>
+                                </div>
+
+                                <!-- RDP 端口 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-port" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">RDP 端口</label>
+                                    <input type="number" id="field-port" value="3389" class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150" placeholder="3389">
+                                </div>
+
+                                <!-- 显示主机名 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-display-hostname" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">显示主机名</label>
+                                    <input type="text" id="field-display-hostname" class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150" placeholder="user-desktop">
+                                </div>
+
+                                <!-- 所需积分 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-points" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">
+                                        所需积分 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                                    </label>
+                                    <input type="number" id="field-points" value="100" required class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150" placeholder="100">
+                                    <p class="text-[var(--vercel-text-muted-foreground)] text-[var(--vercel-font-size-xs)]">用户申请此产品需消耗的积分</p>
+                                </div>
+
+                                <!-- 排序权重 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-sort" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">排序权重</label>
+                                    <input type="number" id="field-sort" value="0" class="w-full h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150" placeholder="0">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- Divider -->
+                        <hr class="border-[var(--vercel-border)]">
+
+                        <!-- Section: 配置开关 -->
+                        <fieldset>
+                            <legend class="text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-base)] font-semibold mb-4">配置开关</legend>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                                <!-- 是否可用 -->
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-foreground)]">是否可用</span>
+                                    <div class="relative">
+                                        <input type="checkbox" class="toggle-input sr-only peer" checked>
+                                        <div class="w-9 h-5 rounded-[var(--vercel-radius-full)] bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                        <div class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-[var(--vercel-shadow-sm)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                                    </div>
+                                </label>
+
+                                <!-- 自动审批 -->
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-foreground)]">自动审批</span>
+                                    <div class="relative">
+                                        <input type="checkbox" class="toggle-input sr-only peer">
+                                        <div class="w-9 h-5 rounded-[var(--vercel-radius-full)] bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                        <div class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-[var(--vercel-shadow-sm)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                                    </div>
+                                </label>
+
+                                <!-- 每用户限一个 -->
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-foreground)]">每用户限一个</span>
+                                    <div class="relative">
+                                        <input type="checkbox" class="toggle-input sr-only peer">
+                                        <div class="w-9 h-5 rounded-[var(--vercel-radius-full)] bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                        <div class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-[var(--vercel-shadow-sm)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                                    </div>
+                                </label>
+
+                                <!-- 磁盘配额保护 -->
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-foreground)]">磁盘配额保护</span>
+                                    <div class="relative">
+                                        <input type="checkbox" class="toggle-input sr-only peer" checked>
+                                        <div class="w-9 h-5 rounded-[var(--vercel-radius-full)] bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                        <div class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-[var(--vercel-shadow-sm)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                                    </div>
+                                </label>
+
+                                <!-- 主机保护 -->
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-foreground)]">主机保护</span>
+                                    <div class="relative">
+                                        <input type="checkbox" class="toggle-input sr-only peer" checked>
+                                        <div class="w-9 h-5 rounded-[var(--vercel-radius-full)] bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                        <div class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-[var(--vercel-shadow-sm)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                                    </div>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <!-- Divider -->
+                        <hr class="border-[var(--vercel-border)]">
+
+                        <!-- Section: 其他配置 -->
+                        <fieldset>
+                            <legend class="text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-base)] font-semibold mb-4">其他配置</legend>
+                            <div class="space-y-4">
+                                <!-- 可见性 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-visibility" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">可见性</label>
+                                    <select id="field-visibility" class="w-full sm:w-1/2 h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23858585%22%20d%3D%22M3%204.5L6%207.5L9%204.5%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_10px_center] bg-no-repeat pr-8">
+                                        <option value="public">公开</option>
+                                        <option value="private">私有</option>
+                                    </select>
+                                </div>
+
+                                <!-- 默认磁盘配额 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-disk-quota" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">默认磁盘配额</label>
+                                    <input type="text" id="field-disk-quota" class="w-full sm:w-1/2 h-9 px-3 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150" placeholder="50GB">
+                                </div>
+
+                                <!-- 额外配额盘 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-extra-disks" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">额外配额盘</label>
+                                    <textarea id="field-extra-disks" rows="3" class="w-full px-3 py-2 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] font-[family-name:var(--vercel-font-mono)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150 resize-y" placeholder='{"disk_d": "20GB", "disk_e": "100GB"}'></textarea>
+                                </div>
+
+                                <!-- 使用条款 -->
+                                <div class="space-y-1.5">
+                                    <label for="field-terms" class="block text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">使用条款</label>
+                                    <textarea id="field-terms" rows="5" class="w-full px-3 py-2 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-text-foreground)] text-[var(--vercel-font-size-sm)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] focus:border-transparent transition-shadow duration-150 resize-y" placeholder="用户开通此产品前需同意的使用条款，留空则不展示&#10;&#10;例如：&#10;1. 本产品仅限个人学习与研究使用&#10;2. 禁止用于挖矿、破解等违规行为&#10;3. 违规使用将被封禁账户并扣除全部积分"></textarea>
+                                    <p class="text-[var(--vercel-text-muted-foreground)] text-[var(--vercel-font-size-xs)]">留空则不向用户展示使用条款</p>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- Divider -->
+                        <hr class="border-[var(--vercel-border)]">
+
+                        <!-- Actions -->
+                        <div class="flex items-center justify-end gap-3 pt-2">
+                            <button type="button" class="inline-flex items-center justify-center h-9 px-4 rounded-[var(--vercel-radius)] border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)] hover:bg-[var(--vercel-bg-muted)] transition-colors duration-150">
+                                取消
+                            </button>
+                            <button type="submit" class="inline-flex items-center justify-center h-9 px-4 rounded-[var(--vercel-radius)] bg-[var(--vercel-accent-primary)] text-[var(--vercel-text-primary-foreground)] text-[var(--vercel-font-size-sm)] font-medium hover:opacity-90 transition-opacity duration-150">
+                                保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        /* Mobile sidebar toggle */
+        #mobile-sidebar-overlay.is-open { display: flex; }
+        #mobile-sidebar-overlay.is-open #mobile-sidebar {
+            animation: slideIn 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+
+    <script>
+        /* Mobile sidebar open/close */
+        var menuBtn = document.getElementById('mobile-menu-btn');
+        var overlay = document.getElementById('mobile-sidebar-overlay');
+        var backdrop = document.getElementById('mobile-sidebar-backdrop');
+
+        menuBtn.addEventListener('click', function() {
+            overlay.classList.add('is-open');
+        });
+        backdrop.addEventListener('click', function() {
+            overlay.classList.remove('is-open');
+        });
+
+        /* Slug preview sync */
+        var nameInput = document.getElementById('field-name');
+        var slugPreview = document.getElementById('slug-preview');
+        nameInput.addEventListener('input', function() {
+            slugPreview.textContent = nameInput.value
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-')
+                .replace(/^-|-$/g, '') || 'product-name';
+        });
+    </script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

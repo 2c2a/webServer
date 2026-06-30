@@ -1,0 +1,181 @@
+{# 后台开户审核详情片段 #}
+<div class="space-y-4 sm:space-y-6">
+    <!-- Page title row -->
+    <div class="flex items-center justify-between gap-4">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-lg font-bold tracking-tight text-[var(--vercel-text-foreground)]">开户审核详情</h1>
+            <p class="mt-1 text-xs text-[var(--vercel-text-muted-foreground)]">审核开户申请并管理创建结果</p>
+        </div>
+        {% set status_map = {'pending': ('待审核', 'var(--vercel-status-warning)', 'var(--vercel-text-destructive-foreground)'),
+                             'approved': ('已通过', 'var(--vercel-status-success)', 'var(--vercel-text-destructive-foreground)'),
+                             'rejected': ('已拒绝', 'var(--vercel-status-destructive)', 'var(--vercel-text-destructive-foreground)'),
+                             'completed': ('已完成', 'var(--vercel-status-success)', 'var(--vercel-text-destructive-foreground)'),
+                             'failed': ('创建失败', 'var(--vercel-status-destructive)', 'var(--vercel-text-destructive-foreground)')} %}
+        {% set st = status_map.get(item.status, ('未知', 'var(--vercel-text-muted-foreground)', 'var(--vercel-text-foreground)')) %}
+        <span class="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold whitespace-nowrap"
+              style="background: {{ st[1] }}; color: {{ st[2] }}">{{ st[0] }}</span>
+    </div>
+
+    <!-- 1. 申请信息卡片 -->
+    <section class="rounded-md border p-4 sm:p-6 bg-[var(--vercel-bg-card)] border-[var(--vercel-border)]">
+        <h2 class="text-sm font-semibold mb-4 text-[var(--vercel-text-foreground)]">申请信息</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">申请人</p>
+                <p class="text-sm font-medium truncate text-[var(--vercel-text-foreground)]">
+                    {{ item.applicant.username if item.applicant else '—' }}
+                    {% if item.user_fullname %}<span class="text-[var(--vercel-text-muted-foreground)]">（{{ item.user_fullname }}）</span>{% endif %}
+                </p>
+            </div>
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">目标产品</p>
+                <p class="text-sm font-medium truncate text-[var(--vercel-text-foreground)]">
+                    {{ item.target_product.display_name or item.target_product.name if item.target_product else '—' }}
+                </p>
+            </div>
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">联系邮箱</p>
+                <p class="text-sm font-medium truncate text-[var(--vercel-text-foreground)]">{{ item.contact_email or '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">联系电话</p>
+                <p class="text-sm font-medium truncate text-[var(--vercel-text-foreground)]">{{ item.contact_phone or '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">申请时间</p>
+                <p class="text-sm font-medium whitespace-nowrap text-[var(--vercel-text-foreground)]">{{ item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">当前状态</p>
+                <span class="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold whitespace-nowrap"
+                      style="background: {{ st[1] }}; color: {{ st[2] }}">{{ st[0] }}</span>
+            </div>
+            {% if item.username %}
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">云桌面用户名</p>
+                <p class="text-sm font-medium truncate text-[var(--vercel-text-foreground)]">{{ item.username }}</p>
+            </div>
+            {% endif %}
+            {% if item.user_email %}
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">云桌面邮箱</p>
+                <p class="text-sm font-medium truncate text-[var(--vercel-text-foreground)]">{{ item.user_email }}</p>
+            </div>
+            {% endif %}
+            {% if item.user_description %}
+            <div class="sm:col-span-2 lg:col-span-3">
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">用户描述</p>
+                <p class="text-sm line-clamp-2 text-[var(--vercel-text-foreground)]">{{ item.user_description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- 2. 审核操作区 -->
+    {% if item.status == 'pending' %}
+    <section class="rounded-md border p-4 sm:p-6 bg-[var(--vercel-bg-card)] border-[var(--vercel-border)]"
+             style="border-top: 2px solid var(--vercel-accent-primary);">
+        <h2 class="text-sm font-semibold mb-4 text-[var(--vercel-text-foreground)]">审核操作</h2>
+        <form hx-post="/fragments/admin/openings/{{ item.id }}/approve"
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+            <div class="mb-4">
+                <label class="block text-xs font-medium mb-1.5 text-[var(--vercel-text-muted-foreground)]">审核备注</label>
+                <textarea name="approval_notes" rows="3" placeholder="填写审核意见..."
+                          class="w-full rounded-md border px-3 py-2 text-sm resize-none outline-none transition-colors bg-[var(--vercel-bg-background)] border-[var(--vercel-accent-input)] text-[var(--vercel-text-foreground)]"></textarea>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <button type="submit" name="action" value="approve"
+                        class="inline-flex h-8 items-center rounded-md border px-4 text-xs font-medium transition-colors"
+                        style="background: var(--vercel-status-success); border-color: var(--vercel-status-success); color: var(--vercel-text-destructive-foreground);">
+                    <i data-lucide="check" class="h-3.5 w-3.5 mr-1"></i>通过
+                </button>
+                <button type="submit" name="action" value="reject"
+                        class="inline-flex h-8 items-center rounded-md border px-4 text-xs font-medium transition-colors"
+                        style="background: transparent; border-color: var(--vercel-status-destructive); color: var(--vercel-status-destructive);">
+                    <i data-lucide="x" class="h-3.5 w-3.5 mr-1"></i>拒绝
+                </button>
+            </div>
+            <p class="text-xs text-[var(--vercel-text-muted-foreground)]">通过后将自动创建云桌面实例并扣除相应积分</p>
+        </form>
+    </section>
+    {% else %}
+    <!-- 已审核信息 -->
+    <section class="rounded-md border p-4 sm:p-6 bg-[var(--vercel-bg-card)] border-[var(--vercel-border)]">
+        <h2 class="text-sm font-semibold mb-4 text-[var(--vercel-text-foreground)]">审核结果</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">审核人</p>
+                <p class="text-sm font-medium truncate text-[var(--vercel-text-foreground)]">{{ item.approved_by.username if item.approved_by else '—' }}</p>
+            </div>
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">审核时间</p>
+                <p class="text-sm font-medium whitespace-nowrap text-[var(--vercel-text-foreground)]">{{ item.approval_date.strftime('%Y-%m-%d %H:%M') if item.approval_date else '—' }}</p>
+            </div>
+            {% if item.approval_notes %}
+            <div class="sm:col-span-2 lg:col-span-3">
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">审核备注</p>
+                <p class="text-sm text-[var(--vercel-text-foreground)]">{{ item.approval_notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- 3. 创建结果区域 -->
+    {% if item.status in ['completed', 'approved'] and item.result_message %}
+    <section class="rounded-md border p-4 sm:p-6 bg-[var(--vercel-bg-card)] border-[var(--vercel-border)]">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-[var(--vercel-text-foreground)]">创建结果</h2>
+            {% if item.cloud_user_id %}
+            <span class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold whitespace-nowrap"
+                  style="background: var(--vercel-status-success); color: var(--vercel-text-destructive-foreground);">
+                <i data-lucide="check-circle" class="h-3.5 w-3.5"></i>创建成功
+            </span>
+            {% else %}
+            <span class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold whitespace-nowrap"
+                  style="background: var(--vercel-status-warning); color: var(--vercel-text-destructive-foreground);">
+                <i data-lucide="clock" class="h-3.5 w-3.5"></i>处理中
+            </span>
+            {% endif %}
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mb-5">
+            {% if item.cloud_user_id %}
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">云用户 ID</p>
+                <p class="text-sm font-medium font-mono truncate text-[var(--vercel-text-foreground)]">{{ item.cloud_user_id }}</p>
+            </div>
+            {% endif %}
+            {% if item.retry_count is not none %}
+            <div>
+                <p class="text-xs mb-1 text-[var(--vercel-text-muted-foreground)]">重试次数</p>
+                <p class="text-sm font-medium font-mono whitespace-nowrap text-[var(--vercel-text-foreground)]">{{ item.retry_count }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% if item.result_message %}
+        <div class="rounded-md border p-4 bg-[var(--vercel-bg-muted)] border-[var(--vercel-border)]">
+            <h3 class="text-xs font-semibold mb-2 text-[var(--vercel-text-foreground)]">结果消息</h3>
+            <p class="text-sm text-[var(--vercel-text-foreground)]">{{ item.result_message }}</p>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- 4. 重试区域（仅失败时显示） -->
+    {% if item.status == 'failed' %}
+    <section class="rounded-md border p-4 sm:p-6 bg-[var(--vercel-bg-card)] border-[var(--vercel-border)]">
+        <div class="rounded-md border p-3 mb-3 bg-[var(--vercel-bg-muted)] border-[var(--vercel-border)]">
+            <p class="text-xs font-medium mb-1 text-[var(--vercel-status-destructive)]">失败原因</p>
+            <p class="text-xs text-[var(--vercel-text-foreground)]">{{ item.result_message or '未知错误' }}</p>
+        </div>
+        <button hx-post="/fragments/admin/openings/{{ item.id }}/retry"
+                hx-target="#admin-content"
+                hx-swap="innerHTML"
+                class="inline-flex h-8 items-center rounded-md border px-4 text-xs font-medium transition-colors"
+                style="background: var(--vercel-accent-primary); border-color: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">
+            <i data-lucide="refresh-cw" class="h-3.5 w-3.5 mr-1"></i>重试创建
+        </button>
+    </section>
+    {% endif %}
+</div>

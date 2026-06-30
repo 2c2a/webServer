@@ -1,0 +1,67 @@
+{# 后台用户列表片段 #}
+<div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">用户名</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">邮箱</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">状态</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">角色</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">注册时间</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">最后登录</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">操作</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--vercel-border)]">
+            {% if items %}
+            {% for u in items %}
+            <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="whitespace-nowrap px-4 py-3 font-medium text-[var(--vercel-text-foreground)]">{{ u.username }}</td>
+                <td class="truncate px-4 py-3 text-[var(--vercel-text-muted-foreground)]" style="max-width:200px">{{ u.email or '-' }}</td>
+                <td class="whitespace-nowrap px-4 py-3">
+                    {% if u.is_active %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-success)]" style="background:rgba(22,163,74,0.1)">启用</span>
+                    {% else %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-destructive)]" style="background:rgba(231,0,11,0.1)">禁用</span>
+                    {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3">
+                    {% if u.is_superuser %}
+                    <span class="inline-flex items-center rounded-md border border-[var(--vercel-accent-primary)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]">管理员</span>
+                    {% elif u.is_staff %}
+                    <span class="inline-flex items-center rounded-md border border-[var(--vercel-accent-primary)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]">Staff</span>
+                    {% else %}
+                    <span class="inline-flex items-center rounded-md border border-[var(--vercel-border)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]">普通用户</span>
+                    {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ u.date_joined.strftime('%Y-%m-%d %H:%M') if u.date_joined else '-' }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else '-' }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right">
+                    <div class="inline-flex items-center gap-1">
+                        <button type="button"
+                                onclick="resetUserPassword({{ u.id }}, '{{ u.username | e }}')"
+                                class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--vercel-text-muted-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)] hover:text-[var(--vercel-text-foreground)]"
+                                title="重置密码">
+                            <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
+                        </button>
+                        <button type="button"
+                                hx-post="/fragments/admin/users/{{ u.id }}/toggle-ban"
+                                hx-confirm="确认{{ '解封' if not u.is_active else '封禁' }}用户 {{ u.username | e }}？"
+                                hx-target="#admin-content"
+                                hx-swap="innerHTML"
+                                class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--vercel-text-muted-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)] hover:text-[var(--vercel-status-destructive)]"
+                                title="{{ '解封' if not u.is_active else '封禁' }}">
+                            <i data-lucide="ban" class="h-3.5 w-3.5"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无用户</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

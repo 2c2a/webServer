@@ -1,0 +1,91 @@
+name: Collect & Deploy Static Files
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'static/**'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'static/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  collectstatic:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version-file: '.python-version'
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Collect static files
+      run: uv run python manage.py collectstatic --noinput
+      env:
+        DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        DEBUG: 'True'
+
+    - name: Prepare deployment directory
+      run: |
+        mkdir -p deploy/static
+        cp -r staticfiles/* deploy/static/
+        cat > deploy/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>ZASCA</title>
+          <style>
+            body { display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
+            .container { text-align: center; }
+            h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+            p { color: #94a3b8; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>ZASCA</h1>
+            <p>Static assets served via Cloudflare Pages</p>
+          </div>
+        </body>
+        </html>
+        EOF
+
+    - name: Deploy to Cloudflare Pages
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        command: pages deploy deploy --project-name=2c2astatic --branch=main
+
+    - name: Upload static files artifact
+      uses: actions/upload-artifact@v6
+      with:
+        name: static-files
+        path: staticfiles/
+        retention-days: 30
+
+    - name: Run tests (optional)
+      run: uv run python manage.py test
+      env:
+        DJANGO_SETTINGS_MODULE: config.settings
+        DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        DEBUG: 'False'
+        DATABASE_URL: 'sqlite:///actions_db.sqlite3'

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品管理 — 2c2a</title>
+    <style id="theme-vars">
+/* 2c2a Admin Console — Vercel-inspired design tokens */
+/* Brand prefix: vercel */
+
+:root {
+  /* ── Background ── */
+  --vercel-bg-background: #ffffff;
+  --vercel-bg-card: #ffffff;
+  --vercel-bg-popover: #ffffff;
+  --vercel-bg-muted: #f5f5f5;
+
+  /* ── Text ── */
+  --vercel-text-foreground: #0a0a0a;
+  --vercel-text-card-foreground: #0a0a0a;
+  --vercel-text-popover-foreground: #0a0a0a;
+  --vercel-text-primary-foreground: #fafafa;
+  --vercel-text-secondary-foreground: #171717;
+  --vercel-text-muted-foreground: #858585;
+  --vercel-text-accent-foreground: #171717;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  /* ── Accent ── */
+  --vercel-accent-primary: #121212;
+  --vercel-accent-secondary: #f5f5f5;
+  --vercel-accent-accent: #f5f5f5;
+  --vercel-accent-input: #e5e5e5;
+  --vercel-accent-ring: #0d0d0d;
+
+  /* ── Border ── */
+  --vercel-border: #e8e8e8;
+
+  /* ── Status ── */
+  --vercel-status-destructive: #e7000b;
+  --vercel-status-success: #16a34a;
+  --vercel-status-warning: #ca8a04;
+  --vercel-status-info: #2563eb;
+
+  /* ── Chart ── */
+  --vercel-chart-1: #91c5ff;
+  --vercel-chart-2: #3a81f6;
+  --vercel-chart-3: #2563eb;
+  --vercel-chart-4: #1a4eda;
+  --vercel-chart-5: #1f3fad;
+
+  /* ── Sidebar ── */
+  --vercel-sidebar-bg: #fafafa;
+  --vercel-sidebar-foreground: #0a0a0a;
+  --vercel-sidebar-primary: #171717;
+  --vercel-sidebar-primary-foreground: #fafafa;
+  --vercel-sidebar-accent: #f5f5f5;
+  --vercel-sidebar-accent-foreground: #171717;
+  --vercel-sidebar-border: #e5e5e5;
+  --vercel-sidebar-ring: #a1a1a1;
+
+  /* ── Typography ── */
+  --vercel-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --vercel-font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  --vercel-font-size-xs: 0.75rem;
+  --vercel-font-size-sm: 0.8125rem;
+  --vercel-font-size-base: 0.875rem;
+  --vercel-font-size-lg: 1rem;
+  --vercel-font-size-xl: 1.25rem;
+  --vercel-font-size-2xl: 1.5rem;
+  --vercel-font-size-3xl: 1.875rem;
+  --vercel-line-height-tight: 1.25;
+  --vercel-line-height-normal: 1.5;
+  --vercel-line-height-relaxed: 1.625;
+
+  /* ── Spacing ── */
+  --vercel-spacing-unit: 0.25rem;
+  --vercel-spacing-1: 0.25rem;
+  --vercel-spacing-2: 0.5rem;
+  --vercel-spacing-3: 0.75rem;
+  --vercel-spacing-4: 1rem;
+  --vercel-spacing-5: 1.25rem;
+  --vercel-spacing-6: 1.5rem;
+  --vercel-spacing-8: 2rem;
+  --vercel-spacing-10: 2.5rem;
+  --vercel-spacing-12: 3rem;
+
+  /* ── Radius ── */
+  --vercel-radius: 0.5rem;
+  --vercel-radius-sm: 0.25rem;
+  --vercel-radius-md: 0.5rem;
+  --vercel-radius-lg: 0.5rem;
+  --vercel-radius-full: 9999px;
+
+  /* ── Shadow ── */
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+
+  /* ── Transition ── */
+  --vercel-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --vercel-transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark mode ── */
+.dark {
+  --vercel-bg-background: #0a0a0a;
+  --vercel-bg-card: #171717;
+  --vercel-bg-popover: #262626;
+  --vercel-bg-muted: #262626;
+
+  --vercel-text-foreground: #fafafa;
+  --vercel-text-card-foreground: #fafafa;
+  --vercel-text-popover-foreground: #fafafa;
+  --vercel-text-primary-foreground: #171717;
+  --vercel-text-secondary-foreground: #fafafa;
+  --vercel-text-muted-foreground: #a1a1a1;
+  --vercel-text-accent-foreground: #fafafa;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  --vercel-accent-primary: #e5e5e5;
+  --vercel-accent-secondary: #262626;
+  --vercel-accent-accent: #262626;
+  --vercel-accent-input: #404040;
+  --vercel-accent-ring: #a3a3a3;
+
+  --vercel-border: #404040;
+
+  --vercel-status-destructive: #ff3b4a;
+
+  --vercel-chart-1: #5b9aff;
+  --vercel-chart-2: #5b9aff;
+  --vercel-chart-3: #91c5ff;
+  --vercel-chart-4: #91c5ff;
+  --vercel-chart-5: #5b9aff;
+
+  --vercel-sidebar-bg: #0a0a0a;
+  --vercel-sidebar-foreground: #fafafa;
+  --vercel-sidebar-primary: #e5e5e5;
+  --vercel-sidebar-primary-foreground: #0a0a0a;
+  --vercel-sidebar-accent: #262626;
+  --vercel-sidebar-accent-foreground: #fafafa;
+  --vercel-sidebar-border: #262626;
+  --vercel-sidebar-ring: #525252;
+
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-border: var(--vercel-border);
+    --color-chart-1: var(--vercel-chart-1);
+    --color-chart-2: var(--vercel-chart-2);
+    --color-chart-3: var(--vercel-chart-3);
+    --color-chart-4: var(--vercel-chart-4);
+    --color-chart-5: var(--vercel-chart-5);
+    --color-sidebar-foreground: var(--vercel-sidebar-foreground);
+    --color-sidebar-primary: var(--vercel-sidebar-primary);
+    --color-sidebar-primary-foreground: var(--vercel-sidebar-primary-foreground);
+    --color-sidebar-accent: var(--vercel-sidebar-accent);
+    --color-sidebar-accent-foreground: var(--vercel-sidebar-accent-foreground);
+  }
+  @layer base {
+    body { background: var(--vercel-background); color: var(--vercel-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+<main>
+<!-- Mobile hamburger -->
+<button id="sidebar-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]" aria-label="打开侧边栏">
+  <i data-lucide="menu" class="h-4 w-4"></i>
+</button>
+
+<!-- Mobile overlay -->
+<div id="sidebar-overlay" class="hidden fixed inset-0 z-40 bg-black/40 lg:hidden"></div>
+
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-60 -translate-x-full border-r border-[var(--vercel-sidebar-border)] bg-[var(--vercel-sidebar-bg)] transition-transform duration-200 lg:static lg:translate-x-0">
+    <div class="flex h-14 items-center px-5 border-b border-[var(--vercel-sidebar-border)]">
+      <span class="text-sm font-semibold tracking-tight" style="color:var(--vercel-sidebar-primary)">2c2a</span>
+    </div>
+    <nav class="flex flex-col gap-0.5 px-3 pt-4">
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-overview">
+        <i data-lucide="layout-dashboard" class="h-4 w-4"></i> 概览
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-users">
+        <i data-lucide="users" class="h-4 w-4"></i> 用户管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-hosts">
+        <i data-lucide="server" class="h-4 w-4"></i> 主机管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-tickets">
+        <i data-lucide="ticket" class="h-4 w-4"></i> 工单管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-openings">
+        <i data-lucide="user-plus" class="h-4 w-4"></i> 开户申请
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-products">
+        <i data-lucide="package" class="h-4 w-4"></i> 产品管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-points">
+        <i data-lucide="coins" class="h-4 w-4"></i> 积分管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-audit">
+        <i data-lucide="scroll-text" class="h-4 w-4"></i> 审计日志
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-sitegroups">
+        <i data-lucide="building-2" class="h-4 w-4"></i> 站点组管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-settings">
+        <i data-lucide="settings" class="h-4 w-4"></i> 系统配置
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <div class="flex-1 min-w-0 lg:ml-0">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-background)]/95 backdrop-blur">
+      <div class="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <h1 class="text-lg font-semibold tracking-tight truncate" style="color:var(--vercel-text-foreground)">产品管理</h1>
+      </div>
+    </header>
+
+    <!-- Content area -->
+    <div class="px-4 py-5 sm:px-6 lg:px-8 space-y-6">
+
+      <!-- Section 1: Product Groups -->
+      <section>
+        <div class="flex items-center justify-between gap-4 mb-3">
+          <h2 class="text-sm font-semibold" style="color:var(--vercel-text-foreground)">产品组</h2>
+          <button class="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-white transition-colors" style="background:var(--vercel-accent-primary)" data-dom-id="btn-add-group">
+            <i data-lucide="plus" class="h-4 w-4"></i>
+            <span class="hidden sm:inline">新增产品组</span>
+          </button>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">名称</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">描述</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">可见性</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">排序</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">状态</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-right font-medium" style="color:var(--vercel-text-muted-foreground)">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">基础云电脑</td>
+                <td class="px-4 py-2.5 truncate max-w-[200px]" style="color:var(--vercel-text-secondary-foreground)">适合日常办公的基础云桌面方案</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">公开</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">1</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">启用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-group-1"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-group-1"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">高性能套餐</td>
+                <td class="px-4 py-2.5 truncate max-w-[200px]" style="color:var(--vercel-text-secondary-foreground)">高性能计算与图形渲染专用</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">公开</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">启用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-group-2"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-group-2"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">GPU 专属</td>
+                <td class="px-4 py-2.5 truncate max-w-[200px]" style="color:var(--vercel-text-secondary-foreground)">搭载独立显卡的云桌面方案</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">私有</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">3</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">启用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-group-3"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-group-3"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">教育专区</td>
+                <td class="px-4 py-2.5 truncate max-w-[200px]" style="color:var(--vercel-text-secondary-foreground)">面向教育机构的优惠套餐</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">私有</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">4</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-destructive);color:var(--vercel-text-destructive-foreground)">禁用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-group-4"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-group-4"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 2: Products -->
+      <section>
+        <div class="flex items-center justify-between gap-4 mb-3">
+          <h2 class="text-sm font-semibold" style="color:var(--vercel-text-foreground)">产品列表</h2>
+          <button class="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-white transition-colors" style="background:var(--vercel-accent-primary)" data-dom-id="btn-add-product">
+            <i data-lucide="plus" class="h-4 w-4"></i>
+            <span class="hidden sm:inline">新增产品</span>
+          </button>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">名称</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">所属组</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">关联主机</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">所需积分</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">可用状态</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">可见性</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-right font-medium" style="color:var(--vercel-text-muted-foreground)">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">标准云桌面</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">基础云电脑</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">Web-Prod-01</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">100</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">可用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">公开</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-prod-1"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-prod-1"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">进阶云桌面</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">基础云电脑</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">Web-Prod-02</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">200</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">可用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">公开</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-prod-2"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-prod-2"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">高性能云桌面</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">高性能套餐</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">GPU-Node-01</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">500</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">可用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">私有</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-prod-3"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-prod-3"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">GPU 渲染桌面</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">GPU 专属</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">GPU-Node-02</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">800</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-warning);color:var(--vercel-text-destructive-foreground)">维护中</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">私有</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-prod-4"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-prod-4"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">教育标准桌面</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">教育专区</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">Edu-Node-01</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">50</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-destructive);color:var(--vercel-text-destructive-foreground)">不可用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">私有</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-prod-5"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-prod-5"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">经济型桌面</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">基础云电脑</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">Web-Prod-03</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">60</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">可用</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">公开</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-prod-6"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                    <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-prod-6"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 3: Collapsible product form -->
+      <section>
+        <button id="form-toggle" class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--vercel-border)] px-3.5 py-2 text-sm transition-colors hover:bg-[var(--vercel-bg-muted)]" style="color:var(--vercel-text-foreground)" data-dom-id="btn-toggle-form">
+          <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" id="form-chevron"></i>
+          展开添加表单
+        </button>
+
+        <div id="product-form" class="hidden mt-4 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] p-5">
+          <h3 class="mb-4 text-sm font-semibold" style="color:var(--vercel-text-foreground)">新增产品</h3>
+          <form>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <!-- 名称 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">名称</label>
+                <input type="text" placeholder="产品内部标识" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 显示名称 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">显示名称</label>
+                <input type="text" placeholder="用户可见的产品名称" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 描述 -->
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">描述</label>
+                <textarea rows="2" placeholder="产品简要描述" class="w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)"></textarea>
+              </div>
+              <!-- 显示描述 -->
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">显示描述</label>
+                <textarea rows="2" placeholder="用户可见的产品描述" class="w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)"></textarea>
+              </div>
+              <!-- 所属产品组 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">所属产品组</label>
+                <select class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+                  <option value="">请选择产品组</option>
+                  <option value="basic">基础云电脑</option>
+                  <option value="perf">高性能套餐</option>
+                  <option value="gpu">GPU 专属</option>
+                  <option value="edu">教育专区</option>
+                </select>
+              </div>
+              <!-- 关联主机 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">关联主机</label>
+                <select class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+                  <option value="">请选择主机</option>
+                  <option value="1">Web-Prod-01</option>
+                  <option value="2">Web-Prod-02</option>
+                  <option value="3">GPU-Node-01</option>
+                  <option value="4">Edu-Node-01</option>
+                </select>
+              </div>
+              <!-- RDP 端口 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">RDP 端口</label>
+                <input type="number" value="3389" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 显示主机名 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">显示主机名</label>
+                <input type="text" placeholder="用户看到的连接地址" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 所需积分 (highlighted) -->
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">所需积分</label>
+                <input type="number" min="0" value="100" class="h-9 w-full max-w-[200px] rounded-lg border border-[var(--vercel-accent-ring)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-2 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+
+              <!-- Toggle switches row -->
+              <div class="sm:col-span-2 border-t border-[var(--vercel-border)] pt-4">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <!-- 是否可用 -->
+                  <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color:var(--vercel-text-foreground)">
+                    <span class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors" style="background:var(--vercel-accent-primary)">
+                      <span class="pointer-events-none inline-block h-3.5 w-3.5 translate-x-4 rounded-full bg-white shadow transition-transform"></span>
+                    </span>
+                    是否可用
+                  </label>
+                  <!-- 自动审批 -->
+                  <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color:var(--vercel-text-foreground)">
+                    <span class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors" style="background:var(--vercel-text-muted-foreground)">
+                      <span class="pointer-events-none inline-block h-3.5 w-3.5 translate-x-0.5 rounded-full bg-white shadow transition-transform"></span>
+                    </span>
+                    自动审批
+                  </label>
+                  <!-- 每用户限一个 -->
+                  <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color:var(--vercel-text-foreground)">
+                    <span class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors" style="background:var(--vercel-text-muted-foreground)">
+                      <span class="pointer-events-none inline-block h-3.5 w-3.5 translate-x-0.5 rounded-full bg-white shadow transition-transform"></span>
+                    </span>
+                    每用户限一个
+                  </label>
+                  <!-- 磁盘配额保护 -->
+                  <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color:var(--vercel-text-foreground)">
+                    <span class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors" style="background:var(--vercel-accent-primary)">
+                      <span class="pointer-events-none inline-block h-3.5 w-3.5 translate-x-4 rounded-full bg-white shadow transition-transform"></span>
+                    </span>
+                    磁盘配额保护
+                  </label>
+                  <!-- 主机保护 -->
+                  <label class="flex items-center gap-2.5 text-sm cursor-pointer" style="color:var(--vercel-text-foreground)">
+                    <span class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors" style="background:var(--vercel-accent-primary)">
+                      <span class="pointer-events-none inline-block h-3.5 w-3.5 translate-x-4 rounded-full bg-white shadow transition-transform"></span>
+                    </span>
+                    主机保护
+                  </label>
+                </div>
+              </div>
+
+              <!-- 可见性 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">可见性</label>
+                <select class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+                  <option value="public">公开</option>
+                  <option value="private">私有</option>
+                </select>
+              </div>
+
+              <!-- 磁盘配置 -->
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">磁盘配置</label>
+                <textarea rows="3" placeholder='{"default_quota": "50GB", "extra_disks": []}' class="w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 py-2 font-mono text-xs outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)"></textarea>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-5 flex items-center gap-3">
+              <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors" style="background:var(--vercel-accent-primary)" data-dom-id="btn-save-product">
+                <i data-lucide="check" class="h-4 w-4"></i> 保存
+              </button>
+              <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--vercel-border)] px-4 py-2 text-sm font-medium transition-colors hover:bg-[var(--vercel-bg-muted)]" style="color:var(--vercel-text-foreground)" data-dom-id="btn-cancel-product">
+                取消
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar toggle + form toggle scripts -->
+<style>
+  @layer components {
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  }
+</style>
+<script>
+  document.getElementById('sidebar-toggle').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.remove('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.remove('hidden');
+  });
+  document.getElementById('sidebar-overlay').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    this.classList.add('hidden');
+  });
+  document.getElementById('form-toggle').addEventListener('click', function() {
+    var form = document.getElementById('product-form');
+    var chevron = document.getElementById('form-chevron');
+    var isHidden = form.classList.contains('hidden');
+    if (isHidden) {
+      form.classList.remove('hidden');
+      chevron.style.transform = 'rotate(180deg)';
+    } else {
+      form.classList.add('hidden');
+      chevron.style.transform = 'rotate(0deg)';
+    }
+  });
+</script>
+</main>
+<script>lucide.createIcons();</script>
+</body>
+</html>

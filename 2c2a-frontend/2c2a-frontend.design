@@ -1,0 +1,1074 @@
+{
+  "data": [
+    {
+      "id": "page-login",
+      "title": "登录",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410400000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/login.html",
+        "interactions": [
+          {
+            "domId": "link-register",
+            "targetPageId": "page-register",
+            "transitionLabel": "去注册"
+          },
+          {
+            "domId": "link-forgot",
+            "targetPageId": "page-forgot-password",
+            "transitionLabel": "忘记密码"
+          },
+          {
+            "domId": "cta-login",
+            "targetPageId": "page-dashboard",
+            "transitionLabel": "登录成功"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-register",
+      "title": "注册",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410400000,
+      "canvasData": {
+        "x": 200,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/register.html",
+        "interactions": [
+          {
+            "domId": "link-login",
+            "targetPageId": "page-login",
+            "hideEdge": true,
+            "transitionLabel": "去登录"
+          },
+          {
+            "domId": "link-forgot",
+            "targetPageId": "page-forgot-password",
+            "hideEdge": true,
+            "transitionLabel": "忘记密码"
+          },
+          {
+            "domId": "cta-register",
+            "targetPageId": "page-login",
+            "transitionLabel": "注册成功"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-forgot-password",
+      "title": "忘记密码",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782423600000,
+      "canvasData": {
+        "x": 420,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/forgot-password.html",
+        "interactions": [
+          {
+            "domId": "back-login",
+            "targetPageId": "page-login",
+            "hideEdge": true,
+            "transitionLabel": "返回登录"
+          },
+          {
+            "domId": "cta-back-login",
+            "targetPageId": "page-login",
+            "transitionLabel": "返回登录"
+          },
+          {
+            "domId": "cta-send-reset",
+            "targetPageId": "page-reset-password",
+            "transitionLabel": "发送重置链接"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reset-password",
+      "title": "重置密码",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782424200000,
+      "canvasData": {
+        "x": 420,
+        "y": 0,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reset-password.html",
+        "interactions": [
+          {
+            "domId": "back-login",
+            "targetPageId": "page-login",
+            "hideEdge": true,
+            "transitionLabel": "返回登录"
+          },
+          {
+            "domId": "cta-reset-password",
+            "targetPageId": "page-login",
+            "transitionLabel": "重置成功，去登录"
+          },
+          {
+            "domId": "cta-go-login",
+            "targetPageId": "page-login",
+            "transitionLabel": "立即登录"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-notifications",
+      "title": "站内信",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782427200000,
+      "canvasData": {
+        "x": 0,
+        "y": 1180,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/notifications.html",
+        "interactions": [
+          {
+            "domId": "back-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "返回仪表盘"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-dashboard",
+      "title": "仪表盘首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410400000,
+      "canvasData": {
+        "x": 200,
+        "y": 590,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/dashboard.html",
+        "interactions": [
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "cta-submit-ticket",
+            "targetPageId": "page-submit-ticket",
+            "hideEdge": true,
+            "transitionLabel": "快捷提工单"
+          },
+          {
+            "domId": "link-notifications",
+            "targetPageId": "page-notifications",
+            "transitionLabel": "站内信"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "transitionLabel": "查看云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-product-list",
+      "title": "产品列表",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410400000,
+      "canvasData": {
+        "x": 620,
+        "y": 590,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/cloud-computers.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-my-cloud-computers",
+      "title": "我的云电脑",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416400000,
+      "canvasData": {
+        "x": 0,
+        "y": 3668,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/my-cloud-computers.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-cloud-detail-active",
+      "title": "云电脑详情(运行中)",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416400000,
+      "canvasData": {
+        "x": 420,
+        "y": 3668,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/cloud-detail-active.html",
+        "interactions": [
+          {
+            "domId": "back-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "返回我的云电脑"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-cloud-detail-pending",
+      "title": "云电脑详情(申请中)",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416400000,
+      "canvasData": {
+        "x": 0,
+        "y": 1180,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/cloud-detail-pending.html",
+        "interactions": [
+          {
+            "domId": "back-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "返回我的云电脑"
+          },
+          {
+            "domId": "cta-retry-apply",
+            "targetPageId": "page-cloud-computer-apply",
+            "transitionLabel": "重新申请"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-tickets",
+      "title": "我的工单",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410400000,
+      "canvasData": {
+        "x": 0,
+        "y": 1834,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/tickets.html",
+        "interactions": [
+          {
+            "domId": "cta-new-ticket",
+            "targetPageId": "page-submit-ticket",
+            "transitionLabel": "新建工单"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-points",
+      "title": "积分中心",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410400000,
+      "canvasData": {
+        "x": 420,
+        "y": 2424,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/points.html",
+        "interactions": [
+          {
+            "domId": "cta-submit-ticket",
+            "targetPageId": "page-submit-ticket",
+            "hideEdge": true,
+            "transitionLabel": "快捷提工单"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-submit-ticket",
+      "title": "提交工单",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410400000,
+      "canvasData": {
+        "x": 420,
+        "y": 1834,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/submit-ticket.html",
+        "interactions": [
+          {
+            "domId": "back-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "返回工单列表"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-cloud-computer-apply",
+      "title": "申请云电脑",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782412800000,
+      "canvasData": {
+        "x": 420,
+        "y": 1180,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/cloud-computer-apply.html",
+        "interactions": [
+          {
+            "domId": "back-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "返回云电脑列表"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-profile",
+      "title": "我的",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782412800000,
+      "canvasData": {
+        "x": 0,
+        "y": 3078,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/profile.html",
+        "interactions": [
+          {
+            "domId": "cta-change-password",
+            "targetPageId": "page-change-password",
+            "transitionLabel": "修改密码"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-change-password",
+      "title": "修改密码",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782412800000,
+      "canvasData": {
+        "x": 420,
+        "y": 3078,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/change-password.html",
+        "interactions": [
+          {
+            "domId": "back-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回我的"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-ticket-detail",
+      "title": "工单详情",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416400000,
+      "canvasData": {
+        "x": 840,
+        "y": 3668,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/ticket-detail.html",
+        "interactions": [
+          {
+            "domId": "back-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "返回工单列表"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-cloud-computers",
+            "targetPageId": "page-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "云电脑"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-email-manage",
+      "title": "邮箱管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782420000000,
+      "canvasData": {
+        "x": 1260,
+        "y": 3672,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/email-manage.html",
+        "interactions": [
+          {
+            "domId": "back-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回我的"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-phone-manage",
+      "title": "手机号管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782420000000,
+      "canvasData": {
+        "x": 1680,
+        "y": 3668,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/phone-manage.html",
+        "interactions": [
+          {
+            "domId": "back-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回我的"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-about",
+      "title": "关于我们",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782420000000,
+      "canvasData": {
+        "x": 2100,
+        "y": 3668,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/about.html",
+        "interactions": [
+          {
+            "domId": "back-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回我的"
+          },
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true,
+            "transitionLabel": "仪表盘"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-product-list",
+            "hideEdge": true,
+            "transitionLabel": "产品列表"
+          },
+          {
+            "domId": "nav-my-cloud",
+            "targetPageId": "page-my-cloud-computers",
+            "hideEdge": true,
+            "transitionLabel": "我的云电脑"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true,
+            "transitionLabel": "工单"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true,
+            "transitionLabel": "积分"
+          },
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": false,
+    "deviceType": "mobile",
+    "projectName": "2c2a 前台系统",
+    "designLibrary": {
+      "name": "TRAE Work",
+      "id": "dl_builtin_trae_work",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_trae_work",
+      "versionSource": "metadata.json"
+    }
+  }
+}

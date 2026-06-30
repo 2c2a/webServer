@@ -1,0 +1,124 @@
+{# 用户前台布局（TRAE Work 主题，源自 2c2a-frontend.design）。
+   主题 token 集中在此；页面仅提供 {% block content %}。
+   变量：active_nav（dashboard/cloud-computers/tickets/points/profile），page_title，site_name。 #}
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ page_title|default('2c2a') }}</title>
+    <style id="theme-vars">
+:root{--c-brand:#4b3fe3;--c-brand-hover:#6a6fff;--c-brand-active:#3f31c6;--c-brand-disabled:rgba(75,63,227,0.22);--c-brand-soft:rgba(170,183,255,0.36);--c-bg:#ffffff;--c-bg-secondary:#f5f5f5;--c-bg-tertiary:#e5e5e5;--c-text-primary:#171717;--c-text-default:#262626;--c-text-secondary:#404040;--c-text-tertiary:#737373;--c-border:rgba(115,115,115,0.12);--c-success:#00b983;--c-warning:#f2a90c;--c-error:#ff4757;--c-info:#3f85ff}
+    </style>
+    <script src="/static/vendor/tailwind-browser.min.js"></script>
+    <script src="/static/vendor/lucide.min.js"></script>
+    <script src="/static/vendor/htmx.min.js"></script>
+    <style type="text/tailwindcss">
+  @layer base {
+    body { background: var(--c-bg-secondary); color: var(--c-text-primary); font-family: 'SF Pro Text', 'PingFang SC', system-ui, sans-serif; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'SF Pro', 'PingFang SC', system-ui, sans-serif; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+
+    {# 顶部导航栏（可被子页 {% block header %} 覆盖） #}
+    {% block header %}
+    <header class="fixed top-0 left-0 right-0 z-50 h-[44px] bg-white flex items-center justify-between px-4"
+            style="border-bottom: 1px solid var(--c-border);">
+        <a href="/dashboard" class="text-base font-semibold" style="color: var(--c-brand); font-family: 'SF Pro', 'PingFang SC', system-ui, sans-serif;">{{ site_name|default('2c2a') }}</a>
+        <a href="/notifications" class="relative flex items-center justify-center w-8 h-8 rounded-full"
+           style="color: #262626;" aria-label="通知">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+            <span id="notification-badge"
+                  hx-get="/fragments/notifications/unread-count"
+                  hx-trigger="load"
+                  hx-target="this"
+                  hx-swap="innerHTML"></span>
+        </a>
+    </header>
+    {% endblock %}
+
+    {# 主内容区 #}
+    <main id="main-content" class="min-h-screen" style="padding-top: 44px; padding-bottom: 56px;">
+        {% block content %}{% endblock %}
+    </main>
+
+    {# 底部 Tab 栏（6 项：仪表盘 / 产品列表 / 云电脑 / 工单 / 积分 / 我的） #}
+    <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white flex items-center justify-around h-[56px]"
+         style="border-top: 1px solid var(--c-border);">
+        <a href="/dashboard" data-nav-key="dashboard" data-dom-id="nav-dashboard"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: {% if active_nav == 'dashboard' %}var(--c-brand){% else %}var(--c-text-tertiary){% endif %}; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+                <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">仪表盘</span>
+        </a>
+        <a href="/cloud-computers" data-nav-key="products" data-dom-id="nav-products"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: {% if active_nav == 'products' %}var(--c-brand){% else %}var(--c-text-tertiary){% endif %}; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="7" height="7" x="3" y="3" rx="1"/>
+                <rect width="7" height="7" x="14" y="3" rx="1"/>
+                <rect width="7" height="7" x="3" y="14" rx="1"/>
+                <rect width="7" height="7" x="14" y="14" rx="1"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">产品列表</span>
+        </a>
+        <a href="/my-cloud" data-nav-key="my-cloud" data-dom-id="nav-my-cloud"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: {% if active_nav == 'my-cloud' %}var(--c-brand){% else %}var(--c-text-tertiary){% endif %}; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">云电脑</span>
+        </a>
+        <a href="/tickets" data-nav-key="tickets" data-dom-id="nav-tickets"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: {% if active_nav == 'tickets' %}var(--c-brand){% else %}var(--c-text-tertiary){% endif %}; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 5v2m0 4v2m0 4v2"/>
+                <path d="M5 5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2 2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2 2 2 0 0 1-2-2 2 2 0 0 1 2-2 2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5z"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">工单</span>
+        </a>
+        <a href="/points" data-nav-key="points" data-dom-id="nav-points"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: {% if active_nav == 'points' %}var(--c-brand){% else %}var(--c-text-tertiary){% endif %}; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">积分</span>
+        </a>
+        <a href="/profile" data-nav-key="profile" data-dom-id="nav-profile"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: {% if active_nav == 'profile' %}var(--c-brand){% else %}var(--c-text-tertiary){% endif %}; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="5"/>
+                <path d="M20 21a8 8 0 0 0-16 0"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">我的</span>
+        </a>
+    </nav>
+
+    <script>
+    lucide.createIcons();
+    // HTMX 加载片段后重新渲染 Lucide 图标
+    document.addEventListener('htmx:afterSwap', function() { lucide.createIcons(); });
+    document.addEventListener('htmx:afterSettle', function() { lucide.createIcons(); });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

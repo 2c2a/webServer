@@ -1,0 +1,43 @@
+{% extends "frontend_shell.html" %}
+{% set active_nav = "points" %}
+{% set page_title = "积分中心" %}
+
+{% block content %}
+
+        <!-- Page Header -->
+        <div class="px-4 pt-4 pb-2">
+            <h1 class="text-lg font-semibold" style="color: var(--c-text-primary);">积分中心</h1>
+        </div>
+
+        <!-- Points Balance Hero Card -->
+        <div id="points-balance" class="mx-4"
+             hx-get="/fragments/points/balance"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">加载中...</div>
+        </div>
+
+        <!-- Task List Section -->
+        <div class="px-4 mt-6">
+            <h2 class="text-sm font-semibold mb-3" style="color: var(--c-text-primary);">积分任务</h2>
+            <div hx-get="/fragments/points/tasks"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+                <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">加载中...</div>
+            </div>
+        </div>
+
+        <!-- Points Records Section -->
+        <div class="px-4 mt-6 mb-4">
+            <h2 class="text-sm font-semibold mb-3" style="color: var(--c-text-primary);">积分明细</h2>
+            <div hx-get="/fragments/points/records"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+                <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">加载中...</div>
+            </div>
+        </div>
+
+{% endblock %}

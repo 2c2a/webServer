@@ -1,0 +1,64 @@
+{% extends "app_shell.html" %}
+{% block title %} - 登录{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1 class="auth-title">登录</h1>
+        <form id="login-form" class="auth-form" hx-post="/auth/login" hx-ext="json-enc">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary">登录</button>
+        </form>
+        <div id="auth-error" class="auth-error"></div>
+    </div>
+</div>
+
+<script src="/static/vendor/hash-wasm.js"></script>
+<script>
+// 前端 BLAKE2b 预哈希：对原始密码做 BLAKE2b（定长输出），防超长密码 DoS 后端 Argon2id
+async function blake2bPrehash(password) {
+    // hash-wasm 默认输出 512 bits（64 字节），对应后端要求的 128 字符 hex
+    return await hashwasm.blake2b(password, 512);
+}
+
+document.getElementById('login-form').addEventListener('htmx:configRequest', async function(evt) {
+    evt.preventDefault(); // 阻止默认提交，改为异步处理
+    const form = evt.detail.elt;
+    const btn = form.querySelector('button[type="submit"]');
+    const username = form.querySelector('#username').value;
+    const password = form.querySelector('#password').value;
+    // 显示加载动画并禁用按钮
+    btn.classList.add('htmx-request');
+    btn.disabled = true;
+    const prehash = await blake2bPrehash(password);
+    try {
+        const resp = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username, password: prehash})
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            // Access Token 存入前端内存（不落 Cookie/Storage，防 XSS）
+            window.__ACCESS_TOKEN__ = data.access_token;
+            window.__TOKEN_EXPIRES_IN__ = data.expires_in;
+            location.href = '/';
+        } else {
+            document.getElementById('auth-error').textContent = data.message || '登录失败';
+        }
+    } catch (e) {
+        document.getElementById('auth-error').textContent = '网络错误';
+    } finally {
+        btn.classList.remove('htmx-request');
+        btn.disabled = false;
+    }
+});
+</script>
+{% endblock %}

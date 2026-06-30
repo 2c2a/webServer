@@ -1,0 +1,89 @@
+[project]
+name = "2c2a"
+version = "2.0.0"
+description = "Zero Agent Security Control Architecture - async rewrite (Granian + FastAPI + SQLAlchemy 2.0 Async + HTMX OOB + RedisHuey + JinjaX + aiohttp)"
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "AGPL-3.0" }
+
+dependencies = [
+    # ASGI 服务器
+    "granian>=1.6.0",
+    # Web 框架
+    "fastapi>=0.115.0",
+    "starlette>=0.38.0",
+    # ORM (SQLAlchemy 2.0 异步)
+    "sqlalchemy[asyncio]>=2.0.32",
+    "aiosqlite>=0.20.0",
+    "asyncpg>=0.29.0",
+    "aiomysql>=0.2.0",
+    # 迁移
+    "alembic>=1.13.0",
+    # 模板 (JinjaX)
+    "jinja2>=3.1.4",
+    "jinjax>=0.5.0",
+    # HTMX 服务端无直接依赖，仅前端 JS
+    # Redis (异步 + Huey)
+    "redis[hiredis]>=5.0.0",
+    "huey[redis]>=2.5.0",
+    # 异步 HTTP (替代同步 winrm)
+    "aiohttp>=3.10.0",
+    "pyspnego>=0.11.0",
+    # 异步 SMTP (邮件发送：密码重置、通知等)
+    "aiosmtplib>=3.0.0",
+    # 安全 / 加密
+    "argon2-cffi>=23.1.0",
+    "pyjwt>=2.9.0",
+    "cryptography>=43.0.0",
+    # 配置
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.0",
+    # 工具
+    "python-multipart>=0.0.9",
+    "itsdangerous>=2.2.0",
+    "httpx>=0.27.0",
+    "structlog>=24.4.0",
+    "python-dotenv>=1.0.1",
+    # CLI 管理工具
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    # 验证码图像渲染（text_click / sequence_click）
+    "pillow>=10.4.0",
+]
+
+[project.scripts]
+2c2a = "app.cli.main:app"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.27.0",
+    "ruff>=0.6.0",
+    "playwright>=1.45.0",
+    "pytest-playwright>=0.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# session 级 async fixture（_init_engine）需要 session 级事件循环
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+
+[tool.granian]
+# 仅文档用，实际参数由命令行传入

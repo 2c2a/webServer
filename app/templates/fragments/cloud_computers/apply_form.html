@@ -1,0 +1,290 @@
+{# 云电脑申请表单片段。
+   selected_product_id：从产品列表点"申请开通"跳转时携带的预选产品 ID。
+   每个产品 option 携带 data-points 与 data-terms 属性，前端 JS 用于：
+   - 同步底部"合计"显示
+   - 条件渲染必读条款卡片（条款非空时展示，含 10s 倒计时 + 同意勾选） #}
+<form id="apply-form"
+      hx-post="/fragments/cloud-computers/apply"
+      hx-target="#apply-form-container"
+      hx-swap="innerHTML"
+      style="background: var(--c-bg); border-radius: 8px; padding: 16px;">
+    <h3 style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 16px;">申请信息</h3>
+
+    <!-- 隐藏字段：用户勾选条款同意后由 JS 设置为 "true"，后端兜底校验 -->
+    <input type="hidden" name="terms_agreed" id="apply-terms-agreed" value="">
+
+    <!-- Product Select -->
+    <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; font-weight: 500; color: var(--c-text-primary); margin-bottom: 6px;">选择产品</label>
+        <select name="product_id" id="apply-product-select" required
+                onchange="onApplyProductChange()"
+                style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: var(--c-bg); outline: none; font-family: inherit; box-sizing: border-box;"
+                onfocus="this.style.borderColor='var(--c-brand)'"
+                onblur="this.style.borderColor='var(--c-border)'">
+            <option value="" disabled {% if not selected_product_id %}selected{% endif %} data-points="" data-terms="" style="color: var(--c-text-tertiary);">请选择产品</option>
+            {% if products %}
+                {% for p in products %}
+                <option value="{{ p.id }}"
+                        data-points="{{ p.required_points }}"
+                        data-terms="{{ p.terms | default('') }}"
+                        {% if selected_product_id and selected_product_id == p.id %}selected{% endif %}>{{ p.name }}（{{ p.required_points }}积分/月）</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+    </div>
+
+    <!-- Username -->
+    <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; font-weight: 500; color: var(--c-text-primary); margin-bottom: 6px;">云电脑账号</label>
+        <input type="text" name="username" placeholder="请输入账号名称" required
+               style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: var(--c-bg); outline: none; font-family: inherit; box-sizing: border-box;"
+               onfocus="this.style.borderColor='var(--c-brand)'"
+               onblur="this.style.borderColor='var(--c-border)'">
+    </div>
+
+    <!-- Email -->
+    <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; font-weight: 500; color: var(--c-text-primary); margin-bottom: 6px;">邮箱</label>
+        <input type="email" name="email" placeholder="请输入邮箱" required
+               style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: var(--c-bg); outline: none; font-family: inherit; box-sizing: border-box;"
+               onfocus="this.style.borderColor='var(--c-brand)'"
+               onblur="this.style.borderColor='var(--c-border)'">
+    </div>
+
+    <!-- Phone -->
+    <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; font-weight: 500; color: var(--c-text-primary); margin-bottom: 6px;">手机号</label>
+        <input type="tel" name="phone" placeholder="请输入手机号"
+               style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: var(--c-bg); outline: none; font-family: inherit; box-sizing: border-box;"
+               onfocus="this.style.borderColor='var(--c-brand)'"
+               onblur="this.style.borderColor='var(--c-border)'">
+    </div>
+
+    <!-- Remarks -->
+    <div style="margin-bottom: 0;">
+        <label style="display: block; font-size: 14px; font-weight: 500; color: var(--c-text-primary); margin-bottom: 6px;">备注</label>
+        <textarea name="remarks" rows="3" placeholder="备注信息（选填）"
+                  style="width: 100%; border: 1px solid var(--c-border); border-radius: 8px; padding: 10px 12px; font-size: 14px; color: var(--c-text-primary); background: var(--c-bg); outline: none; font-family: inherit; box-sizing: border-box; resize: none;"
+                  onfocus="this.style.borderColor='var(--c-brand)'"
+                  onblur="this.style.borderColor='var(--c-border)'"></textarea>
+    </div>
+</form>
+
+{# 必读条款卡片容器：JS 根据所选产品的 terms 内容条件渲染 #}
+<div id="terms-card-container"></div>
+
+{% if not products %}
+<div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">暂无可申请的产品</div>
+{% endif %}
+
+<script>
+// 全局状态：当前产品的条款、倒计时、是否同意
+var __applyTermsState = {
+    termsText: '',      // 当前产品的条款内容（空字符串表示无条款）
+    countdown: 0,        // 剩余倒计时秒数
+    agreed: false,      // 是否已勾选同意
+    timerInterval: null  // 倒计时定时器
+};
+
+// 根据所选产品同步：合计 + 必读条款卡片
+function onApplyProductChange() {
+    var sel = document.getElementById('apply-product-select');
+    if (!sel) return;
+
+    var opt = sel.options[sel.selectedIndex];
+    var points = opt ? opt.getAttribute('data-points') : '';
+    var terms = opt ? (opt.getAttribute('data-terms') || '') : '';
+
+    // 1) 更新底部"合计"
+    updateApplyTotal(points);
+
+    // 2) 重置条款状态
+    __applyTermsState.termsText = terms;
+    __applyTermsState.countdown = 0;
+    __applyTermsState.agreed = false;
+    if (__applyTermsState.timerInterval) {
+        clearInterval(__applyTermsState.timerInterval);
+        __applyTermsState.timerInterval = null;
+    }
+    // 同步重置隐藏字段（条款同意状态）
+    var hidden = document.getElementById('apply-terms-agreed');
+    if (hidden) hidden.value = '';
+
+    // 3) 条件渲染必读条款卡片
+    renderTermsCard(terms);
+
+    // 4) 同步提交按钮状态
+    updateSubmitButton();
+}
+
+// 更新底部"合计"显示
+function updateApplyTotal(points) {
+    var total = document.getElementById('apply-total');
+    if (!total) return;
+
+    if (points !== '' && points !== null) {
+        var n = parseInt(points, 10);
+        if (!isNaN(n)) {
+            if (n > 0) {
+                total.textContent = n + ' 积分/月';
+                total.style.color = 'var(--c-brand)';
+            } else {
+                total.textContent = '免费';
+                total.style.color = 'var(--c-success)';
+            }
+            return;
+        }
+    }
+    total.textContent = '申请后确认';
+    total.style.color = 'var(--c-text-secondary)';
+}
+
+// 渲染必读条款卡片（terms 为空时不渲染）
+function renderTermsCard(terms) {
+    var container = document.getElementById('terms-card-container');
+    if (!container) return;
+
+    if (!terms || !terms.trim()) {
+        container.innerHTML = '';
+        return;
+    }
+
+    // 转义 HTML 特殊字符（条款内容来自管理员，但稳妥起见仍转义）
+    var escaped = terms.replace(/&/g, '&amp;')
+                       .replace(/</g, '&lt;')
+                       .replace(/>/g, '&gt;');
+    // 保留换行：将 \n 转换为 <br>
+    escaped = escaped.replace(/\n/g, '<br>');
+
+    container.innerHTML =
+        '<div style="background: var(--c-bg); border-radius: 8px; overflow: hidden; margin-top: 12px;">' +
+            // Header
+            '<div style="padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between;">' +
+                '<div style="display: flex; align-items: center; gap: 6px;">' +
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>' +
+                        '<line x1="12" y1="9" x2="12" y2="13"/>' +
+                        '<line x1="12" y1="17" x2="12.01" y2="17"/>' +
+                    '</svg>' +
+                    '<span style="font-size: 14px; font-weight: 600; color: var(--c-text-primary);">必读条款</span>' +
+                '</div>' +
+                '<span id="terms-timer" style="font-size: 12px; color: var(--c-brand); font-weight: 500;">请阅读 10s</span>' +
+            '</div>' +
+            // Scrollable Terms Content
+            '<div id="terms-scroll" style="margin: 0 12px; max-height: 140px; overflow-y: auto; border: 1px solid var(--c-border); border-radius: 8px; padding: 12px; background: var(--c-bg-secondary); font-size: 13px; color: var(--c-text-secondary); line-height: 1.7;">' +
+                escaped +
+            '</div>' +
+            // Read Progress
+            '<div style="margin: 8px 12px 0; height: 3px; background: var(--c-bg-tertiary); border-radius: 2px; overflow: hidden;">' +
+                '<div id="terms-progress" style="width: 0%; height: 100%; background: var(--c-brand); border-radius: 2px; transition: width 0.3s;"></div>' +
+            '</div>' +
+            // Agree Checkbox
+            '<div style="padding: 12px 16px;">' +
+                '<label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; user-select: none;">' +
+                    '<div id="terms-checkbox" style="width: 20px; height: 20px; border: 2px solid var(--c-border); border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all 0.15s; background: var(--c-bg); opacity: 0.4;" onclick="toggleTermsAgree()">' +
+                        '<svg id="terms-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><polyline points="20 6 9 17 4 12"/></svg>' +
+                    '</div>' +
+                    '<span style="font-size: 13px; color: var(--c-text-secondary); line-height: 1.5;">我已阅读并同意以上条款，承诺遵守使用规范</span>' +
+                '</label>' +
+            '</div>' +
+        '</div>';
+
+    // 启动 10s 倒计时
+    startTermsCountdown();
+}
+
+// 启动条款阅读倒计时（10s）
+function startTermsCountdown() {
+    __applyTermsState.countdown = 10;
+    var timerEl = document.getElementById('terms-timer');
+    var progressEl = document.getElementById('terms-progress');
+    var checkboxEl = document.getElementById('terms-checkbox');
+
+    if (__applyTermsState.timerInterval) {
+        clearInterval(__applyTermsState.timerInterval);
+    }
+
+    __applyTermsState.timerInterval = setInterval(function() {
+        __applyTermsState.countdown--;
+        if (__applyTermsState.countdown <= 0) {
+            clearInterval(__applyTermsState.timerInterval);
+            __applyTermsState.timerInterval = null;
+            if (timerEl) {
+                timerEl.textContent = '阅读完成';
+                timerEl.style.color = 'var(--c-success)';
+            }
+            // 启用 checkbox
+            if (checkboxEl) {
+                checkboxEl.style.opacity = '1';
+                checkboxEl.style.borderColor = 'var(--c-brand)';
+                checkboxEl.style.cursor = 'pointer';
+            }
+            if (progressEl) progressEl.style.width = '100%';
+        } else {
+            if (timerEl) timerEl.textContent = '请阅读 ' + __applyTermsState.countdown + 's';
+            if (progressEl) progressEl.style.width = ((10 - __applyTermsState.countdown) / 10 * 100) + '%';
+        }
+        updateSubmitButton();
+    }, 1000);
+}
+
+// 切换条款同意状态
+function toggleTermsAgree() {
+    // 倒计时未结束禁止勾选
+    if (__applyTermsState.countdown > 0) return;
+
+    __applyTermsState.agreed = !__applyTermsState.agreed;
+    var checkboxEl = document.getElementById('terms-checkbox');
+    var checkIcon = document.getElementById('terms-check-icon');
+    if (!checkboxEl || !checkIcon) return;
+
+    // 同步隐藏字段值（供后端兜底校验）
+    var hidden = document.getElementById('apply-terms-agreed');
+    if (hidden) hidden.value = __applyTermsState.agreed ? 'true' : '';
+
+    if (__applyTermsState.agreed) {
+        checkboxEl.style.background = 'var(--c-brand)';
+        checkboxEl.style.borderColor = 'var(--c-brand)';
+        checkIcon.style.display = 'block';
+    } else {
+        checkboxEl.style.background = 'var(--c-bg)';
+        checkboxEl.style.borderColor = 'var(--c-brand)';
+        checkIcon.style.display = 'none';
+    }
+    updateSubmitButton();
+}
+
+// 同步提交按钮启用/禁用状态
+function updateSubmitButton() {
+    var btn = document.getElementById('apply-submit-btn');
+    if (!btn) return;
+
+    // 当前产品无条款 → 直接启用
+    if (!__applyTermsState.termsText || !__applyTermsState.termsText.trim()) {
+        btn.disabled = false;
+        btn.style.background = 'var(--c-brand)';
+        btn.style.cursor = 'pointer';
+        btn.style.opacity = '1';
+        return;
+    }
+
+    // 有条款：倒计时结束 + 已同意 → 启用
+    if (__applyTermsState.countdown <= 0 && __applyTermsState.agreed) {
+        btn.disabled = false;
+        btn.style.background = 'var(--c-brand)';
+        btn.style.cursor = 'pointer';
+        btn.style.opacity = '1';
+    } else {
+        btn.disabled = true;
+        btn.style.background = 'var(--c-brand-disabled)';
+        btn.style.cursor = 'not-allowed';
+        btn.style.opacity = '0.6';
+    }
+}
+
+// 表单加载完成后立即同步一次（处理 product_id 预选场景）
+(function initApplyForm() {
+    // 立即同步一次：合计 + 条款卡片
+    onApplyProductChange();
+})();
+</script>

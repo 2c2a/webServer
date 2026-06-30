@@ -1,0 +1,49 @@
+{# 后台站点组列表片段 #}
+<div class="rounded-lg border overflow-hidden" style="border-color: var(--vercel-border); background: var(--vercel-bg-card);">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm" style="color: var(--vercel-text-foreground);">
+            <thead>
+                <tr class="border-b" style="border-color: var(--vercel-border);">
+                    <th class="text-left px-4 py-3 text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">名称</th>
+                    <th class="text-left px-4 py-3 text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">Slug</th>
+                    <th class="text-left px-4 py-3 text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">状态</th>
+                    <th class="text-left px-4 py-3 text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">域名数</th>
+                    <th class="text-left px-4 py-3 text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">成员数</th>
+                    <th class="text-left px-4 py-3 text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">创建时间</th>
+                    <th class="text-right px-4 py-3 text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if items %}
+                {% for sg in items %}
+                <tr class="border-b" style="border-color: var(--vercel-border);">
+                    <td class="px-4 py-3 font-medium whitespace-nowrap">{{ sg.name }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <code class="text-xs px-1.5 py-0.5 rounded" style="background: var(--vercel-bg-muted); color: var(--vercel-text-muted-foreground);">{{ sg.slug }}</code>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        {% if sg.is_active %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap" style="background:rgba(22,163,74,0.1); color:var(--vercel-status-success);">启用</span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap" style="background:rgba(231,0,11,0.1); color:var(--vercel-status-destructive);">禁用</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ sg.hostnames|length }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ sg.members|length }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">
+                        {{ sg.created_at.strftime('%Y-%m-%d %H:%M') if sg.created_at else '-' }}
+                    </td>
+                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                        <button class="p-1 rounded transition-colors hover:bg-black/5" style="color: var(--vercel-text-muted-foreground);"><i data-lucide="settings" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-sm" style="color: var(--vercel-text-muted-foreground);">暂无站点组</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>

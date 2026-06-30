@@ -1,0 +1,32 @@
+{# 后台概览待审核开户片段 #}
+<div class="flex items-center justify-between border-b px-4 sm:px-5 py-3" style="border-color: var(--vercel-border);">
+    <h2 class="text-sm font-semibold truncate" style="color: var(--vercel-text-foreground);">待审核开户</h2>
+    <a href="/admin/openings" class="text-xs font-medium whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">查看全部</a>
+</div>
+{% if items %}
+<ul class="divide-y" style="border-color: var(--vercel-border);">
+    {% for o in items %}
+    <li class="flex items-start justify-between gap-2 px-4 sm:px-5 py-3">
+        <div class="min-w-0 flex-1">
+            <p class="truncate text-xs font-medium" style="color: var(--vercel-text-card-foreground);">
+                {{ o.user_fullname or o.username }}
+            </p>
+            <p class="mt-0.5 truncate text-xs" style="color: var(--vercel-text-muted-foreground);">
+                {{ o.target_product.display_name or o.target_product.name if o.target_product else '-' }} · {{ o.contact_email }}
+            </p>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+            <span class="inline-flex h-5 items-center rounded px-1.5 text-xs font-medium whitespace-nowrap"
+                  style="background: var(--vercel-status-warning); color: var(--vercel-text-destructive-foreground);">
+                {{ o.status }}
+            </span>
+            <span class="text-xs whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">
+                {{ o.created_at.strftime('%Y-%m-%d %H:%M') if o.created_at else '' }}
+            </span>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="p-8 text-center text-xs" style="color: var(--vercel-text-muted-foreground);">暂无待审核开户</div>
+{% endif %}

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱验证码 - {{ site_name }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'SF Pro Text','PingFang SC',system-ui,-apple-system,sans-serif;color:#171717;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;min-height:100vh;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="100%" style="max-width:480px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding:28px 32px 20px;border-bottom:1px solid #f0f0f0;">
+                            <h1 style="margin:0;font-size:18px;font-weight:600;color:#171717;">邮箱验证码</h1>
+                            <p style="margin:6px 0 0;font-size:13px;color:#737373;">{{ site_name }}</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:24px 32px 8px;">
+                            <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#404040;">
+                                您好，
+                            </p>
+                            <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#404040;">
+                                您正在进行 <strong style="color:#171717;">注册</strong> 操作。请使用以下验证码完成邮箱验证：
+                            </p>
+
+                            <!-- 验证码大字号显示 -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+                                <tr>
+                                    <td align="center" style="padding:20px 16px;background-color:#f5f5f5;border-radius:8px;letter-spacing:8px;">
+                                        <span style="font-size:32px;font-weight:600;color:#4b3fe3;font-family:'SF Pro','PingFang SC',monospace;">{{ code }}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Notice -->
+                    <tr>
+                        <td style="padding:8px 32px 24px;">
+                            <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#737373;">
+                                <strong style="color:#404040;">该验证码将在 {{ expires_in_minutes }} 分钟后失效，请尽快使用。</strong>
+                            </p>
+                            <p style="margin:0;font-size:12px;line-height:1.6;color:#737373;">
+                                如果这不是您本人的操作，请忽略此邮件，您的邮箱不会被注册。
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding:16px 32px 24px;border-top:1px solid #f0f0f0;background-color:#fafafa;">
+                            <p style="margin:0;font-size:11px;line-height:1.6;color:#a3a3a3;text-align:center;">
+                                这是一封系统自动发送的邮件，请勿直接回复。<br/>
+                                &copy; {{ year }} {{ site_name }}
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

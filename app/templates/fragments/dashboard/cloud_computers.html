@@ -1,0 +1,30 @@
+{# 仪表盘我的云电脑片段 #}
+<div class="no-scrollbar" style="display: flex; gap: 10px; overflow-x: auto; padding: 0 16px;">
+    {% if cloud_computers %}
+        {% for cc in cloud_computers %}
+        <div style="flex-shrink: 0; width: calc(50% - 5px); background: #ffffff; border-radius: 8px; padding: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     stroke="{% if cc.status == 'active' %}#4b3fe3{% else %}#737373{% endif %}"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
+                </svg>
+            </div>
+            <p style="font-size: 14px; font-weight: 500; color: var(--c-text-primary); margin: 0 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cc.product.name if cc.product else cc.username }}</p>
+            {% if cc.status == 'active' %}
+            <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: rgba(0,185,131,0.1); color: var(--c-success);">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--c-success); display: inline-block;"></span>
+                运行中
+            </span>
+            {% else %}
+            <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: rgba(115,115,115,0.08); color: var(--c-text-tertiary);">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #737373; display: inline-block;"></span>
+                {{ cc.status }}
+            </span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);width:100%;">暂无数据</div>
+    {% endif %}
+</div>

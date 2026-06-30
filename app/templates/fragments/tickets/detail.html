@@ -1,0 +1,94 @@
+{# 工单详情片段（对齐 2c2a-frontend/pages/ticket-detail.html 设计稿，使用 --c-* 主题 token）。
+   上下文变量：ticket（Ticket，已预加载 creator/assignee/category/comments.author），comments。 #}
+
+{# 1. 工单信息卡片 #}
+<div class="mx-4 mt-0 bg-white rounded-lg p-4"
+     style="border: 1px solid rgba(115,115,115,0.08);">
+    <h2 class="text-base font-semibold" style="color: var(--c-text-primary);">{{ ticket.title }}</h2>
+
+    {# 状态 + 优先级 #}
+    <div class="flex items-center gap-2 mt-2 flex-wrap">
+        {# 状态徽章 #}
+        {% if ticket.status == 'open' or ticket.status == 'pending' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white"
+              style="background-color: var(--c-warning);">待处理</span>
+        {% elif ticket.status == 'in_progress' or ticket.status == 'processing' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white"
+              style="background-color: var(--c-info);">处理中</span>
+        {% elif ticket.status == 'resolved' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white"
+              style="background-color: var(--c-success);">已解决</span>
+        {% elif ticket.status == 'closed' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white"
+              style="background-color: #737373;">已关闭</span>
+        {% else %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white"
+              style="background-color: #737373;">{{ ticket.status }}</span>
+        {% endif %}
+
+        {# 优先级徽章 #}
+        {% if ticket.priority == 'urgent' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+              style="color: var(--c-error); background-color: rgba(255,71,87,0.12);">紧急</span>
+        {% elif ticket.priority == 'high' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+              style="color: var(--c-error); background-color: rgba(255,71,87,0.12);">高优先级</span>
+        {% elif ticket.priority == 'low' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+              style="color: var(--c-info); background-color: rgba(63,133,255,0.12);">低优先级</span>
+        {% else %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+              style="color: var(--c-text-secondary); background-color: var(--c-bg-secondary);">中优先级</span>
+        {% endif %}
+    </div>
+
+    {# 元信息 #}
+    <div class="flex flex-col gap-1.5 mt-3">
+        <span class="text-xs" style="color: var(--c-text-tertiary);">工单号: {{ ticket.ticket_no }}</span>
+        <span class="text-xs" style="color: var(--c-text-tertiary);">分类: {{ ticket.category.name if ticket.category else '未分类' }}</span>
+        <span class="text-xs" style="color: var(--c-text-tertiary);">受理人: {{ ticket.assignee.username if ticket.assignee else '未分配' }}</span>
+        <span class="text-xs" style="color: var(--c-text-tertiary);">创建时间: {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else '-' }}</span>
+    </div>
+</div>
+
+{# 2. 问题描述卡片 #}
+<div class="mx-4 mt-3 bg-white rounded-lg p-4"
+     style="border: 1px solid rgba(115,115,115,0.08);">
+    <h3 class="text-sm font-medium" style="color: var(--c-text-primary);">问题描述</h3>
+    <p class="text-sm mt-2" style="color: var(--c-text-default); line-height: 1.625; white-space: pre-wrap; word-break: break-word;">{{ ticket.description }}</p>
+</div>
+
+{# 3. 回复记录 #}
+<div class="mx-4 mt-3">
+    <h3 class="text-sm font-medium mb-2" style="color: var(--c-text-primary);">回复记录 ({{ comments|length }})</h3>
+
+    {% if comments %}
+    {% for c in comments %}
+    {# 工作人员回复：左边框 brand 色；用户回复：左边框 success 色 #}
+    {% set is_staff_reply = c.author and (c.author.is_staff or c.author.is_superuser) %}
+    <div class="bg-white rounded-lg p-3 mt-2"
+         style="border: 1px solid rgba(115,115,115,0.08); border-left: 3px solid {% if is_staff_reply %}var(--c-brand){% else %}var(--c-success){% endif %};">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                 style="background-color: {% if is_staff_reply %}var(--c-brand){% else %}var(--c-success){% endif %};">
+                {{ (c.author.username if c.author else '用户')[:1] }}
+            </div>
+            <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                <span class="text-sm font-medium" style="color: var(--c-text-primary);">{{ c.author.username if c.author else '用户' }}</span>
+                {% if is_staff_reply %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
+                      style="background-color: var(--c-brand);">客服</span>
+                {% endif %}
+                <span class="text-xs" style="color: var(--c-text-tertiary);">{{ c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else '-' }}</span>
+            </div>
+        </div>
+        <p class="text-sm mt-1.5" style="color: var(--c-text-default); line-height: 1.625; white-space: pre-wrap; word-break: break-word;">{{ c.content }}</p>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="bg-white rounded-lg p-6 mt-2 text-center"
+         style="border: 1px solid rgba(115,115,115,0.08);">
+        <p class="text-xs" style="color: var(--c-text-tertiary);">暂无回复，请在下方输入您的回复</p>
+    </div>
+    {% endif %}
+</div>

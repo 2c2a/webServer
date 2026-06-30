@@ -1,0 +1,98 @@
+{# 后台公告创建/编辑表单片段。toggle 开关使用纯 CSS peer-checked: 模式，无需 JavaScript。 #}
+<div class="mx-auto max-w-[720px]">
+    <h1 class="text-base font-semibold tracking-tight text-[var(--vercel-text-foreground)]">{% if announcement %}编辑公告{% else %}新增公告{% endif %}</h1>
+    <p class="mt-1 text-sm text-[var(--vercel-text-muted-foreground)]">{% if announcement %}修改公告内容与展示状态{% else %}新增一条用户前台展示的站点公告{% endif %}</p>
+
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <form class="p-5 sm:p-6"
+              {% if announcement %}
+              hx-put="/fragments/admin/announcements/{{ announcement.id }}"
+              {% else %}
+              hx-post="/fragments/admin/announcements/create"
+              {% endif %}
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                <!-- 标题 -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        标题 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="text" name="title" required maxlength="200"
+                           value="{{ announcement.title | default('') }}"
+                           placeholder="请输入公告标题"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 内容 -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        内容 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <textarea name="content" rows="6" required placeholder="请输入公告内容"
+                              class="w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] resize-y">{{ announcement.content | default('') }}</textarea>
+                </div>
+
+                <!-- 排序 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">排序</label>
+                    <input type="number" name="sort_order" value="{{ announcement.sort_order | default(0) }}"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                    <p class="text-xs text-[var(--vercel-text-muted-foreground)]">数值越小越靠前</p>
+                </div>
+
+                <!-- 发布时间 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">发布时间</label>
+                    <input type="datetime-local" name="published_at"
+                           {% if announcement and announcement.published_at %}value="{{ announcement.published_at.strftime('%Y-%m-%dT%H:%M') }}"{% endif %}
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                    <p class="text-xs text-[var(--vercel-text-muted-foreground)]">可选，留空表示不显示</p>
+                </div>
+
+                <!-- Separator -->
+                <div class="sm:col-span-2"><hr class="border-[var(--vercel-border)]"></div>
+
+                <!-- 配置开关分区 -->
+                <div class="sm:col-span-2">
+                    <legend class="text-sm font-semibold text-[var(--vercel-text-foreground)] mb-4">展示设置</legend>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                        <!-- 启用 -->
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">启用公告</span>
+                            <div class="relative">
+                                <input type="checkbox" name="is_active" value="true" class="peer sr-only" {% if not announcement or announcement.is_active %}checked{% endif %}>
+                                <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+
+                        <!-- 置顶 -->
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">置顶</span>
+                            <div class="relative">
+                                <input type="checkbox" name="is_pinned" value="true" class="peer sr-only" {% if announcement and announcement.is_pinned %}checked{% endif %}>
+                                <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-warning)] transition-colors duration-200"></div>
+                                <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="my-5 border-t border-[var(--vercel-border)]"></div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3">
+                <a href="/admin/announcements" class="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                    取消
+                </a>
+                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--vercel-accent-primary)] px-4 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    保存
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

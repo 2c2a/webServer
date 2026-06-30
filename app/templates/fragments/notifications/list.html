@@ -1,0 +1,14 @@
+{# 站内信列表片段。变量：notifications（list[Notification]），type_meta，current_filter。 #}
+<div>
+    {% if notifications %}
+    {% for n in notifications %}
+    {% include "notifications/_item.html" %}
+    {% endfor %}
+    <div style="text-align: center; font-size: 12px; color: var(--c-text-tertiary); padding: 16px;">暂无更多通知</div>
+    {% else %}
+    <div style="text-align:center;padding:48px 16px;color:var(--c-text-tertiary);">
+        <p style="font-size:14px;margin:0;">暂无通知</p>
+        <p style="margin-top:4px;font-size:12px;">新消息会出现在这里</p>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,19 @@
+{# 统计片段（HTMX 动态、不可缓存） #}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">主机总数</div>
+        <div class="stat-value">{{ stats.hosts_count|default(0) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">云电脑用户</div>
+        <div class="stat-value">{{ stats.cloud_users_count|default(0) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">待处理工单</div>
+        <div class="stat-value">{{ stats.pending_tickets|default(0) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">开户申请</div>
+        <div class="stat-value">{{ stats.pending_requests|default(0) }}</div>
+    </div>
+</div>

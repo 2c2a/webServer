@@ -1,0 +1,13 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "openings" %}
+{% set page_title = "开户审核" %}
+{% set breadcrumbs = [{"label": "首页", "href": "/admin/"}, {"label": "开户申请", "href": "/admin/openings"}, {"label": "开户审核"}] %}
+
+{% block content %}
+      <div hx-get="/fragments/admin/openings/review?opening_id={{ opening_id | default('') }}"
+           hx-trigger="load"
+           hx-target="this"
+           hx-swap="innerHTML">
+        <div class="p-8 text-center text-[var(--vercel-text-muted-foreground)]">加载中...</div>
+      </div>
+{% endblock %}

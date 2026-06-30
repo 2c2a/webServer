@@ -1,0 +1,130 @@
+{
+  "project": {
+    "name": "2c2a 主页",
+    "path": "d:\\cty\\python\\2c2a-webserver-fastapi\\2c2a-homepage",
+    "operation": "create",
+    "deviceType": "desktop",
+    "language": "zh-CN",
+    "dashboardMode": false,
+    "replicationMode": null,
+    "sourceUrl": null,
+    "visualSpecExcerpt": null,
+    "styleDefinitionBrief": "企业安全管控平台落地页，紫蓝品牌色(#4b3fe3)，冷色调专业科技感，简洁大气，Desktop 优先响应式",
+    "designRead": "SaaS landing / IT decision maker / calm enterprise trust / low density / avoid purple neon AI hero",
+    "designDials": {
+      "layoutVariance": 3,
+      "motionIntensity": 2,
+      "visualDensity": 2
+    },
+    "styleContinuityAnchors": {
+      "colorSystem": {
+        "primaryColorRole": "single brand hue #4b3fe3 used for CTA, accent highlights, and interactive states",
+        "brandHuePolicy": "no secondary/accent brand hue; identity uses neutral tints or primary tints",
+        "stateColors": "optional semantic success/warning/error/info tokens only"
+      },
+      "shapeSystem": "radius-sm 4px / radius-md 8px / radius-lg 12px / radius-xl 16px / radius-full 9999px",
+      "typographySystem": "Inter + PingFang SC + Microsoft YaHei, sans-serif throughout, display 48px/700, h1 36px/700, h2 28px/600",
+      "spacingSystem": "4px base scale up to 96px, generous section padding (80-96px)",
+      "componentLanguage": "clean bordered cards, border-first surfaces, subtle hover transitions",
+      "surfaceAndDepth": "white cards with thin borders (0.08 alpha) as default; shadow only for floating layers, max alpha 0.05",
+      "imageryAndIconography": "professional tech imagery, clean icon lines",
+      "interactionTone": "subtle hover/focus feedback, refined button/card transitions"
+    },
+    "specsConstraints": null,
+    "sharedProjectShellContract": {
+      "navigationShell": "fixed top navbar with brand logo left, navigation center, login CTA right",
+      "primaryColorSystem": "single brand hue #4b3fe3",
+      "typographySystem": "Inter + PingFang SC + Microsoft YaHei sans-serif",
+      "radiusScale": "max 16px, restrained radius",
+      "surfaceDepthModel": "border-first surfaces, minimal shadows",
+      "ctaStyle": "brand color filled rounded button, login outline button",
+      "alignmentRules": "center-aligned hero, max-width container 1200px"
+    },
+    "generationTree": null
+  },
+  "designSource": {
+    "operatingMode": "free-explore",
+    "libraryIdentity": {
+      "name": null,
+      "id": null,
+      "version": null,
+      "scope": null,
+      "path": null,
+      "versionSource": null
+    },
+    "cssFilePath": "d:\\cty\\python\\2c2a-webserver-fastapi\\2c2a-homepage\\colors_and_type.css",
+    "brandPrefix": "c",
+    "themeMode": "light",
+    "designDecisionSummary": "企业安全管控平台，紫蓝品牌色(#4b3fe3)，Inter字体，克制圆角，边框优先表面",
+    "componentContractKind": "undefined",
+    "forbiddenInventedComponents": [],
+    "allowedComponents": [],
+    "styleConstraints": {
+      "radiusMax": 16,
+      "spacingBase": 4,
+      "fontSizeBody": 15,
+      "fontSizeMin": 12,
+      "controlHeightDefault": 36,
+      "controlHeightLarge": 42
+    },
+    "productContext": {
+      "kitType": "enterprise-saas-landing",
+      "productType": "B2B cloud security control platform"
+    },
+    "actualTokenNameReference": [
+      { "semanticPurpose": "Brand primary", "tokenName": "c-primary" },
+      { "semanticPurpose": "Brand primary hover", "tokenName": "c-primary-hover" },
+      { "semanticPurpose": "Brand primary light", "tokenName": "c-primary-light" },
+      { "semanticPurpose": "Brand primary background", "tokenName": "c-primary-bg" },
+      { "semanticPurpose": "Page background", "tokenName": "c-bg" },
+      { "semanticPurpose": "Secondary background", "tokenName": "c-bg-secondary" },
+      { "semanticPurpose": "Card surface", "tokenName": "c-surface" },
+      { "semanticPurpose": "Default border", "tokenName": "c-border" },
+      { "semanticPurpose": "Primary text", "tokenName": "c-text-primary" },
+      { "semanticPurpose": "Secondary text", "tokenName": "c-text-secondary" },
+      { "semanticPurpose": "Tertiary text", "tokenName": "c-text-tertiary" },
+      { "semanticPurpose": "Inverse text", "tokenName": "c-text-inverse" }
+    ]
+  },
+  "pages": [
+    {
+      "nodeId": "page-index",
+      "slug": "index",
+      "title": "主页",
+      "htmlSrc": "pages/index.html",
+      "pageIndex": 1,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "showcase",
+      "businessScenario": "public landing page for 2c2a platform, first impression, brand trust, login entry",
+      "visualNorthStar": "专业科技感落地页，紫蓝渐变hero区域，简洁信任信号，右上角登录入口",
+      "compositionPattern": "Hero-centered with feature grid below and trust footer",
+      "continuityAnchors": [],
+      "libraryRestraintMode": false,
+      "uiKitPath": null,
+      "componentPlan": [],
+      "imagePlan": ["hero-main.jpg"],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": []
+    }
+  ],
+  "assets": [
+    {
+      "filename": "hero-main.jpg",
+      "role": "critical-hero",
+      "owningPage": "index",
+      "semanticDescription": "technology cloud security abstract visual",
+      "status": "planned"
+    }
+  ],
+  "wiringPlan": [],
+  "hiddenInteractionPlan": []
+}

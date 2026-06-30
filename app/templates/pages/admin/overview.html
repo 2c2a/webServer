@@ -1,0 +1,53 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "overview" %}
+{% set page_title = "后台概览" %}
+
+{% block content %}
+<!-- Page title -->
+<div class="mb-6">
+    <h1 class="text-lg font-bold tracking-tight" style="font-size: var(--vercel-font-size-xl); color: var(--vercel-text-foreground);">后台概览</h1>
+    <p class="mt-1 text-xs" style="color: var(--vercel-text-muted-foreground);">系统运行状态与关键指标一览</p>
+</div>
+
+<!-- KPI Stat Cards -->
+<div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mb-6"
+     hx-get="/fragments/admin/overview/kpis"
+     hx-trigger="load"
+     hx-target="this"
+     hx-swap="innerHTML">
+    <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">加载中...</span>
+</div>
+
+<!-- Two-column layout -->
+<div class="grid gap-4 sm:gap-6 lg:grid-cols-5">
+    <!-- Left column: 待处理工单 (60%) -->
+    <section class="lg:col-span-3 rounded-md border" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);"
+             hx-get="/fragments/admin/overview/pending-tickets"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="innerHTML">
+        <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">加载中...</span>
+    </section>
+
+    <!-- Right column (40%) -->
+    <div class="lg:col-span-2 space-y-4 sm:space-y-6">
+        <!-- 待审核开户 -->
+        <section class="rounded-md border" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);"
+                 hx-get="/fragments/admin/overview/pending-openings"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+            <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">加载中...</span>
+        </section>
+
+        <!-- 系统任务 -->
+        <section class="rounded-md border" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);"
+                 hx-get="/fragments/admin/overview/system-tasks"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+            <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">加载中...</span>
+        </section>
+    </div>
+</div>
+{% endblock %}

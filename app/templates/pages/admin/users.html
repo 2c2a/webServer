@@ -1,0 +1,52 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "users" %}
+{% set page_title = "用户管理" %}
+
+{% block content %}
+<div class="flex-1 overflow-x-auto">
+  <!-- Page header -->
+  <header class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-background)]">
+    <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:px-6">
+      <div class="min-w-0 flex-1">
+        <h1 class="truncate text-lg font-semibold tracking-tight text-[var(--vercel-text-foreground)]">用户管理</h1>
+        <p class="mt-1 truncate text-sm text-[var(--vercel-text-muted-foreground)]">管理系统用户账户、角色权限与访问状态</p>
+      </div>
+      <a href="/admin/users/new" type="button" class="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[var(--vercel-accent-primary)] px-4 py-2 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+        <i data-lucide="plus" class="h-4 w-4"></i>
+        <span>新增用户</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Filter bar -->
+  <div class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 py-3 lg:px-6">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <div class="relative flex-1 sm:max-w-xs">
+        <i data-lucide="search" class="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--vercel-text-muted-foreground)]"></i>
+        <input type="text" placeholder="搜索用户名、邮箱..." class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] py-2 pl-9 pr-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]">
+      </div>
+      <select class="rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]">
+        <option>全部</option>
+        <option>启用</option>
+        <option>禁用</option>
+      </select>
+      <select class="rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]">
+        <option>全部</option>
+        <option>普通用户</option>
+        <option>Staff</option>
+        <option>管理员</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Data table (HTMX) -->
+  <div class="px-4 py-4 lg:px-6">
+    <div hx-get="/fragments/admin/users/list"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML">
+      <span class="text-xs text-[var(--vercel-text-muted-foreground)]">加载中...</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "announcements" %}
+{% set page_title = "公告管理" %}
+
+{% block content %}
+<div class="flex-1 overflow-x-auto">
+  <!-- Page header -->
+  <header class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-background)]">
+    <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:px-6">
+      <div class="min-w-0 flex-1">
+        <h1 class="truncate text-lg font-semibold tracking-tight text-[var(--vercel-text-foreground)]">公告管理</h1>
+        <p class="mt-1 truncate text-sm text-[var(--vercel-text-muted-foreground)]">编辑用户前台展示的站点公告</p>
+      </div>
+      <a href="/admin/announcements/new" type="button" class="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[var(--vercel-accent-primary)] px-4 py-2 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+        <i data-lucide="plus" class="h-4 w-4"></i>
+        <span>新增公告</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Data table (HTMX) -->
+  <div class="px-4 py-4 lg:px-6">
+    <div hx-get="/fragments/admin/announcements/list"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML">
+      <span class="text-xs text-[var(--vercel-text-muted-foreground)]">加载中...</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

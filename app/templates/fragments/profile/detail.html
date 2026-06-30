@@ -1,0 +1,13 @@
+{# 个人资料片段 #}
+<div style="background: var(--c-bg); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+    <!-- Avatar -->
+    <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--c-brand-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span style="font-size: 20px; font-weight: 600; color: var(--c-brand);">{{ user.username[:1]|upper }}</span>
+    </div>
+    <!-- User Info -->
+    <div style="min-width: 0;">
+        <p style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 2px;">{{ user.username }}</p>
+        <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0 0 2px;">@{{ user.username }}</p>
+        <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0;">注册于 {{ user.date_joined.strftime('%Y-%m-%d') if user.date_joined else '' }}</p>
+    </div>
+</div>

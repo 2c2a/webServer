@@ -1,0 +1,278 @@
+{# 后台系统配置详情片段 #}
+{% if config %}
+<div class="space-y-6">
+    <!-- Section 1: 站点配置 -->
+    <section class="rounded-md" style="border:1px solid var(--vercel-border);background:var(--vercel-bg-card);">
+        <div class="px-5 py-4" style="border-bottom:1px solid var(--vercel-border);">
+            <h2 class="text-base font-semibold" style="color:var(--vercel-text-foreground);">站点配置</h2>
+        </div>
+        <div class="px-5 py-4 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-4 gap-x-4 items-start">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">站点名称</label>
+                <input type="text" value="{{ config.site_name or '' }}" readonly class="w-full px-3 py-2 text-sm rounded-md outline-none" style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">ICP 备案号</label>
+                <input type="text" value="{{ config.icp_number or '' }}" readonly class="w-full px-3 py-2 text-sm rounded-md outline-none" style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">Logo URL</label>
+                <input type="text" value="{{ config.site_icon or '' }}" readonly class="w-full px-3 py-2 text-sm rounded-md outline-none" style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: SMTP 配置（可编辑） -->
+    <section class="rounded-md" style="border:1px solid var(--vercel-border);background:var(--vercel-bg-card);">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--vercel-border);">
+            <div>
+                <h2 class="text-base font-semibold" style="color:var(--vercel-text-foreground);">SMTP 邮件配置</h2>
+                <p class="text-xs mt-1" style="color:var(--vercel-text-muted-foreground);">用于密码重置邮件发送；密码留空表示不修改</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button"
+                        id="btn-test-smtp"
+                        hx-post="/fragments/admin/settings/smtp/test"
+                        hx-include="#smtp-config-form"
+                        hx-target="#smtp-test-result"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt="this"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md"
+                        style="background:var(--vercel-bg-background);border:1px solid var(--vercel-border);color:var(--vercel-text-foreground);">
+                    <i data-lucide="plug-zap" class="h-3.5 w-3.5"></i>
+                    测试连接
+                </button>
+                <button type="button"
+                        id="btn-save-smtp"
+                        hx-post="/fragments/admin/settings/smtp"
+                        hx-include="#smtp-config-form"
+                        hx-target="#smtp-save-result"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt="this"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md"
+                        style="background:var(--vercel-accent);color:#fff;">
+                    <i data-lucide="save" class="h-3.5 w-3.5"></i>
+                    保存配置
+                </button>
+            </div>
+        </div>
+        <form class="px-5 py-4 space-y-4" id="smtp-config-form">
+            <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-4 gap-x-4 items-start">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">SMTP 主机</label>
+                <input type="text" name="smtp_host" value="{{ config.smtp_host or '' }}" placeholder="如 smtp.example.com"
+                       class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                       style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">端口</label>
+                <input type="number" name="smtp_port" id="smtp-port" value="{{ config.smtp_port or '' }}" placeholder="25 / 465 / 587" min="1" max="65535"
+                       class="w-full max-w-xs px-3 py-2 text-sm rounded-md outline-none"
+                       style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">加密方式</label>
+                <select name="smtp_encryption" id="smtp-encryption"
+                        class="w-full max-w-xs px-3 py-2 text-sm rounded-md outline-none"
+                        style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                    {% set cur_enc = (config.smtp_encryption or 'TLS')|upper %}
+                    <option value="NONE" {% if cur_enc == 'NONE' %}selected{% endif %}>NONE（明文，仅内网中继）</option>
+                    <option value="STARTTLS" {% if cur_enc in ('TLS','STARTTLS') %}selected{% endif %}>STARTTLS（显式 TLS，端口 587）</option>
+                    <option value="SSL" {% if cur_enc == 'SSL' %}selected{% endif %}>SSL（隐式 TLS，端口 465）</option>
+                </select>
+
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">用户名</label>
+                <input type="text" name="smtp_username" value="{{ config.smtp_username or '' }}" placeholder="SMTP 登录用户名"
+                       class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                       style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">密码</label>
+                <div class="w-full">
+                    <input type="password" name="smtp_password" placeholder="{% if config.smtp_password_cipher %}已设置（留空不修改）{% else %}请输入 SMTP 密码{% endif %}" autocomplete="new-password"
+                           class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                           style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                    <p class="text-xs mt-1" style="color:var(--vercel-text-muted-foreground);">密码使用 AES-256-GCM 字段级加密存储，不会以明文落库</p>
+                </div>
+
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">发件邮箱</label>
+                <input type="email" name="smtp_from_email" value="{{ config.smtp_from_email or '' }}" placeholder="如 noreply@example.com"
+                       class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                       style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">发件人名称</label>
+                <input type="text" name="smtp_from_name" value="{{ config.smtp_from_name or '' }}" placeholder="如 系统通知"
+                       class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                       style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+            </div>
+
+            <div id="smtp-save-result" class="text-xs" style="min-height:1rem;"></div>
+            <div id="smtp-test-result" class="text-xs" style="min-height:1rem;"></div>
+        </form>
+    </section>
+
+    <!-- Section 3: 注册策略（可编辑） -->
+    <section class="rounded-md" style="border:1px solid var(--vercel-border);background:var(--vercel-bg-card);">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--vercel-border);">
+            <div>
+                <h2 class="text-base font-semibold" style="color:var(--vercel-text-foreground);">注册策略</h2>
+                <p class="text-xs mt-1" style="color:var(--vercel-text-muted-foreground);">控制前台 `/auth/register` 是否接受新用户注册；保存后立即生效</p>
+            </div>
+            <button type="button"
+                    id="btn-save-registration"
+                    hx-post="/fragments/admin/settings/registration"
+                    hx-include="#registration-config-form"
+                    hx-target="#registration-save-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md"
+                    style="background:var(--vercel-accent);color:#fff;">
+                <i data-lucide="save" class="h-3.5 w-3.5"></i>
+                保存配置
+            </button>
+        </div>
+        <form class="px-5 py-4 space-y-4" id="registration-config-form">
+            <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-4 gap-x-4 items-start">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">允许注册</label>
+                <div class="pt-2">
+                    <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" name="enable_registration" value="true"
+                               {% if config.enable_registration %}checked{% endif %}
+                               class="rounded">
+                        <span style="color:var(--vercel-text-foreground);">启用前台注册</span>
+                    </label>
+                    <p class="text-xs mt-1" style="color:var(--vercel-text-muted-foreground);">关闭后 `/auth/register` 端点将返回 403「注册功能已关闭」</p>
+                </div>
+            </div>
+
+            <div id="registration-save-result" class="text-xs" style="min-height:1rem;"></div>
+        </form>
+    </section>
+
+    <!-- Section 4: 验证码配置（可编辑） -->
+    <section class="rounded-md" style="border:1px solid var(--vercel-border);background:var(--vercel-bg-card);">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--vercel-border);">
+            <div>
+                <h2 class="text-base font-semibold" style="color:var(--vercel-text-foreground);">验证码配置</h2>
+                <p class="text-xs mt-1" style="color:var(--vercel-text-muted-foreground);">按场景配置验证码开关与类型；保存后立即生效</p>
+            </div>
+            <button type="button"
+                    id="btn-save-captcha"
+                    hx-post="/fragments/admin/settings/captcha"
+                    hx-include="closest section"
+                    hx-target="#captcha-save-result"
+                    hx-swap="innerHTML"
+                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md"
+                    style="background:var(--vercel-accent);color:#fff;">
+                保存配置
+            </button>
+        </div>
+        <form class="px-5 py-4 space-y-4" id="captcha-config-form">
+            <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-4 gap-x-4 items-start">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">全局开关</label>
+                <div class="flex items-center gap-3 pt-2">
+                    <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" name="captcha_enabled" value="true"
+                               {% if config.captcha_enabled %}checked{% endif %}
+                               class="rounded">
+                        <span style="color:var(--vercel-text-foreground);">启用验证码系统</span>
+                    </label>
+                    <span class="text-xs" style="color:var(--vercel-text-muted-foreground);">关闭后所有场景均跳过校验</span>
+                </div>
+
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">默认类型</label>
+                <select name="captcha_type"
+                        class="w-full max-w-xs px-3 py-2 text-sm rounded-md outline-none"
+                        style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                    {% for t in captcha_types %}
+                    <option value="{{ t.type_id }}" {% if (config.captcha_type or '') | lower == t.type_id %}selected{% endif %}>
+                        {{ t.name }}（{{ t.type_id }}）
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="pt-4 border-t" style="border-color:var(--vercel-border);">
+                <h3 class="text-sm font-medium mb-3" style="color:var(--vercel-text-foreground);">场景配置</h3>
+                <div class="space-y-4">
+                    {# ── 登录场景 ── #}
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-y-2 gap-x-4 items-center py-2">
+                        <label class="text-sm whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">登录</label>
+                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="captcha_required_on_login" value="true"
+                                   {% if config.captcha_required_on_login %}checked{% endif %}
+                                   class="rounded">
+                            <span>启用</span>
+                        </label>
+                        <select name="login_captcha_type"
+                                class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                                style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                            <option value="">（继承默认）</option>
+                            {% for t in captcha_types %}
+                            <option value="{{ t.type_id }}" {% if (config.login_captcha_type or '') | lower == t.type_id %}selected{% endif %}>
+                                {{ t.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# ── 注册场景 ── #}
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-y-2 gap-x-4 items-center py-2">
+                        <label class="text-sm whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">注册</label>
+                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="captcha_required_on_register" value="true"
+                                   {% if config.captcha_required_on_register %}checked{% endif %}
+                                   class="rounded">
+                            <span>启用</span>
+                        </label>
+                        <select name="register_captcha_type"
+                                class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                                style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                            <option value="">（继承默认）</option>
+                            {% for t in captcha_types %}
+                            <option value="{{ t.type_id }}" {% if (config.register_captcha_type or '') | lower == t.type_id %}selected{% endif %}>
+                                {{ t.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# ── 邮件场景 ── #}
+                    <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-y-2 gap-x-4 items-center py-2">
+                        <label class="text-sm whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">邮件</label>
+                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="captcha_required_on_email" value="true"
+                                   {% if config.captcha_required_on_email %}checked{% endif %}
+                                   class="rounded">
+                            <span>启用</span>
+                        </label>
+                        <select name="email_captcha_type"
+                                class="w-full px-3 py-2 text-sm rounded-md outline-none"
+                                style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                            <option value="">（继承默认）</option>
+                            {% for t in captcha_types %}
+                            <option value="{{ t.type_id }}" {% if (config.email_captcha_type or '') | lower == t.type_id %}selected{% endif %}>
+                                {{ t.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="captcha-save-result" class="text-xs" style="min-height:1rem;"></div>
+        </form>
+    </section>
+
+    <!-- Section 4: 元数据 -->
+    <section class="rounded-md" style="border:1px solid var(--vercel-border);background:var(--vercel-bg-card);">
+        <div class="px-5 py-4" style="border-bottom:1px solid var(--vercel-border);">
+            <h2 class="text-base font-semibold" style="color:var(--vercel-text-foreground);">配置元数据</h2>
+        </div>
+        <div class="px-5 py-4">
+            <div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-4 gap-x-4 items-start">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">创建时间</label>
+                <input type="text" value="{{ config.created_at.strftime('%Y-%m-%d %H:%M') if config.created_at else '-' }}" readonly class="w-full px-3 py-2 text-sm rounded-md outline-none" style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+                <label class="text-sm pt-2 whitespace-nowrap" style="color:var(--vercel-text-muted-foreground);">最后更新</label>
+                <input type="text" value="{{ config.updated_at.strftime('%Y-%m-%d %H:%M') if config.updated_at else '-' }}" readonly class="w-full px-3 py-2 text-sm rounded-md outline-none" style="background:var(--vercel-bg-background);border:1px solid var(--vercel-accent-input);color:var(--vercel-text-foreground);">
+            </div>
+        </div>
+    </section>
+</div>
+{% else %}
+<div class="rounded-md border p-8 text-center text-sm" style="border-color: var(--vercel-border); color: var(--vercel-text-muted-foreground);">
+    系统配置尚未初始化
+</div>
+{% endif %}

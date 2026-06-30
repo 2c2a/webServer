@@ -1,0 +1,154 @@
+{# 验证码 widget 片段
+   渲染状态：
+   - challenge: 题目对象（含 image/hint/type/width/height/captcha_id）
+   - success: 是否验证通过
+   - error: 错误消息
+   - target: 容器 DOM ID
+#}
+<div id="captcha-widget-{{ target }}"
+     class="captcha-widget"
+     data-captcha-id="{{ challenge.captcha_id if challenge else '' }}"
+     data-captcha-type="{{ challenge.type if challenge else '' }}"
+     data-captcha-expected-clicks="{{ challenge.expected_clicks if challenge else 0 }}"
+     data-captcha-sign-key="{{ (challenge.meta or {}).get('sign_key', '') if challenge else '' }}"
+     data-target="{{ target }}"
+     style="width: 100%; max-width: {{ challenge.width if challenge else 320 }}px; margin: 0 auto;">
+
+    {% if success %}
+    {# ── 验证成功 ── #}
+    <div class="captcha-state captcha-state-success"
+         style="display:flex;align-items:center;justify-content:center;gap:8px;
+                padding:12px;border:1px solid var(--c-success, #22c55e);
+                border-radius:8px;background:rgba(34,197,94,0.08);
+                color:var(--c-success, #22c55e);font-size:14px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>{{ message or '验证通过' }}</span>
+    </div>
+    <input type="hidden" name="captcha_id" value="{{ challenge.captcha_id if challenge else '' }}">
+    <input type="hidden" name="captcha" value="verified">
+
+    {% elif challenge %}
+    {# ── 渲染题目 ── #}
+    {% if challenge.type != 'slider' %}
+    <div class="captcha-image-wrapper"
+         style="position:relative;width:100%;border:1px solid var(--c-border, rgba(115,115,115,0.12));
+                border-radius:8px;overflow:hidden;background:#f9fafb;
+                aspect-ratio: {{ challenge.width }} / {{ challenge.height }};">
+        <div class="captcha-image-inner"
+             style="position:absolute;inset:0;width:100%;height:100%;"
+             data-captcha-image
+             data-captcha-type="{{ challenge.type }}">
+            {% if challenge.image and challenge.image.startswith('data:') %}
+            <img src="{{ challenge.image }}" style="width:100%;height:100%;display:block;user-select:none;" alt="captcha" draggable="false">
+            {% else %}
+            {{ challenge.image | safe }}
+            {% endif %}
+        </div>
+        {# 拼图块可移动层（slider_image）或内圈旋转层（rotate）#}
+        {% if challenge.type == 'slider_image' and challenge.background %}
+        <div class="captcha-piece-layer"
+             data-captcha-piece
+             data-captcha-width="{{ challenge.width }}"
+             data-captcha-ys="{{ (challenge.meta or {}).get('ys', [0, 1]) | tojson }}"
+             style="position:absolute;left:0;top:0;width:100%;height:100%;
+                    pointer-events:none;transform:translateX(0);
+                    transition:none;">
+            {{ challenge.background | safe }}
+        </div>
+        {% elif challenge.type == 'rotate' and challenge.background %}
+        <div class="captcha-piece-layer"
+             data-captcha-rotate-inner
+             style="position:absolute;left:0;top:0;width:100%;height:100%;
+                    pointer-events:none;transform:rotate(0deg);
+                    transition:none;">
+            {{ challenge.background | safe }}
+        </div>
+        {% endif %}
+        {# 错误提示叠层 #}
+        {% if error %}
+        <div class="captcha-error-overlay"
+             style="position:absolute;top:8px;left:8px;right:8px;
+                    padding:6px 10px;background:rgba(255,71,87,0.95);
+                    color:#fff;font-size:12px;border-radius:6px;
+                    text-align:center;pointer-events:none;">
+            {{ error }}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# 提示文本 #}
+    <p class="captcha-hint"
+       style="margin:8px 0 4px;font-size:13px;color:var(--c-text-secondary, #404040);
+              text-align:center;font-weight:500;">
+        {{ challenge.hint }}
+    </p>
+
+    {# 滑块类控件（slider / slider_image / rotate）#}
+    {% if challenge.type in ['slider', 'slider_image', 'rotate'] %}
+    <div class="captcha-slider-track"
+         style="position:relative;height:40px;margin-top:6px;
+                background:#e5e7eb;border-radius:20px;overflow:hidden;">
+        <div class="captcha-slider-progress"
+             style="position:absolute;left:0;top:0;height:100%;width:0%;
+                    background:linear-gradient(90deg, var(--c-brand, #4f46e5), var(--c-success, #22c55e));
+                    transition:width 0.05s linear;"></div>
+        <div class="captcha-slider-hint"
+             style="position:absolute;inset:0;display:flex;align-items:center;
+                    justify-content:center;font-size:12px;color:#6b7280;
+                    pointer-events:none;">向右拖动滑块</div>
+        <div class="captcha-slider-knob"
+             draggable="false"
+             style="position:absolute;left:0;top:50%;transform:translate(0,-50%);
+                    width:36px;height:36px;background:#fff;border:2px solid var(--c-brand, #4f46e5);
+                    border-radius:50%;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,0.15);
+                    display:flex;align-items:center;justify-content:center;
+                    user-select:none;touch-action:none;z-index:2;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand, #4f46e5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+    </div>
+    {% elif challenge.type in ['text_click', 'sequence_click', 'region_click', 'reasoning_click'] %}
+    {# 点选类控件：点击进度指示 #}
+    <div class="captcha-click-progress"
+         style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;
+                font-size:12px;color:var(--c-text-tertiary, #737373);">
+        <span>已点击 <span class="captcha-click-count" data-captcha-click-count>0</span> / <span data-captcha-click-total>{{ challenge.expected_clicks or 1 }}</span></span>
+        <button type="button"
+                class="captcha-refresh-btn"
+                data-captcha-refresh
+                style="background:none;border:none;cursor:pointer;color:var(--c-brand, #4f46e5);font-size:12px;">
+            换一题
+        </button>
+    </div>
+    {% endif %}
+
+    {# 隐藏字段：提交时携带 #}
+    <input type="hidden" name="captcha_id" value="{{ challenge.captcha_id }}" data-captcha-id-input>
+    <input type="hidden" name="captcha" value="" data-captcha-answer-input>
+
+    {# 错误（非叠层）#}
+    {% if error %}
+    <p class="captcha-error-text"
+       style="margin:6px 0 0;font-size:12px;color:var(--c-error, #ff4757);text-align:center;">
+        {{ error }}
+    </p>
+    {% endif %}
+
+    {% else %}
+    {# ── 无题目（已过期或未生成）── #}
+    <div class="captcha-state captcha-state-empty"
+         style="padding:16px;border:1px dashed var(--c-border, rgba(115,115,115,0.12));
+                border-radius:8px;text-align:center;background:#f9fafb;">
+        <p style="margin:0 0 8px;font-size:13px;color:var(--c-text-tertiary, #737373);">
+            {{ error or '请点击下方按钮获取验证码' }}
+        </p>
+        <button type="button"
+                class="captcha-load-btn"
+                data-captcha-load
+                style="padding:6px 16px;background:var(--c-brand, #4f46e5);color:#fff;
+                       border:none;border-radius:6px;font-size:13px;cursor:pointer;">
+            获取验证码
+        </button>
+    </div>
+    {% endif %}
+</div>

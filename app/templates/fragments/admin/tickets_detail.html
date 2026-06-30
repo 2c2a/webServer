@@ -1,0 +1,152 @@
+{# 后台工单详情片段（Vercel 主题，对齐设计稿）。 #}
+<div class="mx-auto max-w-[840px]">
+    <!-- Page header -->
+    <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0 flex-1">
+            <h1 class="truncate text-base font-semibold tracking-tight text-[var(--vercel-text-foreground)]">#{{ ticket.ticket_no }} {{ ticket.title }}</h1>
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+                {# 状态徽章 #}
+                {% if ticket.status == 'open' %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-warning)]" style="background:rgba(202,138,4,0.1)">待处理</span>
+                {% elif ticket.status == 'in_progress' %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-info)]" style="background:rgba(37,99,235,0.1)">处理中</span>
+                {% elif ticket.status == 'resolved' %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-success)]" style="background:rgba(22,163,74,0.1)">已解决</span>
+                {% elif ticket.status == 'closed' %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]" style="background:rgba(115,115,115,0.1)">已关闭</span>
+                {% endif %}
+                {# 优先级徽章 #}
+                {% if ticket.priority == 'urgent' %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-destructive)]" style="background:rgba(231,0,11,0.1)">紧急</span>
+                {% elif ticket.priority == 'high' %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-warning)]" style="background:rgba(202,138,4,0.1)">高</span>
+                {% elif ticket.priority == 'low' %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]" style="background:rgba(115,115,115,0.1)">低</span>
+                {% else %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]" style="background:rgba(115,115,115,0.1)">普通</span>
+                {% endif %}
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">创建人 #{{ ticket.creator_id }}</span>
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">·</span>
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else '-' }}</span>
+            </div>
+        </div>
+        <button type="button"
+                class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]"
+                hx-get="/fragments/admin/tickets/list"
+                hx-target="#admin-content"
+                hx-swap="innerHTML">
+            <i data-lucide="arrow-left" class="mr-1.5 h-4 w-4"></i>
+            返回列表
+        </button>
+    </div>
+
+    <!-- 工单内容 -->
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <div class="border-b border-[var(--vercel-border)] px-4 py-3 sm:px-5">
+            <h2 class="text-sm font-semibold tracking-tight text-[var(--vercel-text-foreground)]">工单描述</h2>
+        </div>
+        <div class="p-4 sm:p-5">
+            <p class="whitespace-pre-wrap text-sm leading-relaxed text-[var(--vercel-text-foreground)]">{{ ticket.description | default('（无描述）') }}</p>
+        </div>
+    </div>
+
+    <!-- 状态更新表单 -->
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <div class="border-b border-[var(--vercel-border)] px-4 py-3 sm:px-5">
+            <h2 class="text-sm font-semibold tracking-tight text-[var(--vercel-text-foreground)]">状态更新</h2>
+        </div>
+        <form class="p-4 sm:p-5"
+              hx-put="/fragments/admin/tickets/{{ ticket.id }}"
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <!-- 状态 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">状态</label>
+                    <select name="status"
+                            class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                        <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>待处理</option>
+                        <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>处理中</option>
+                        <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>已解决</option>
+                        <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>已关闭</option>
+                    </select>
+                </div>
+                <!-- 优先级 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">优先级</label>
+                    <select name="priority"
+                            class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                        <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>低</option>
+                        <option value="normal" {% if ticket.priority == 'normal' %}selected{% endif %}>普通</option>
+                        <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>高</option>
+                        <option value="urgent" {% if ticket.priority == 'urgent' %}selected{% endif %}>紧急</option>
+                    </select>
+                </div>
+                <!-- 指派人 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">指派人 ID</label>
+                    <input type="number" name="assignee_id"
+                           value="{{ ticket.assignee_id or '' }}"
+                           placeholder="未指派"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+            </div>
+            <div class="mt-5 flex justify-end">
+                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--vercel-accent-primary)] px-4 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    更新工单
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 回复记录 -->
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <div class="border-b border-[var(--vercel-border)] px-4 py-3 sm:px-5">
+            <h2 class="text-sm font-semibold tracking-tight text-[var(--vercel-text-foreground)]">回复记录</h2>
+        </div>
+        <div class="divide-y divide-[var(--vercel-border)]">
+            {% if comments %}
+            {% for c in comments %}
+            <div class="p-4 sm:p-5 {% if c.is_internal %}bg-[var(--vercel-bg-muted)]{% endif %}">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">用户 #{{ c.author_id }}</span>
+                    {% if c.is_internal %}
+                    <span class="inline-flex items-center rounded-md border border-[var(--vercel-status-warning)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--vercel-status-warning)]">内部</span>
+                    {% endif %}
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">{{ c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else '-' }}</span>
+                </div>
+                <p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--vercel-text-foreground)]">{{ c.content }}</p>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="p-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无回复</div>
+            {% endif %}
+        </div>
+
+        <!-- 追加回复表单 -->
+        <form class="border-t border-[var(--vercel-border)] p-4 sm:p-5"
+              hx-post="/fragments/admin/tickets/{{ ticket.id }}/comments"
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+            <div class="space-y-3">
+                <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">追加回复</label>
+                <textarea name="content" rows="4" required
+                          placeholder="请输入回复内容..."
+                          class="w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] resize-y"></textarea>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <div class="relative">
+                        <input type="checkbox" name="is_internal" value="true" class="peer sr-only">
+                        <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                        <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                    </div>
+                    <span class="text-sm text-[var(--vercel-text-foreground)]">标记为内部备注</span>
+                </label>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--vercel-accent-primary)] px-4 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    提交回复
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

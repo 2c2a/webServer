@@ -1,0 +1,64 @@
+{# App Shell 基础布局（可被 CDN 全量缓存）。
+   仅含租户级配置（站点名、主题、ICP），不含任何用户状态。
+   用户导航、统计等动态内容由 HTMX 在页面加载后发起独立请求获取。 #}
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{ theme|default('light') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_name|default('2c2a') }}{% block title %}{% endblock %}</title>
+    {% if site_icon %}<link rel="icon" href="{{ site_icon }}">{% endif %}
+    <link rel="stylesheet" href="/static/css/base.css">
+    <script src="/static/vendor/htmx.min.js"></script>
+</head>
+<body>
+    <div id="app-shell">
+        <header id="topbar" class="topbar">
+            <div class="topbar-brand">{{ site_name|default('2c2a') }}</div>
+            {# 导航由 HTMX 加载后填充（动态、不可缓存、基于用户状态） #}
+            <nav id="main-nav" hx-get="/fragments/nav" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+                <span class="placeholder">...</span>
+            </nav>
+        </header>
+
+        <main id="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            {% if icp_number %}<span>{{ icp_number }}</span>{% endif %}
+        </footer>
+    </div>
+
+    {# Access Token 存放于前端内存（防 XSS），通过 HTMX 请求头发送 #}
+    {% if access_token %}
+    <script>
+        window.__ACCESS_TOKEN__ = "{{ access_token }}";
+        window.__TOKEN_EXPIRES_IN__ = {{ expires_in|default(300) }};
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            if (window.__ACCESS_TOKEN__) {
+                evt.detail.headers['Authorization'] = 'Bearer ' + window.__ACCESS_TOKEN__;
+            }
+        });
+    </script>
+    <script src="/static/js/auth.js"></script>
+    {% endif %}
+    <script>
+        // 全局按钮加载状态：HTMX 请求期间禁用触发按钮，防止重复点击。
+        // 配合 CSS .btn.htmx-request 的 spinner 动画使用。
+        (function() {
+            function setDisabled(elt, disabled) {
+                if (elt && elt.tagName === 'BUTTON') {
+                    elt.disabled = disabled;
+                }
+            }
+            document.body.addEventListener('htmx:beforeRequest', function(evt) {
+                setDisabled(evt.detail.elt, true);
+            });
+            document.body.addEventListener('htmx:afterRequest', function(evt) {
+                setDisabled(evt.detail.elt, false);
+            });
+        })();
+    </script>
+</body>
+</html>

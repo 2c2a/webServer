@@ -1,0 +1,63 @@
+{% extends "app_shell.html" %}
+{% block title %} - 注册{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1 class="auth-title">注册</h1>
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required
+                       pattern="[A-Za-z0-9._-]+" minlength="3" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="email">邮箱（可选）</label>
+                <input type="email" id="email" name="email" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" required minlength="8" autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn btn-primary">注册</button>
+        </form>
+        <div id="auth-error" class="auth-error"></div>
+    </div>
+</div>
+
+<script>
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = form.querySelector('button[type="submit"]');
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    // 显示加载动画并禁用按钮
+    btn.classList.add('htmx-request');
+    btn.disabled = true;
+    // 前端 BLAKE2b 预哈希（防 DoS）
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+    const prehash = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+    try {
+        const resp = await fetch('/auth/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, email: email || null, password: prehash})
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            window.__ACCESS_TOKEN__ = data.access_token;
+            location.href = '/';
+        } else {
+            document.getElementById('auth-error').textContent = data.message || '注册失败';
+        }
+    } catch (err) {
+        document.getElementById('auth-error').textContent = '网络错误';
+    } finally {
+        btn.classList.remove('htmx-request');
+        btn.disabled = false;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "frontend_shell.html" %}
+{% set active_nav = "my-cloud" %}
+{% set page_title = "我的云电脑" %}
+
+{% block content %}
+
+        {# 页面标题 #}
+        <div style="padding: 16px 16px 12px;">
+            <h1 style="font-size: 18px; font-weight: 600; color: var(--c-text-primary); margin: 0;">我的云电脑</h1>
+        </div>
+
+        {# 状态过滤 Pills（仅视觉，暂不联动后端） #}
+        <div class="no-scrollbar" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 14px;">
+            <button style="flex-shrink: 0; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 500; border: 1px solid var(--c-brand); background: var(--c-brand); color: #ffffff; cursor: pointer; font-family: inherit;">全部</button>
+            <button style="flex-shrink: 0; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 500; border: 1px solid var(--c-border); background: #ffffff; color: var(--c-text-secondary); cursor: pointer; font-family: inherit;">运行中</button>
+            <button style="flex-shrink: 0; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 500; border: 1px solid var(--c-border); background: #ffffff; color: var(--c-text-secondary); cursor: pointer; font-family: inherit;">申请中</button>
+            <button style="flex-shrink: 0; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 500; border: 1px solid var(--c-border); background: #ffffff; color: var(--c-text-secondary); cursor: pointer; font-family: inherit;">已停止</button>
+        </div>
+
+        {# 云电脑列表（HTMX 加载，合并运行中 + 申请中） #}
+        <div style="padding: 0 16px;"
+             hx-get="/fragments/my-cloud/list"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">加载中...</div>
+        </div>
+
+        {# 申请更多 #}
+        <div style="display: flex; justify-content: center; padding: 16px;">
+            <a href="/cloud-computers"
+               style="display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 24px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid var(--c-brand); color: var(--c-brand); background: transparent; text-decoration: none; font-family: inherit;">
+                申请更多
+            </a>
+        </div>
+
+{% endblock %}

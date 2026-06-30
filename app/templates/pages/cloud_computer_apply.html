@@ -1,0 +1,32 @@
+{% extends "frontend_shell.html" %}
+{% set active_nav = "products" %}
+{% set page_title = "申请云电脑" %}
+
+{% block content %}
+
+        <!-- Application Form (HTMX-loaded, includes product selector) -->
+        <div id="apply-form-container" style="padding: 12px 16px 0;"
+             hx-get="/fragments/cloud-computers/apply-form{% if product_id %}?product_id={{ product_id }}{% endif %}"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">加载中...</div>
+        </div>
+
+        <!-- Spacer to clear the fixed bottom action bar -->
+        <div style="height: 80px;"></div>
+
+        <!-- Bottom Summary Bar -->
+        <div class="fixed left-0 right-0 z-40 flex items-center justify-between"
+             style="bottom: 56px; background: var(--c-bg); border-top: 1px solid var(--c-border); padding: 12px 16px;">
+            <div>
+                <span style="font-size: 14px; color: var(--c-text-secondary);">合计: </span>
+                <span id="apply-total" style="font-size: 16px; font-weight: 600; color: var(--c-text-secondary);">申请后确认</span>
+            </div>
+            <button id="apply-submit-btn" type="submit" form="apply-form" disabled
+                    style="background: var(--c-brand-disabled); color: var(--c-bg); border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: not-allowed; font-family: inherit; white-space: nowrap; opacity: 0.6; transition: all 0.2s;">
+                提交申请
+            </button>
+        </div>
+
+{% endblock %}

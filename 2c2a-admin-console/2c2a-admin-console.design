@@ -1,0 +1,834 @@
+{
+  "data": [
+    {
+      "id": "page-overview",
+      "title": "后台概览",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410000000,
+      "canvasData": {
+        "x": 0,
+        "y": 754,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/overview.html",
+        "interactions": [
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users"
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-users",
+      "title": "用户管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410000000,
+      "canvasData": {
+        "x": 620,
+        "y": 754,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/users.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products"
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts"
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-hosts",
+      "title": "主机管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410000000,
+      "canvasData": {
+        "x": 620,
+        "y": 3618,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/hosts.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets"
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-tickets",
+      "title": "工单管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410000000,
+      "canvasData": {
+        "x": 620,
+        "y": 4372,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/tickets.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings"
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-openings",
+      "title": "开户申请",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410000000,
+      "canvasData": {
+        "x": 620,
+        "y": 4808,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/openings.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups"
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-sitegroups",
+      "title": "站点组管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410000000,
+      "canvasData": {
+        "x": 0,
+        "y": 1131,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/sitegroups.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings"
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-settings",
+      "title": "系统配置",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782410000000,
+      "canvasData": {
+        "x": 0,
+        "y": 1508,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview"
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-products",
+      "title": "产品管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782414000000,
+      "canvasData": {
+        "x": 620,
+        "y": 2218,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/products.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points"
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-points",
+      "title": "积分管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782414000000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/points.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-audit",
+            "targetPageId": "page-audit"
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-audit",
+      "title": "审计日志",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782414000000,
+      "canvasData": {
+        "x": 0,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/audit.html",
+        "interactions": [
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview"
+          },
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-sitegroups",
+            "targetPageId": "page-sitegroups",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-user-detail",
+      "title": "用户详情",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416000000,
+      "canvasData": {
+        "x": 0,
+        "y": 3241,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/user-detail.html",
+        "interactions": [
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-host-groups",
+      "title": "主机分组管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416000000,
+      "canvasData": {
+        "x": 0,
+        "y": 3995,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/host-groups.html",
+        "interactions": [
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-ticket-detail",
+      "title": "工单详情",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416000000,
+      "canvasData": {
+        "x": 0,
+        "y": 4372,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/ticket-detail.html",
+        "interactions": [
+          {
+            "domId": "nav-tickets",
+            "targetPageId": "page-tickets"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-opening-review",
+      "title": "开户审核详情",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782416000000,
+      "canvasData": {
+        "x": 0,
+        "y": 4808,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/opening-review.html",
+        "interactions": [
+          {
+            "domId": "nav-openings",
+            "targetPageId": "page-openings"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-host-form",
+      "title": "新增/编辑主机",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782418000000,
+      "canvasData": {
+        "x": 0,
+        "y": 3618,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/host-form.html",
+        "interactions": [
+          {
+            "domId": "nav-hosts",
+            "targetPageId": "page-hosts"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-user-form",
+      "title": "新增/编辑用户",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782418000000,
+      "canvasData": {
+        "x": 0,
+        "y": 2864,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/user-form.html",
+        "interactions": [
+          {
+            "domId": "nav-users",
+            "targetPageId": "page-users"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-product-form",
+      "title": "新增/编辑产品",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782418000000,
+      "canvasData": {
+        "x": 0,
+        "y": 2218,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/product-form.html",
+        "interactions": [
+          {
+            "domId": "nav-products",
+            "targetPageId": "page-products"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-points-task-form",
+      "title": "新增/编辑积分任务",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782418000000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/points-task-form.html",
+        "interactions": [
+          {
+            "domId": "nav-points",
+            "targetPageId": "page-points"
+          },
+          {
+            "domId": "nav-overview",
+            "targetPageId": "page-overview",
+            "hideEdge": true
+          }
+        ]
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "2c2a 管理后台",
+    "designLibrary": {
+      "name": "Vercel",
+      "id": "dl_builtin_vercel",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "c:\\Users\\Administrator\\.trae-cn\\design_libraries\\dl_builtin_vercel",
+      "versionSource": "metadata.json"
+    }
+  }
+}

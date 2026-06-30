@@ -1,0 +1,324 @@
+{% extends "frontend_shell.html" %}
+{% set active_nav = "profile" %}
+{% set page_title = "邮箱管理" %}
+
+{% block header %}
+<!-- Custom Nav Bar: Back Arrow + Title -->
+<header class="fixed top-0 left-0 right-0 z-50 h-[44px] flex items-center px-4"
+        style="background: var(--c-bg); border-bottom: 1px solid var(--c-border);">
+    <a href="/profile" class="flex items-center justify-center w-8 h-8" style="color: var(--c-text-primary); text-decoration: none; margin-right: 8px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+        </svg>
+    </a>
+    <span style="font-size: 17px; font-weight: 600; color: var(--c-text-primary);">邮箱管理</span>
+</header>
+{% endblock %}
+
+{% block content %}
+
+        <!-- Email List (HTMX-loaded) -->
+        <div id="email-list"
+             style="padding-top: 12px;"
+             hx-get="/fragments/profile/emails"
+             hx-trigger="load, reload"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">加载中...</div>
+        </div>
+
+        <!-- Add Email Button -->
+        <div style="margin: 12px 16px 0;">
+            <button onclick="openAddEmailDialog()"
+                    style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 44px; border: 1px dashed var(--c-border); border-radius: 12px; background: transparent; color: var(--c-text-secondary); font-size: 14px; cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s;"
+                    onmouseenter="this.style.borderColor='var(--c-brand)';this.style.color='var(--c-brand)'"
+                    onmouseleave="this.style.borderColor='var(--c-border)';this.style.color='var(--c-text-secondary)'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                添加新邮箱
+            </button>
+        </div>
+
+        <!-- Tips Card -->
+        <div style="margin: 12px 16px 0;">
+            <div style="background: rgba(170,183,255,0.1); border-radius: 12px; padding: 12px 16px; display: flex; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4"/>
+                    <path d="M12 8h.01"/>
+                </svg>
+                <p style="font-size: 12px; color: var(--c-text-secondary); margin: 0; line-height: 1.6;">主邮箱用于接收系统通知和工单回复。未验证的邮箱无法设为主邮箱。每个账号最多绑定 5 个邮箱。</p>
+            </div>
+        </div>
+
+        <div style="height: 80px;"></div>
+
+        <!-- Add Email Dialog (hidden by default) -->
+        <div id="dialog-add-email" style="display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;">
+            <div style="background: var(--c-bg); border-radius: 16px; margin: 24px; width: 100%; max-width: 320px; overflow: hidden;">
+                <div style="padding: 24px 20px 16px;">
+                    <p style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 16px; text-align: center;">添加新邮箱</p>
+                    <form id="add-email-form" style="display: flex; flex-direction: column; gap: 8px;">
+                        <input type="email" name="email" placeholder="请输入邮箱地址" required
+                               style="width: 100%; height: 40px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: var(--c-bg); outline: none; box-sizing: border-box; font-family: inherit;"
+                               onfocus="this.style.borderColor='var(--c-brand)'"
+                               onblur="this.style.borderColor='var(--c-border)'">
+                        <div id="add-email-error" style="display: none; font-size: 12px; color: var(--c-error); margin-top: 4px;"></div>
+                    </form>
+                </div>
+                <div style="display: flex; border-top: 1px solid var(--c-border);">
+                    <button onclick="closeAddEmailDialog()" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; border-right: 1px solid var(--c-border); color: var(--c-text-secondary); cursor: pointer; font-family: inherit;">取消</button>
+                    <button onclick="submitAddEmail()" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; color: var(--c-brand); font-weight: 600; cursor: pointer; font-family: inherit;">确认添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Set Primary Dialog (hidden by default) -->
+        <div id="dialog-set-primary" style="display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;">
+            <div style="background: var(--c-bg); border-radius: 16px; margin: 24px; width: 100%; max-width: 320px; overflow: hidden;">
+                <div style="padding: 24px 20px 16px; text-align: center;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(170,183,255,0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <p style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 8px;">设为主邮箱</p>
+                    <p id="set-primary-message" style="font-size: 13px; color: var(--c-text-secondary); margin: 0; line-height: 1.5;"></p>
+                </div>
+                <div style="display: flex; border-top: 1px solid var(--c-border);">
+                    <button onclick="closeSetPrimaryDialog()" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; border-right: 1px solid var(--c-border); color: var(--c-text-secondary); cursor: pointer; font-family: inherit;">取消</button>
+                    <button id="set-primary-confirm" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; color: var(--c-brand); font-weight: 600; cursor: pointer; font-family: inherit;">确认</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Delete Dialog (hidden by default) -->
+        <div id="dialog-delete-email" style="display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;">
+            <div style="background: var(--c-bg); border-radius: 16px; margin: 24px; width: 100%; max-width: 320px; overflow: hidden;">
+                <div style="padding: 24px 20px 16px; text-align: center;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,71,87,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--c-error)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </div>
+                    <p style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 8px;">删除邮箱</p>
+                    <p id="delete-email-message" style="font-size: 13px; color: var(--c-text-secondary); margin: 0; line-height: 1.5;"></p>
+                </div>
+                <div style="display: flex; border-top: 1px solid var(--c-border);">
+                    <button onclick="closeDeleteEmailDialog()" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; border-right: 1px solid var(--c-border); color: var(--c-text-secondary); cursor: pointer; font-family: inherit;">取消</button>
+                    <button id="delete-email-confirm" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; color: var(--c-error); font-weight: 600; cursor: pointer; font-family: inherit;">删除</button>
+                </div>
+            </div>
+        </div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- auth.js 提供 window.__ACCESS_TOKEN__ 维护与自动刷新 -->
+<script src="/static/js/auth.js"></script>
+<script>
+// 添加邮箱对话框
+function openAddEmailDialog() {
+    document.getElementById('dialog-add-email').style.display = 'flex';
+    setTimeout(function() {
+        var input = document.querySelector('#add-email-form input[name="email"]');
+        if (input) { input.focus(); }
+    }, 50);
+}
+
+function closeAddEmailDialog() {
+    document.getElementById('dialog-add-email').style.display = 'none';
+    var form = document.getElementById('add-email-form');
+    if (form) { form.reset(); }
+    var errBox = document.getElementById('add-email-error');
+    if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+}
+
+async function submitAddEmail() {
+    var form = document.getElementById('add-email-form');
+    var errBox = document.getElementById('add-email-error');
+    if (!form) return;
+
+    var email = form.querySelector('input[name="email"]').value.trim();
+    if (!email) {
+        showAddEmailError('请输入邮箱地址');
+        return;
+    }
+    // 简单邮箱格式校验
+    var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) {
+        showAddEmailError('邮箱格式不正确');
+        return;
+    }
+
+    try {
+        var resp = await fetch('/fragments/profile/emails/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Bearer ' + (window.__ACCESS_TOKEN__ || '')
+            },
+            credentials: 'include',
+            body: 'email=' + encodeURIComponent(email)
+        });
+        var data = await resp.json().catch(function() { return {}; });
+        if (resp.ok && data.success) {
+            closeAddEmailDialog();
+            // 重新加载邮箱列表
+            htmx.trigger('#email-list', 'reload');
+            showToast('邮箱添加成功', 'success');
+        } else {
+            showAddEmailError(data.message || data.detail || '添加失败');
+        }
+    } catch (e) {
+        showAddEmailError('网络错误，请稍后重试');
+    }
+}
+
+function showAddEmailError(msg) {
+    var errBox = document.getElementById('add-email-error');
+    if (errBox) {
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
+    } else {
+        alert(msg);
+    }
+}
+
+// 设为主邮箱对话框
+function openSetPrimaryDialog(emailId, email) {
+    var msg = document.getElementById('set-primary-message');
+    if (msg) {
+        msg.innerHTML = '将 <span style="font-weight: 500; color: var(--c-text-primary);">' + escapeHtml(email) + '</span> 设为主邮箱？<br>原主邮箱将变为普通邮箱。';
+    }
+    var confirmBtn = document.getElementById('set-primary-confirm');
+    confirmBtn.onclick = function() { confirmSetPrimary(emailId); };
+    document.getElementById('dialog-set-primary').style.display = 'flex';
+}
+
+function closeSetPrimaryDialog() {
+    document.getElementById('dialog-set-primary').style.display = 'none';
+}
+
+async function confirmSetPrimary(emailId) {
+    try {
+        var resp = await fetch('/fragments/profile/emails/' + emailId + '/set-primary', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + (window.__ACCESS_TOKEN__ || '')
+            },
+            credentials: 'include'
+        });
+        var data = await resp.json().catch(function() { return {}; });
+        if (resp.ok && data.success) {
+            closeSetPrimaryDialog();
+            htmx.trigger('#email-list', 'reload');
+            showToast('已设为主邮箱', 'success');
+        } else {
+            closeSetPrimaryDialog();
+            showToast(data.message || data.detail || '操作失败', 'error');
+        }
+    } catch (e) {
+        closeSetPrimaryDialog();
+        showToast('网络错误，请稍后重试', 'error');
+    }
+}
+
+// 删除邮箱对话框
+function openDeleteEmailDialog(emailId, email) {
+    var msg = document.getElementById('delete-email-message');
+    if (msg) {
+        msg.innerHTML = '确定删除邮箱 <span style="font-weight: 500; color: var(--c-text-primary);">' + escapeHtml(email) + '</span>？<br>删除后无法恢复。';
+    }
+    var confirmBtn = document.getElementById('delete-email-confirm');
+    confirmBtn.onclick = function() { confirmDeleteEmail(emailId); };
+    document.getElementById('dialog-delete-email').style.display = 'flex';
+}
+
+function closeDeleteEmailDialog() {
+    document.getElementById('dialog-delete-email').style.display = 'none';
+}
+
+async function confirmDeleteEmail(emailId) {
+    try {
+        var resp = await fetch('/fragments/profile/emails/' + emailId + '/delete', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + (window.__ACCESS_TOKEN__ || '')
+            },
+            credentials: 'include'
+        });
+        var data = await resp.json().catch(function() { return {}; });
+        if (resp.ok && data.success) {
+            closeDeleteEmailDialog();
+            htmx.trigger('#email-list', 'reload');
+            showToast('邮箱已删除', 'success');
+        } else {
+            closeDeleteEmailDialog();
+            showToast(data.message || data.detail || '删除失败', 'error');
+        }
+    } catch (e) {
+        closeDeleteEmailDialog();
+        showToast('网络错误，请稍后重试', 'error');
+    }
+}
+
+// 邮箱验证
+async function sendVerification(emailId) {
+    try {
+        var resp = await fetch('/fragments/profile/emails/' + emailId + '/send-verification', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + (window.__ACCESS_TOKEN__ || '')
+            },
+            credentials: 'include'
+        });
+        var data = await resp.json().catch(function() { return {}; });
+        if (resp.ok && data.success) {
+            if (data.email_sent) {
+                showToast('验证邮件已发送，请查收', 'success');
+            } else {
+                showToast(data.message || '验证邮件已发送', 'success');
+            }
+        } else {
+            showToast(data.message || data.detail || '发送失败', 'error');
+        }
+    } catch (e) {
+        showToast('网络错误，请稍后重试', 'error');
+    }
+}
+
+// 工具函数
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function showToast(msg, type) {
+    var existing = document.getElementById('toast');
+    if (existing) { existing.remove(); }
+    var toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;padding:12px 16px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-size:14px;color:#fff;background:' + (type === 'success' ? '#00b983' : '#ff4757') + ';';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        if (toast.parentNode) { toast.parentNode.removeChild(toast); }
+    }, 2500);
+}
+
+// 点击遮罩关闭对话框
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'dialog-add-email') closeAddEmailDialog();
+    if (e.target.id === 'dialog-set-primary') closeSetPrimaryDialog();
+    if (e.target.id === 'dialog-delete-email') closeDeleteEmailDialog();
+});
+</script>
+{% endblock %}

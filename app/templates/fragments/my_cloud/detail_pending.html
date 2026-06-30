@@ -1,0 +1,220 @@
+{# 申请中云电脑详情片段（对齐 2c2a-frontend/pages/cloud-detail-pending.html 设计稿）。
+   上下文：req（AccountOpeningRequest，已预加载 target_product）。 #}
+
+{# 局部样式：审核进度动画 #}
+<style>
+    @keyframes pulse-warning {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(242, 169, 12, 0.4); }
+        50%      { box-shadow: 0 0 0 6px rgba(242, 169, 12, 0); }
+    }
+    .timeline-dot-pulse { animation: pulse-warning 2s ease-in-out infinite; }
+
+    @keyframes spin-slow {
+        0%   { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .spinner-slow { animation: spin-slow 3s linear infinite; }
+</style>
+
+{# ── 计算状态文本与颜色（Banner / 信息卡片 / Timeline 共用） ── #}
+{% set status_text = {'pending': '申请中', 'approved': '已通过', 'completed': '已完成', 'rejected': '已拒绝', 'failed': '失败'}.get(req.status, req.status) %}
+{% set is_pending   = req.status == 'pending' %}
+{% set is_approved  = req.status == 'approved' %}
+{% set is_completed = req.status == 'completed' %}
+{% set is_rejected  = req.status == 'rejected' %}
+{% set is_failed    = req.status == 'failed' %}
+{% set is_bad_state = is_rejected or is_failed %}
+
+{# Banner 渐变与文案 #}
+{% if is_pending %}
+    {% set banner_bg = 'linear-gradient(135deg, var(--c-warning) 0%, #e8970a 100%)' %}
+    {% set banner_label = '申请中' %}
+{% elif is_approved %}
+    {% set banner_bg = 'linear-gradient(135deg, var(--c-info) 0%, #2b6dd6 100%)' %}
+    {% set banner_label = '已通过 · 开通中' %}
+{% elif is_completed %}
+    {% set banner_bg = 'linear-gradient(135deg, var(--c-success) 0%, #00946a 100%)' %}
+    {% set banner_label = '已完成' %}
+{% elif is_rejected %}
+    {% set banner_bg = 'linear-gradient(135deg, var(--c-error) 0%, #d63a47 100%)' %}
+    {% set banner_label = '已拒绝' %}
+{% elif is_failed %}
+    {% set banner_bg = 'linear-gradient(135deg, var(--c-error) 0%, #d63a47 100%)' %}
+    {% set banner_label = '开通失败' %}
+{% else %}
+    {% set banner_bg = 'linear-gradient(135deg, var(--c-text-tertiary) 0%, #525252 100%)' %}
+    {% set banner_label = status_text %}
+{% endif %}
+
+{# 1. 状态横幅 #}
+<div style="margin: 12px 16px 0; background: {{ banner_bg }}; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        {% if is_pending or is_approved %}
+        {# 旋转图标：表示正在处理中 #}
+        <svg class="spinner-slow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        {% elif is_completed %}
+        {# 完成图标：勾 #}
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        {% else %}
+        {# 错误图标：叉 #}
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        {% endif %}
+        <span style="font-size: 15px; font-weight: 500; color: #ffffff;">{{ banner_label }}</span>
+    </div>
+    <span style="font-size: 12px; color: rgba(255,255,255,0.85);">提交于 {{ req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '-' }}</span>
+</div>
+
+{# 2. 申请信息卡片 #}
+<div style="margin: 12px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+    <h2 style="font-size: 15px; font-weight: 500; color: var(--c-text-primary); margin: 0 0 12px;">申请信息</h2>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">目标产品</span>
+        <span style="font-size: 14px; color: var(--c-text-primary); font-weight: 500;">{{ req.target_product.display_name or req.target_product.name if req.target_product else '-' }}</span>
+    </div>
+
+    {% if req.requested_disk_capacity %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">磁盘容量</span>
+        <span style="font-size: 14px; color: var(--c-text-primary); font-weight: 500;">{{ req.requested_disk_capacity | tojson }}</span>
+    </div>
+    {% endif %}
+
+    {% if req.target_product and req.target_product.required_points %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">所需积分</span>
+        <span style="font-size: 14px; color: var(--c-brand); font-weight: 500;">{{ req.target_product.required_points }} 积分/月</span>
+    </div>
+    {% endif %}
+
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">申请时间</span>
+        <span style="font-size: 14px; color: var(--c-text-primary); font-weight: 500;">{{ req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '-' }}</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">申请状态</span>
+        {% if is_pending %}
+        <span style="font-size: 14px; color: var(--c-warning); font-weight: 500;">审核中</span>
+        {% elif is_approved %}
+        <span style="font-size: 14px; color: var(--c-info); font-weight: 500;">已通过</span>
+        {% elif is_completed %}
+        <span style="font-size: 14px; color: var(--c-success); font-weight: 500;">已完成</span>
+        {% elif is_rejected %}
+        <span style="font-size: 14px; color: var(--c-error); font-weight: 500;">已拒绝</span>
+        {% elif is_failed %}
+        <span style="font-size: 14px; color: var(--c-error); font-weight: 500;">失败</span>
+        {% else %}
+        <span style="font-size: 14px; color: var(--c-text-tertiary); font-weight: 500;">{{ status_text }}</span>
+        {% endif %}
+    </div>
+
+    {% if req.approval_notes %}
+    <div style="margin-top: 8px; padding: 10px 12px; background: {% if is_bad_state %}rgba(255,71,87,0.06){% else %}var(--c-bg-secondary){% endif %}; border-radius: 6px;">
+        <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0 0 4px;">{% if is_bad_state %}处理说明{% else %}审核备注{% endif %}</p>
+        <p style="font-size: 13px; color: var(--c-text-default); margin: 0; line-height: 1.5;">{{ req.approval_notes }}</p>
+    </div>
+    {% endif %}
+
+    {% if req.result_message %}
+    <div style="margin-top: 8px; padding: 10px 12px; background: {% if is_failed %}rgba(255,71,87,0.06){% else %}var(--c-bg-secondary){% endif %}; border-radius: 6px;">
+        <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0 0 4px;">结果信息</p>
+        <p style="font-size: 13px; color: var(--c-text-default); margin: 0; line-height: 1.5;">{{ req.result_message }}</p>
+    </div>
+    {% endif %}
+</div>
+
+{# 3. 审核进度 Timeline #}
+<div style="margin: 12px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+    <h2 style="font-size: 15px; font-weight: 500; color: var(--c-text-primary); margin: 0 0 16px;">审核进度</h2>
+
+    <div style="position: relative; padding-left: 24px;">
+        {# 垂直连接线 #}
+        <div style="position: absolute; left: 7px; top: 8px; bottom: 24px; width: 2px; background: var(--c-border);"></div>
+
+        {# Stage 1: 提交申请（已完成，绿色实心圆） #}
+        <div style="position: relative; padding-bottom: 24px;">
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-success); border: 2px solid var(--c-success);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0 0 2px;">提交申请</p>
+            <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0;">{{ req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '-' }}</p>
+        </div>
+
+        {# Stage 2: 管理员审核中 #}
+        <div style="position: relative; padding-bottom: 24px;">
+            {% if is_pending %}
+            {# 进行中：脉冲警告色 #}
+            <div class="timeline-dot-pulse" style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-warning); border: 2px solid var(--c-warning);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0;">管理员审核中</p>
+            {% elif is_rejected %}
+            {# 已拒绝：红色实心圆 #}
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-error); border: 2px solid var(--c-error);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0 0 2px;">审核未通过</p>
+            <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0;">{{ req.approval_date.strftime('%Y-%m-%d %H:%M') if req.approval_date else '-' }}</p>
+            {% else %}
+            {# 已通过/完成/失败：绿色实心圆（审核环节已完成） #}
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-success); border: 2px solid var(--c-success);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0 0 2px;">管理员审核通过</p>
+            <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0;">{{ req.approval_date.strftime('%Y-%m-%d %H:%M') if req.approval_date else '-' }}</p>
+            {% endif %}
+        </div>
+
+        {# Stage 3: 开通中 #}
+        <div style="position: relative; padding-bottom: 24px;">
+            {% if is_approved %}
+            {# 进行中：脉冲警告色 #}
+            <div class="timeline-dot-pulse" style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-warning); border: 2px solid var(--c-warning);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0;">开通中</p>
+            {% elif is_failed %}
+            {# 失败：红色实心圆 #}
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-error); border: 2px solid var(--c-error);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0 0 2px;">开通失败</p>
+            <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0;">请稍后重试或联系客服</p>
+            {% elif is_completed %}
+            {# 已完成：绿色实心圆 #}
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-success); border: 2px solid var(--c-success);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0 0 2px;">开通完成</p>
+            {% else %}
+            {# 待处理：灰色空心圆（pending 或 rejected 时跳过此阶段） #}
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-bg); border: 2px solid var(--c-text-tertiary);"></div>
+            <p style="font-size: 14px; color: var(--c-text-tertiary); margin: 0;">开通中</p>
+            {% endif %}
+        </div>
+
+        {# Stage 4: 完成 #}
+        <div style="position: relative;">
+            {% if is_completed %}
+            {# 已完成：绿色实心圆 #}
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-success); border: 2px solid var(--c-success);"></div>
+            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0;">完成</p>
+            {% else %}
+            {# 待处理：灰色空心圆 #}
+            <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-bg); border: 2px solid var(--c-text-tertiary);"></div>
+            <p style="font-size: 14px; color: var(--c-text-tertiary); margin: 0;">完成</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# 4. 底部操作栏（仅在 rejected / failed 时展示「重新申请」按钮） #}
+{% if is_rejected or is_failed %}
+<div style="margin: 16px 16px 0;">
+    <a href="/cloud-computers/apply?product_id={{ req.target_product_id }}"
+       style="display: flex; align-items: center; justify-content: center; width: 100%; height: 40px; background: var(--c-bg); border: 1px solid var(--c-brand); border-radius: 8px; color: var(--c-brand); font-size: 14px; font-weight: 500; text-decoration: none; font-family: inherit;">
+        重新申请
+    </a>
+</div>
+{% endif %}
+
+{# 底部占位避开 Tab 栏 #}
+<div style="height: 16px;"></div>

@@ -1,0 +1,13 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "tickets" %}
+{% set page_title = "工单详情" %}
+{% set breadcrumbs = [{"label": "首页", "href": "/admin/"}, {"label": "工单管理", "href": "/admin/tickets"}, {"label": "工单详情"}] %}
+
+{% block content %}
+      <div hx-get="/fragments/admin/tickets/detail?ticket_id={{ ticket_id | default('') }}"
+           hx-trigger="load"
+           hx-target="this"
+           hx-swap="innerHTML">
+        <div class="p-8 text-center text-[var(--vercel-text-muted-foreground)]">加载中...</div>
+      </div>
+{% endblock %}

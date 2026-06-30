@@ -1,0 +1,22 @@
+{# 积分明细列表片段 #}
+{% if records %}
+<div class="flex flex-col gap-2">
+    {% for r in records %}
+    <div class="bg-white rounded-lg p-3 flex items-center justify-between" style="border: 1px solid var(--c-border); border-radius: 8px;">
+        <div style="min-width: 0; flex: 1;">
+            <p class="text-sm font-medium" style="color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ r.task.name if r.task else (r.description|default('积分变动')) }}
+            </p>
+            <p class="text-xs" style="color: var(--c-text-tertiary); margin: 4px 0 0;">
+                {{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '' }}
+            </p>
+        </div>
+        <span class="text-sm font-semibold" style="color: {% if r.delta >= 0 %}var(--c-success){% else %}var(--c-error){% endif %}; flex-shrink: 0; margin-left: 12px;">
+            {% if r.delta >= 0 %}+{% endif %}{{ r.delta }}
+        </span>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">暂无数据</div>
+{% endif %}

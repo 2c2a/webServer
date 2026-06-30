@@ -1,0 +1,69 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": ["page-dashboard", "page-cloud-computers", "page-tickets", "page-points", "page-submit-ticket"],
+    "output": "partials/project-shell.html",
+    "sharedRegions": ["top-nav-bar", "bottom-tab-bar", "page-background", "brand-css-variables"],
+    "privateRegions": [],
+    "mutableSlots": ["activeNavItem", "pageTitle"],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-page-dashboard",
+        "kind": "page-leaf",
+        "pageIds": ["page-dashboard"],
+        "output": "pages/dashboard.html",
+        "sharedRegions": [],
+        "privateRegions": ["dashboard body"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-cloud-computers",
+        "kind": "page-leaf",
+        "pageIds": ["page-cloud-computers"],
+        "output": "pages/cloud-computers.html",
+        "sharedRegions": [],
+        "privateRegions": ["cloud computers list body"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-tickets",
+        "kind": "page-leaf",
+        "pageIds": ["page-tickets"],
+        "output": "pages/tickets.html",
+        "sharedRegions": [],
+        "privateRegions": ["tickets list body"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-points",
+        "kind": "page-leaf",
+        "pageIds": ["page-points"],
+        "output": "pages/points.html",
+        "sharedRegions": [],
+        "privateRegions": ["points center body"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-submit-ticket",
+        "kind": "page-leaf",
+        "pageIds": ["page-submit-ticket"],
+        "output": "pages/submit-ticket.html",
+        "sharedRegions": [],
+        "privateRegions": ["submit ticket form body"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

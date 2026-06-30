@@ -1,0 +1,45 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 120" width="720" height="120">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00aeff"/>
+      <stop offset="100%" stop-color="#0043ff"/>
+    </linearGradient>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#11998e"/>
+      <stop offset="100%" stop-color="#38ef7d"/>
+    </linearGradient>
+    <linearGradient id="bg4" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f093fb"/>
+      <stop offset="100%" stop-color="#f5576c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 特性1: 零代理架构 -->
+  <rect x="10" y="10" width="160" height="100" fill="url(#bg1)" rx="12"/>
+  <text x="90" y="45" font-family="system-ui, sans-serif" font-size="28" fill="white" text-anchor="middle">🛡️</text>
+  <text x="90" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">零代理架构</text>
+  <text x="90" y="90" font-family="system-ui, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">无需安装客户端</text>
+
+  <!-- 特性2: Django Admin -->
+  <rect x="190" y="10" width="160" height="100" fill="url(#bg2)" rx="12"/>
+  <text x="270" y="45" font-family="system-ui, sans-serif" font-size="28" fill="white" text-anchor="middle">⚡</text>
+  <text x="270" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Django Admin</text>
+  <text x="270" y="90" font-family="system-ui, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">内置管理功能</text>
+
+  <!-- 特性3: RBAC 权限 -->
+  <rect x="370" y="10" width="160" height="100" fill="url(#bg3)" rx="12"/>
+  <text x="450" y="45" font-family="system-ui, sans-serif" font-size="28" fill="white" text-anchor="middle">🔐</text>
+  <text x="450" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">RBAC 权限</text>
+  <text x="450" y="90" font-family="system-ui, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">细粒度访问控制</text>
+
+  <!-- 特性4: 安全审计 -->
+  <rect x="550" y="10" width="160" height="100" fill="url(#bg4)" rx="12"/>
+  <text x="630" y="45" font-family="system-ui, sans-serif" font-size="28" fill="white" text-anchor="middle">📋</text>
+  <text x="630" y="70" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">安全审计</text>
+  <text x="630" y="90" font-family="system-ui, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)" text-anchor="middle">完整操作日志</text>
+</svg>

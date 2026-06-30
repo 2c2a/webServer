@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云电脑详情 - 2c2a</title>
+    <style id="theme-vars">
+{"color":{"bg-brand":{"bg-brand":{"hex":"#4b3fe3","opacity":"1"},"bg-brand-hover":{"hex":"#6a6fff","opacity":"1"},"bg-brand-active":{"hex":"#3f31c6","opacity":"1"},"bg-brand-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"bg-brand-popup":{"hex":"#aab7ff","opacity":"0.36"},"color-primary":{"hex":"#4b3fe3","opacity":"1"},"color-primary-hover":{"hex":"#6a6fff","opacity":"1"},"color-primary-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"color-primary-soft":{"hex":"#aab7ff","opacity":"0.36"},"color-accent":{"hex":"#4b3fe3","opacity":"1"}},"bg":{"bg-base-default":{"hex":"#ffffff","opacity":"1"},"bg-base-secondary":{"hex":"#f5f5f5","opacity":"1"},"bg-base-tertiary":{"hex":"#e5e5e5","opacity":"1"},"bg-overlay-l1":{"hex":"#737373","opacity":"0.08"},"bg-overlay-l2":{"hex":"#737373","opacity":"0.12"},"bg-overlay-l3":{"hex":"#737373","opacity":"0.16"},"bg-overlay-l4":{"hex":"#737373","opacity":"0.2"},"bg-white":{"hex":"#ffffff","opacity":"1"},"bg-menu":{"hex":"#ffffff","opacity":"1"},"bg-tooltip":{"hex":"#ffffff","opacity":"1"},"bg-invert":{"hex":"#262626","opacity":"1"},"bg-invert-hover":{"hex":"#404040","opacity":"1"},"bg-invert-active":{"hex":"#171717","opacity":"1"},"bg-invert-disabled":{"hex":"#737373","opacity":"0.2"},"color-background":{"hex":"#ffffff","opacity":"1"},"color-surface":{"hex":"#f5f5f5","opacity":"1"},"color-surface-variant":{"hex":"#e5e5e5","opacity":"1"},"color-overlay-1":{"hex":"#737373","opacity":"0.08"},"color-overlay-2":{"hex":"#737373","opacity":"0.12"},"color-overlay-3":{"hex":"#737373","opacity":"0.16"},"color-overlay-4":{"hex":"#737373","opacity":"0.2"},"color-card":{"hex":"#f5f5f5","opacity":"1"},"color-tooltip":{"hex":"#ffffff","opacity":"1"},"color-menu":{"hex":"#ffffff","opacity":"1"}},"icon":{"icon-default":{"hex":"#262626","opacity":"1"},"icon-default-hover":{"hex":"#171717","opacity":"1"},"icon-default-active":{"hex":"#171717","opacity":"1"},"icon-secondary":{"hex":"#404040","opacity":"1"},"icon-secondary-hover":{"hex":"#262626","opacity":"1"},[... 24993 chars omitted ...]
+    </style>
+    <style>:root{--c-brand:#4b3fe3;--c-brand-hover:#6a6fff;--c-brand-active:#3f31c6;--c-brand-disabled:rgba(75,63,227,0.22);--c-brand-soft:rgba(170,183,255,0.36);--c-bg:#ffffff;--c-bg-secondary:#f5f5f5;--c-bg-tertiary:#e5e5e5;--c-text-primary:#171717;--c-text-default:#262626;--c-text-secondary:#404040;--c-text-tertiary:#737373;--c-border:rgba(115,115,115,0.12);--c-success:#00b983;--c-warning:#f2a90c;--c-error:#ff4757;--c-info:#3f85ff}</style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: var(--c-bg); color: var(--c-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* Pulsing animation for timeline in-progress dot */
+      @keyframes pulse-warning {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(242, 169, 12, 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(242, 169, 12, 0); }
+      }
+      .timeline-dot-pulse {
+        animation: pulse-warning 2s ease-in-out infinite;
+      }
+
+      /* Spinner animation */
+      @keyframes spin-slow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .spinner-slow {
+        animation: spin-slow 3s linear infinite;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--c-bg-secondary); color: var(--c-text-primary); font-family: 'SF Pro Text', 'PingFang SC', system-ui, sans-serif; overflow-y: auto;">
+
+    <!-- Custom Navigation Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-[44px] flex items-center px-4"
+            style="background: var(--c-bg); border-bottom: 1px solid var(--c-border);">
+        <a href="#"
+           data-dom-id="back-my-cloud"
+           class="flex items-center justify-center w-8 h-8"
+           style="color: var(--c-text-primary); text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </a>
+        <h1 style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0; text-align: center; flex: 1; font-family: 'SF Pro', 'PingFang SC', system-ui, sans-serif;">云电脑详情</h1>
+        <span style="width: 32px; display: inline-block;"></span>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="min-h-screen" style="padding-top: 44px; padding-bottom: 120px;">
+
+        <!-- 1. Status Banner -->
+        <div style="padding: 12px 16px 0;">
+            <div style="background: linear-gradient(135deg, var(--c-warning) 0%, #e8970a 100%); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Spinner/clock icon -->
+                    <svg class="spinner-slow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span style="font-size: 15px; font-weight: 500; color: #ffffff;">申请中</span>
+                </div>
+                <span style="font-size: 12px; color: rgba(255,255,255,0.85);">提交于 2024-06-20 10:30</span>
+            </div>
+        </div>
+
+        <!-- 2. Application Info Card -->
+        <div style="padding: 12px 16px 0;">
+            <div style="background: var(--c-bg); border-radius: 8px; padding: 16px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 4px;">申请信息</h2>
+
+                <!-- Info Row: 目标产品 -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+                    <span style="font-size: 14px; color: var(--c-text-tertiary);">目标产品</span>
+                    <span style="font-size: 14px; color: var(--c-text-primary); font-weight: 500;">Ubuntu 22.04 开发版</span>
+                </div>
+
+                <!-- Info Row: 磁盘容量 -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+                    <span style="font-size: 14px; color: var(--c-text-tertiary);">磁盘容量</span>
+                    <span style="font-size: 14px; color: var(--c-text-primary); font-weight: 500;">100G SSD</span>
+                </div>
+
+                <!-- Info Row: 所需积分 -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+                    <span style="font-size: 14px; color: var(--c-text-tertiary);">所需积分</span>
+                    <span style="font-size: 14px; color: var(--c-brand); font-weight: 500;">150 积分/月</span>
+                </div>
+
+                <!-- Info Row: 申请时间 -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+                    <span style="font-size: 14px; color: var(--c-text-tertiary);">申请时间</span>
+                    <span style="font-size: 14px; color: var(--c-text-primary); font-weight: 500;">2024-06-20 10:30</span>
+                </div>
+
+                <!-- Info Row: 申请状态 -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0;">
+                    <span style="font-size: 14px; color: var(--c-text-tertiary);">申请状态</span>
+                    <span style="font-size: 14px; color: var(--c-warning); font-weight: 500;">审核中</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Timeline Card -->
+        <div style="padding: 12px 16px 0;">
+            <div style="background: var(--c-bg); border-radius: 8px; padding: 16px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 16px;">审核进度</h2>
+
+                <!-- Timeline -->
+                <div style="position: relative; padding-left: 24px;">
+
+                    <!-- Vertical Line (connecting dots) -->
+                    <div style="position: absolute; left: 7px; top: 8px; bottom: 24px; width: 2px; background: var(--c-border);"></div>
+
+                    <!-- Timeline Item 1: 提交申请 (completed) -->
+                    <div style="position: relative; padding-bottom: 24px;">
+                        <!-- Filled green dot -->
+                        <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-success); border: 2px solid var(--c-success);"></div>
+                        <div>
+                            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0 0 2px;">提交申请</p>
+                            <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 0;">2024-06-20 10:30</p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 2: 管理员审核中 (in-progress) -->
+                    <div style="position: relative; padding-bottom: 24px;">
+                        <!-- Pulsing amber dot -->
+                        <div class="timeline-dot-pulse" style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-warning); border: 2px solid var(--c-warning);"></div>
+                        <div>
+                            <p style="font-size: 14px; color: var(--c-text-primary); font-weight: 500; margin: 0;">管理员审核中</p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 3: 开通中 (pending) -->
+                    <div style="position: relative; padding-bottom: 24px;">
+                        <!-- Gray empty dot -->
+                        <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-bg); border: 2px solid var(--c-text-tertiary);"></div>
+                        <div>
+                            <p style="font-size: 14px; color: var(--c-text-tertiary); margin: 0;">开通中</p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 4: 完成 (pending) -->
+                    <div style="position: relative;">
+                        <!-- Gray empty dot -->
+                        <div style="position: absolute; left: -24px; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--c-bg); border: 2px solid var(--c-text-tertiary);"></div>
+                        <div>
+                            <p style="font-size: 14px; color: var(--c-text-tertiary); margin: 0;">完成</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Action Bar (fixed above tab bar) -->
+    <div class="fixed left-0 right-0 z-40 flex items-center"
+         style="bottom: 56px; background: var(--c-bg); border-top: 1px solid var(--c-border); padding: 12px 16px;">
+        <button data-dom-id="cta-retry-apply"
+                style="width: 100%; height: 40px; background: var(--c-bg); border: 1px solid var(--c-brand); border-radius: 8px; color: var(--c-brand); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center;">
+            重新申请
+        </button>
+    </div>
+
+    <!-- Bottom Tab Bar (6 tabs) -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
+         style="background: var(--c-bg); border-top: 1px solid var(--c-border); height: 56px;">
+        <!-- Tab 1: 仪表盘 -->
+        <a href="#"
+           data-nav-key="dashboard"
+           data-dom-id="nav-dashboard"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: var(--c-text-tertiary); text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+                <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">仪表盘</span>
+        </a>
+        <!-- Tab 2: 产品列表 -->
+        <a href="#"
+           data-nav-key="products"
+           data-dom-id="nav-products"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: var(--c-text-tertiary); text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="14" x="2" y="5" rx="2"/>
+                <line x1="2" x2="22" y1="10" y2="10"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">产品列表</span>
+        </a>
+        <!-- Tab 3: 云电脑 (active) -->
+        <a href="#"
+           data-nav-key="my-cloud"
+           data-active="true"
+           data-dom-id="nav-my-cloud"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: var(--c-brand); text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">云电脑</span>
+        </a>
+        <!-- Tab 4: 工单 -->
+        <a href="#"
+           data-nav-key="tickets"
+           data-dom-id="nav-tickets"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: var(--c-text-tertiary); text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 5v2m0 4v2m0 4v2"/>
+                <path d="M5 5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2 2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2 2 2 0 0 1-2-2 2 2 0 0 1 2-2 2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5z"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">工单</span>
+        </a>
+        <!-- Tab 5: 积分 -->
+        <a href="#"
+           data-nav-key="points"
+           data-dom-id="nav-points"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: var(--c-text-tertiary); text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">积分</span>
+        </a>
+        <!-- Tab 6: 我的 -->
+        <a href="#"
+           data-nav-key="profile"
+           data-dom-id="nav-profile"
+           class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]"
+           style="color: var(--c-text-tertiary); text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="5"/>
+                <path d="M20 21a8 8 0 0 0-16 0"/>
+            </svg>
+            <span style="font-size: 10px; line-height: 1;">我的</span>
+        </a>
+    </nav>
+
+    <script>lucide.createIcons();</script>
+
+</body>
+</html>

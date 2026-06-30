@@ -1,0 +1,36 @@
+{# 后台概览 KPI 片段 #}
+<!-- Card: 用户总数 -->
+<div class="rounded-md border p-4 sm:p-5" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);">
+    <p class="text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">用户总数</p>
+    <p class="mt-2 text-2xl font-bold whitespace-nowrap" style="font-size: var(--vercel-font-size-2xl); color: var(--vercel-text-foreground);">{{ users_count }}</p>
+    <div class="mt-2 flex items-center gap-1">
+        <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">全部用户</span>
+    </div>
+</div>
+
+<!-- Card: 工单总数 -->
+<div class="rounded-md border p-4 sm:p-5" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);">
+    <p class="text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">工单总数</p>
+    <p class="mt-2 text-2xl font-bold whitespace-nowrap" style="font-size: var(--vercel-font-size-2xl); color: var(--vercel-text-foreground);">{{ tickets_count }}</p>
+    <div class="mt-2 flex items-center gap-1">
+        <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">全部工单</span>
+    </div>
+</div>
+
+<!-- Card: 云电脑数 -->
+<div class="rounded-md border p-4 sm:p-5" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);">
+    <p class="text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">云电脑数</p>
+    <p class="mt-2 text-2xl font-bold whitespace-nowrap" style="font-size: var(--vercel-font-size-2xl); color: var(--vercel-text-foreground);">{{ cloud_users_count }}</p>
+    <div class="mt-2 flex items-center gap-1">
+        <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">云电脑用户</span>
+    </div>
+</div>
+
+<!-- Card: 今日签到 -->
+<div class="rounded-md border p-4 sm:p-5" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);">
+    <p class="text-xs font-medium" style="color: var(--vercel-text-muted-foreground);">今日签到</p>
+    <p class="mt-2 text-2xl font-bold whitespace-nowrap" style="font-size: var(--vercel-font-size-2xl); color: var(--vercel-text-foreground);">{{ checkin_count }}</p>
+    <div class="mt-2 flex items-center gap-1">
+        <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">任务积分记录</span>
+    </div>
+</div>

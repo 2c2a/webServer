@@ -1,0 +1,45 @@
+{# 后台审计日志列表片段 #}
+<div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[160px]" style="color:var(--vercel-text-muted-foreground)">时间</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[100px]" style="color:var(--vercel-text-muted-foreground)">操作人</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[90px]" style="color:var(--vercel-text-muted-foreground)">操作类型</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[120px]" style="color:var(--vercel-text-muted-foreground)">主机</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[200px]" style="color:var(--vercel-text-muted-foreground)">详情</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[130px]" style="color:var(--vercel-text-muted-foreground)">IP 地址</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if items %}
+            {% for log in items %}
+            <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">
+                    {{ log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else '-' }}
+                </td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">
+                    {{ log.user.username if log.user else '-' }}
+                </td>
+                <td class="px-4 py-2.5 whitespace-nowrap">
+                    <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-accent-secondary);color:var(--vercel-text-foreground)">{{ log.action }}</span>
+                </td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">
+                    {{ log.host.name if log.host else '-' }}
+                </td>
+                <td class="px-4 py-2.5 truncate max-w-[300px]" style="color:var(--vercel-text-secondary-foreground)">
+                    {% if log.result %}{{ log.result }}{% elif log.details %}{{ log.details | tojson | truncate(120, true, '...') }}{% else %}-{% endif %}
+                </td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">
+                    {{ log.ip_address or '-' }}
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-sm" style="color:var(--vercel-text-muted-foreground)">暂无审计日志</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

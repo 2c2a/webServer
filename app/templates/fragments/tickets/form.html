@@ -1,0 +1,85 @@
+{# 新建工单表单片段（前台，对齐 2c2a-frontend 设计稿，使用 --c-* 主题 token）。
+   提交后端 /fragments/tickets/create，成功后跳转回工单列表页。 #}
+
+<!-- Form Card -->
+<div class="bg-white rounded-lg p-4" style="border: 1px solid var(--c-border); border-radius: 8px;">
+
+    <form id="ticket-form"
+          hx-post="/fragments/tickets/create"
+          hx-target="#form-error"
+          hx-swap="innerHTML"
+          hx-on::after-request="if(event.detail.successful) location.href='/tickets'">
+
+        <!-- Title -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1.5" style="color: var(--c-text-primary);">标题</label>
+            <input type="text" name="title" required placeholder="请输入工单标题"
+                   class="w-full h-[40px] px-3 text-sm rounded-md outline-none transition-colors"
+                   style="border: 1px solid var(--c-border); color: var(--c-text-primary); background: #ffffff;"
+                   onfocus="this.style.borderColor='var(--c-brand)'" onblur="this.style.borderColor='var(--c-border)'">
+        </div>
+
+        <!-- Category -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1.5" style="color: var(--c-text-primary);">分类</label>
+            <div class="relative">
+                <select name="category_id"
+                        class="w-full h-[40px] px-3 text-sm rounded-md appearance-none outline-none transition-colors"
+                        style="border: 1px solid var(--c-border); color: var(--c-text-primary); background: #ffffff;"
+                        onfocus="this.style.borderColor='var(--c-brand)'" onblur="this.style.borderColor='var(--c-border)'">
+                    <option value="">未分类</option>
+                    {% for c in categories %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+                <svg class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Priority -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1.5" style="color: var(--c-text-primary);">优先级</label>
+            <div class="relative">
+                <select name="priority"
+                        class="w-full h-[40px] px-3 text-sm rounded-md appearance-none outline-none transition-colors"
+                        style="border: 1px solid var(--c-border); color: var(--c-text-primary); background: #ffffff;"
+                        onfocus="this.style.borderColor='var(--c-brand)'" onblur="this.style.borderColor='var(--c-border)'">
+                    <option value="low">低</option>
+                    <option value="normal" selected>中</option>
+                    <option value="high">高</option>
+                    <option value="urgent">紧急</option>
+                </select>
+                <svg class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1.5" style="color: var(--c-text-primary);">描述</label>
+            <textarea name="description" rows="4" required placeholder="请详细描述您遇到的问题..."
+                      class="w-full px-3 py-2 text-sm rounded-md outline-none transition-colors resize-none"
+                      style="border: 1px solid var(--c-border); color: var(--c-text-primary); background: #ffffff; min-height: 96px;"
+                      onfocus="this.style.borderColor='var(--c-brand)'" onblur="this.style.borderColor='var(--c-border)'"></textarea>
+        </div>
+
+        <!-- Error display -->
+        <div id="form-error"></div>
+
+    </form>
+
+</div>
+
+<!-- Fixed Bottom Button Bar (above tab nav) -->
+<div class="fixed bottom-[56px] left-0 right-0 z-40 bg-white px-4 py-3"
+     style="border-top: 1px solid var(--c-border);">
+    <button type="submit" form="ticket-form"
+            class="w-full h-[44px] rounded-md text-sm font-medium text-white transition-colors"
+            style="background: var(--c-brand);"
+            onmouseenter="this.style.background='var(--c-brand-hover)'" onmouseleave="this.style.background='var(--c-brand)'">
+        提交工单
+    </button>
+</div>

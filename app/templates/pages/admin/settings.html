@@ -1,0 +1,37 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "settings" %}
+{% set page_title = "系统配置" %}
+
+{% block topbar_actions %}
+          <button type="button"
+                  id="btn-save-settings"
+                  hx-post="/fragments/admin/settings/captcha"
+                  hx-include="#captcha-config-form"
+                  hx-target="#captcha-save-result"
+                  hx-swap="innerHTML"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md"
+                  style="background:var(--vercel-accent);color:#000;">
+              <i data-lucide="save" class="h-3.5 w-3.5"></i>
+              保存验证码配置
+          </button>
+{% endblock %}
+
+{% block content %}
+          <div class="max-w-3xl space-y-6">
+
+            <!-- Page title -->
+            <div>
+              <h1 class="text-xl font-semibold tracking-tight" style="color:var(--vercel-text-foreground);">系统配置</h1>
+              <p class="mt-1 text-sm" style="color:var(--vercel-text-muted-foreground);">管理站点信息、SMTP、注册策略与元数据</p>
+            </div>
+
+            <!-- Settings detail (HTMX) -->
+            <div hx-get="/fragments/admin/settings/detail"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+              <span class="text-sm" style="color:var(--vercel-text-muted-foreground);">加载中...</span>
+            </div>
+
+          </div>
+{% endblock %}

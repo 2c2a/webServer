@@ -1,0 +1,25 @@
+{# 产品组片段（HTMX 动态、不可缓存、基于租户隔离） #}
+{% if product_groups %}
+<div class="product-group-list">
+    {% for pg in product_groups %}
+    <div class="product-group">
+        <h3>{{ pg.name }}</h3>
+        <p class="product-group-desc">{{ pg.description or '' }}</p>
+        <div class="product-list">
+            {% for product in pg.products %}
+            <div class="product-card">
+                <h4>{{ product.display_name or product.name }}</h4>
+                {% if product.is_available %}
+                <a href="/account-openings" class="btn btn-primary btn-sm">申请开通</a>
+                {% else %}
+                <span class="badge badge-disabled">不可用</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">暂无可用产品</div>
+{% endif %}

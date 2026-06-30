@@ -1,0 +1,13 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "users" %}
+{% set page_title = "用户表单" %}
+{% set breadcrumbs = [{"label": "首页", "href": "/admin/"}, {"label": "用户管理", "href": "/admin/users"}, {"label": "用户表单"}] %}
+
+{% block content %}
+      <div hx-get="/fragments/admin/users/form?user_id={{ user_id | default('') }}"
+           hx-trigger="load"
+           hx-target="this"
+           hx-swap="innerHTML">
+        <div class="p-8 text-center text-[var(--vercel-text-muted-foreground)]">加载中...</div>
+      </div>
+{% endblock %}

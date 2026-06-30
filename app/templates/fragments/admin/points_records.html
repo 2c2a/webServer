@@ -1,0 +1,47 @@
+{# 后台积分明细列表片段 #}
+<div class="overflow-x-auto">
+    <table class="w-full text-xs" style="min-width: 600px;">
+        <thead>
+            <tr class="border-b text-left" style="border-color: var(--vercel-border); color: var(--vercel-text-muted-foreground);">
+                <th class="px-4 sm:px-5 py-2.5 font-medium whitespace-nowrap">用户</th>
+                <th class="px-4 sm:px-5 py-2.5 font-medium whitespace-nowrap">变动数额</th>
+                <th class="px-4 sm:px-5 py-2.5 font-medium whitespace-nowrap">变动后余额</th>
+                <th class="px-4 sm:px-5 py-2.5 font-medium whitespace-nowrap">来源</th>
+                <th class="px-4 sm:px-5 py-2.5 font-medium whitespace-nowrap">关联任务</th>
+                <th class="px-4 sm:px-5 py-2.5 font-medium whitespace-nowrap">备注</th>
+                <th class="px-4 sm:px-5 py-2.5 font-medium whitespace-nowrap">时间</th>
+            </tr>
+        </thead>
+        <tbody style="color: var(--vercel-text-card-foreground);">
+            {% if items %}
+            {% for r in items %}
+            <tr class="border-b" style="border-color: var(--vercel-border);">
+                <td class="px-4 sm:px-5 py-3 whitespace-nowrap font-medium">
+                    {{ r.user.username if r.user else '-' }}
+                </td>
+                <td class="px-4 sm:px-5 py-3 whitespace-nowrap font-mono font-medium" style="color: {{ 'var(--vercel-status-destructive)' if r.delta < 0 else 'var(--vercel-status-success)' }};">
+                    {% if r.delta >= 0 %}+{% endif %}{{ r.delta }}
+                </td>
+                <td class="px-4 sm:px-5 py-3 whitespace-nowrap font-mono">{{ r.balance_after }}</td>
+                <td class="px-4 sm:px-5 py-3 whitespace-nowrap">
+                    <span class="inline-flex h-5 items-center rounded px-2 text-xs font-medium whitespace-nowrap" style="background: var(--vercel-bg-muted); color: var(--vercel-text-accent-foreground);">{{ r.source }}</span>
+                </td>
+                <td class="px-4 sm:px-5 py-3 whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">
+                    {{ r.task.name if r.task else '-' }}
+                </td>
+                <td class="px-4 sm:px-5 py-3 truncate min-w-[120px]" style="color: var(--vercel-text-muted-foreground);">
+                    {{ r.description or '-' }}
+                </td>
+                <td class="px-4 sm:px-5 py-3 whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">
+                    {{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '-' }}
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="7" class="px-4 sm:px-5 py-8 text-center text-xs" style="color: var(--vercel-text-muted-foreground);">暂无积分明细</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

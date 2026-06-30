@@ -1,0 +1,48 @@
+{# 积分任务列表片段（对齐 2c2a-frontend/pages/points.html 设计稿）。
+   每个任务根据完成状态显示不同按钮：
+   - 主动型 + 可完成：显示"领取"按钮（hx-post 触发积分发放）
+   - 主动型 + 已完成：显示"已领取"禁用按钮
+   - 被动型（如工单提交）：仅展示任务信息，不显示领取按钮 #}
+<div id="points-tasks-list" class="space-y-3">
+    {% if task_statuses %}
+        {% for item in task_statuses %}
+        {% set task = item.task %}
+        <div class="bg-white rounded-lg p-4" style="border-radius: 8px; border: 1px solid var(--c-border);">
+            <p class="font-medium text-sm" style="color: var(--c-text-primary);">{{ task.name }}</p>
+            <p class="text-xs mt-1" style="color: var(--c-text-tertiary);">{{ task.description | default('') }}</p>
+            <div class="flex items-center justify-between mt-3">
+                <span class="text-xs font-medium" style="color: var(--c-brand);">
+                    {% if task.points >= 0 %}可获得 {{ task.points }}积分{% else %}消耗 {{ -task.points }}积分{% endif %}
+                </span>
+
+                {# 主动型任务：根据完成状态显示领取/已领取按钮 #}
+                {% if not item.passive %}
+                    {% if item.completable %}
+                    {# 可领取：HTMX 提交到 complete 端点，成功后刷新整个任务列表 #}
+                    <button class="rounded-full px-3 py-1 text-xs font-medium"
+                            style="background: var(--c-brand); color: #ffffff; border: none; border-radius: 999px; cursor: pointer;"
+                            hx-post="/fragments/points/complete"
+                            hx-vals='{"task_id": {{ task.id }}}'
+                            hx-target="#points-tasks-list"
+                            hx-swap="outerHTML">
+                        领取
+                    </button>
+                    {% else %}
+                    {# 已领取：禁用按钮 #}
+                    <button class="rounded-full px-3 py-1 text-xs font-medium"
+                            style="border: 1px solid var(--c-border); color: #a3a3a3; background: transparent; border-radius: 999px; cursor: not-allowed; opacity: 0.6;"
+                            disabled>
+                        已领取
+                    </button>
+                    {% endif %}
+                {% else %}
+                {# 被动型任务：仅展示提示 #}
+                <span class="text-xs" style="color: var(--c-text-tertiary);">完成行为后自动发放</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">暂无积分任务</div>
+    {% endif %}
+</div>

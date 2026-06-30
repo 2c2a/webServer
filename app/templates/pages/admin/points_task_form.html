@@ -1,0 +1,13 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "points" %}
+{% set page_title = "积分任务表单" %}
+{% set breadcrumbs = [{"label": "首页", "href": "/admin/"}, {"label": "积分管理", "href": "/admin/points"}, {"label": "积分任务表单"}] %}
+
+{% block content %}
+      <div hx-get="/fragments/admin/points/tasks/form?task_id={{ task_id | default('') }}"
+           hx-trigger="load"
+           hx-target="this"
+           hx-swap="innerHTML">
+        <div class="p-8 text-center text-[var(--vercel-text-muted-foreground)]">加载中...</div>
+      </div>
+{% endblock %}

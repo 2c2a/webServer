@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我们</title>
+    <style id="theme-vars">
+{"color":{"bg-brand":{"bg-brand":{"hex":"#4b3fe3","opacity":"1"},"bg-brand-hover":{"hex":"#6a6fff","opacity":"1"},"bg-brand-active":{"hex":"#3f31c6","opacity":"1"},"bg-brand-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"bg-brand-popup":{"hex":"#aab7ff","opacity":"0.36"},"color-primary":{"hex":"#4b3fe3","opacity":"1"},"color-primary-hover":{"hex":"#6a6fff","opacity":"1"},"color-primary-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"color-primary-soft":{"hex":"#aab7ff","opacity":"0.36"},"color-accent":{"hex":"#4b3fe3","opacity":"1"}},"bg":{"bg-base-default":{"hex":"#ffffff","opacity":"1"},"bg-base-secondary":{"hex":"#f5f5f5","opacity":"1"},"bg-base-tertiary":{"hex":"#e5e5e5","opacity":"1"},"bg-overlay-l1":{"hex":"#737373","opacity":"0.08"},"bg-overlay-l2":{"hex":"#737373","opacity":"0.12"},"bg-overlay-l3":{"hex":"#737373","opacity":"0.16"},"bg-overlay-l4":{"hex":"#737373","opacity":"0.2"},"bg-white":{"hex":"#ffffff","opacity":"1"},"bg-menu":{"hex":"#ffffff","opacity":"1"},"bg-tooltip":{"hex":"#ffffff","opacity":"1"},"bg-invert":{"hex":"#262626","opacity":"1"},"bg-invert-hover":{"hex":"#404040","opacity":"1"},"bg-invert-active":{"hex":"#171717","opacity":"1"},"bg-invert-disabled":{"hex":"#737373","opacity":"0.2"},"color-background":{"hex":"#ffffff","opacity":"1"},"color-surface":{"hex":"#f5f5f5","opacity":"1"},"color-surface-variant":{"hex":"#e5e5e5","opacity":"1"},"color-overlay-1":{"hex":"#737373","opacity":"0.08"},"color-overlay-2":{"hex":"#737373","opacity":"0.12"},"color-overlay-3":{"hex":"#737373","opacity":"0.16"},"color-overlay-4":{"hex":"#737373","opacity":"0.2"},"color-card":{"hex":"#f5f5f5","opacity":"1"},"color-tooltip":{"hex":"#ffffff","opacity":"1"},"color-menu":{"hex":"#ffffff","opacity":"1"}},"icon":{"icon-default":{"hex":"#262626","opacity":"1"},"icon-default-hover":{"hex":"#171717","opacity":"1"},"icon-default-active":{"hex":"#171717","opacity":"1"},"icon-secondary":{"hex":"#404040","opacity":"1"},"icon-secondary-hover":{"hex":"#262626","opacity":"1"},"icon-secondary-active":{"hex":"#171717","opacity":"1"},"icon-tertiary":{"hex":"#737373","opacity":"1"},"icon-inverse":{"hex":"#ffffff","opacity":"1"},"icon-inverse-hover":{"hex":"#e5e5e5","opacity":"1"},"icon-inverse-active":{"hex":"#cccccc","opacity":"1"},"icon-brand":{"hex":"#4b3fe3","opacity":"1"},"icon-brand-hover":{"hex":"#6a6fff","opacity":"1"},"icon-brand-active":{"hex":"#3f31c6","opacity":"1"},"icon-success":{"hex":"#00b983","opacity":"1"},"icon-warning":{"hex":"#f2a90c","opacity":"1"},"icon-error":{"hex":"#ff4757","opacity":"1"},"icon-info":{"hex":"#3f85ff","opacity":"1"}},"text":{"text-default":{"hex":"#262626","opacity":"1"},"text-primary":{"hex":"#171717","opacity":"1"},"text-secondary":{"hex":"#404040","opacity":"1"},"text-tertiary":{"hex":"#737373","opacity":"1"},"text-quaternary":{"hex":"#a3a3a3","opacity":"1"},"text-brand":{"hex":"#4b3fe3","opacity":"1"},"text-brand-hover":{"hex":"#6a6fff","opacity":"1"},"text-inverse":{"hex":"#ffffff","opacity":"1"},"text-success":{"hex":"#00b983","opacity":"1"},"text-warning":{"hex":"#f2a90c","opacity":"1"},"text-error":{"hex":"#ff4757","opacity":"1"},"text-info":{"hex":"#3f85ff","opacity":"1"},"text-disabled":{"hex":"#a3a3a3","opacity":"0.5"}},"border":{"border-default":{"hex":"#e5e5e5","opacity":"1"},"border-light":{"hex":"#f0f0f0","opacity":"1"},"border-dark":{"hex":"#d4d4d4","opacity":"1"},"border-overlay":{"hex":"#737373","opacity":"0.12"}},"status":{"status-success":{"hex":"#00b983","opacity":"1"},"status-warning":{"hex":"#f2a90c","opacity":"1"},"status-error":{"hex":"#ff4757","opacity":"1"},"status-info":{"hex":"#3f85ff","opacity":"1"}}}
+    </style>
+    <style>:root{--c-brand:#4b3fe3;--c-brand-hover:#6a6fff;--c-brand-active:#3f31c6;--c-brand-disabled:rgba(75,63,227,0.22);--c-brand-soft:rgba(170,183,255,0.36);--c-bg:#ffffff;--c-bg-secondary:#f5f5f5;--c-bg-tertiary:#e5e5e5;--c-text-primary:#171717;--c-text-default:#262626;--c-text-secondary:#404040;--c-text-tertiary:#737373;--c-border:rgba(115,115,115,0.12);--c-success:#00b983;--c-warning:#f2a90c;--c-error:#ff4757;--c-info:#3f85ff}</style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--c-bg-secondary); color: var(--c-text-primary); font-family: 'SF Pro Text', 'PingFang SC', system-ui, sans-serif; overflow-y: auto;">
+
+    <!-- Custom Nav Bar -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-[44px] flex items-center justify-between px-4"
+            style="background: var(--c-bg); border-bottom: 1px solid var(--c-border);">
+        <a href="#" data-dom-id="back-profile" class="flex items-center justify-center w-8 h-8" style="color: var(--c-text-primary);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </a>
+        <span style="font-size: 16px; font-weight: 600; color: var(--c-text-primary);">关于我们</span>
+        <span style="width: 32px;"></span>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" style="padding-top: 44px; padding-bottom: 112px;">
+
+        <!-- 1. App Logo Area -->
+        <div style="text-align: center; padding-top: 24px;">
+            <span style="font-size: 32px; font-weight: 700; color: var(--c-brand);">2c2a</span>
+            <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 4px 0 0;">Zero Agent Security Control Architecture</p>
+        </div>
+
+        <!-- 2. Version Info Card -->
+        <div style="margin: 16px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">应用版本</span>
+                <span style="font-size: 14px; color: var(--c-text-primary);">v1.0.0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">构建号</span>
+                <span style="font-size: 14px; color: var(--c-text-primary);">2024.06.01</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">系统架构</span>
+                <span style="font-size: 14px; color: var(--c-text-primary);">FastAPI + Granian</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">前端框架</span>
+                <span style="font-size: 14px; color: var(--c-text-primary);">HTMX + Tailwind CSS</span>
+            </div>
+        </div>
+
+        <!-- 3. Description Card -->
+        <div style="margin: 12px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+            <h2 style="font-size: 15px; font-weight: 500; color: var(--c-text-primary); margin: 0 0 10px;">关于 2c2a</h2>
+            <p style="font-size: 14px; color: var(--c-text-secondary); line-height: 1.6; margin: 0;">2c2a 是一个零代理安全控制架构的云服务平台，提供云电脑管理、工单系统、积分体系等功能模块。系统采用全异步架构，支持多站点隔离和原生插件系统。</p>
+        </div>
+
+        <!-- 4. Links Section -->
+        <div style="margin: 12px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+            <a href="#"
+               style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; text-decoration: none; border-bottom: 1px solid var(--c-border);"
+               onmouseenter="this.style.background='var(--c-bg-secondary)'" onmouseleave="this.style.background='transparent'">
+                <span style="font-size: 14px; color: var(--c-text-secondary);">服务协议</span>
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">&gt;</span>
+            </a>
+            <a href="#"
+               style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; text-decoration: none; border-bottom: 1px solid var(--c-border);"
+               onmouseenter="this.style.background='var(--c-bg-secondary)'" onmouseleave="this.style.background='transparent'">
+                <span style="font-size: 14px; color: var(--c-text-secondary);">隐私政策</span>
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">&gt;</span>
+            </a>
+            <a href="#"
+               style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; text-decoration: none; border-bottom: 1px solid var(--c-border);"
+               onmouseenter="this.style.background='var(--c-bg-secondary)'" onmouseleave="this.style.background='transparent'">
+                <span style="font-size: 14px; color: var(--c-text-secondary);">开源许可</span>
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">&gt;</span>
+            </a>
+            <a href="#"
+               style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; text-decoration: none;"
+               onmouseenter="this.style.background='var(--c-bg-secondary)'" onmouseleave="this.style.background='transparent'">
+                <span style="font-size: 14px; color: var(--c-text-secondary);">检查更新</span>
+                <span style="font-size: 14px; color: var(--c-text-tertiary);">&gt;</span>
+            </a>
+        </div>
+
+        <!-- 5. Copyright Footer -->
+        <div style="text-align: center; padding-top: 24px; padding-bottom: 80px;">
+            <span style="font-size: 12px; color: var(--c-text-tertiary);">Copyright 2024 2c2a Team</span>
+        </div>
+
+    </main>
+
+    <!-- Bottom Tab Bar (6 tabs) -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white flex items-center justify-around h-[56px]"
+         style="border-top: 1px solid var(--c-border);">
+      <a href="#" data-dom-id="nav-dashboard" data-nav-key="dashboard" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span style="font-size: 10px;">仪表盘</span>
+      </a>
+      <a href="#" data-dom-id="nav-products" data-nav-key="products" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-8l-2 4h12z"/></svg>
+        <span style="font-size: 10px;">产品列表</span>
+      </a>
+      <a href="#" data-dom-id="nav-my-cloud" data-nav-key="my-cloud" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span style="font-size: 10px;">云电脑</span>
+      </a>
+      <a href="#" data-dom-id="nav-tickets" data-nav-key="tickets" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span style="font-size: 10px;">工单</span>
+      </a>
+      <a href="#" data-dom-id="nav-points" data-nav-key="points" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27"/></svg>
+        <span style="font-size: 10px;">积分</span>
+      </a>
+      <a href="#" data-dom-id="nav-profile" data-nav-key="profile" data-active="true" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-brand);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span style="font-size: 10px;">我的</span>
+      </a>
+    </nav>
+
+    <script>lucide.createIcons();</script>
+
+</body>
+</html>

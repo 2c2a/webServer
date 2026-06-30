@@ -1,0 +1,13 @@
+SMTP 测试邮件 - {{ site_name }}
+
+这是一封由 2c2a mail test 命令发送的测试邮件。
+如果您收到此邮件，说明 SMTP 配置正确且可达。
+
+SMTP 主机：{{ smtp_host }}:{{ smtp_port }}
+加密方式：{{ smtp_encryption }}
+发件人：{{ from_email }}
+发送时间：{{ sent_at }}
+
+---
+这是一封系统自动发送的测试邮件。
+(c) {{ year }} {{ site_name }}

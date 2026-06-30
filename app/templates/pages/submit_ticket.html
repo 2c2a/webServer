@@ -1,0 +1,19 @@
+{% extends "frontend_shell.html" %}
+{% set active_nav = "tickets" %}
+{% set page_title = "提交工单" %}
+
+{% block content %}
+
+        <!-- Form Card -->
+        <div class="mx-4 mt-4"
+             hx-get="/fragments/tickets/form"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div style="text-align:center;padding:24px;color:var(--c-text-tertiary);">加载中...</div>
+        </div>
+
+        <!-- Spacer to clear the fixed bottom action bar -->
+        <div style="height: 72px;"></div>
+
+{% endblock %}

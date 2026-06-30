@@ -1,0 +1,23 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "sitegroups" %}
+{% set page_title = "站点组管理" %}
+
+{% block content %}
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-6">
+            <h1 class="text-xl font-semibold tracking-tight" style="color:var(--vercel-text-foreground);">站点组管理</h1>
+            <a href="/admin/sitegroups/new" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0"
+                    style="background:var(--vercel-accent-primary); color:var(--vercel-text-primary-foreground);">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>新增站点组</span>
+            </a>
+          </div>
+
+          <!-- Table (HTMX) -->
+          <div hx-get="/fragments/admin/sitegroups/list"
+               hx-trigger="load"
+               hx-target="this"
+               hx-swap="innerHTML">
+            <span class="text-xs" style="color:var(--vercel-text-muted-foreground);">加载中...</span>
+          </div>
+{% endblock %}

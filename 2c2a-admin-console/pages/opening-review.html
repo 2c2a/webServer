@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开户审核详情 — 2c2a</title>
+    <style id="theme-vars">
+/* 2c2a Admin Console — Vercel-inspired design tokens */
+/* Brand prefix: vercel */
+
+:root {
+  /* ── Background ── */
+  --vercel-bg-background: #ffffff;
+  --vercel-bg-card: #ffffff;
+  --vercel-bg-popover: #ffffff;
+  --vercel-bg-muted: #f5f5f5;
+
+  /* ── Text ── */
+  --vercel-text-foreground: #0a0a0a;
+  --vercel-text-card-foreground: #0a0a0a;
+  --vercel-text-popover-foreground: #0a0a0a;
+  --vercel-text-primary-foreground: #fafafa;
+  --vercel-text-secondary-foreground: #171717;
+  --vercel-text-muted-foreground: #858585;
+  --vercel-text-accent-foreground: #171717;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  /* ── Accent ── */
+  --vercel-accent-primary: #121212;
+  --vercel-accent-secondary: #f5f5f5;
+  --vercel-accent-accent: #f5f5f5;
+  --vercel-accent-input: #e5e5e5;
+  --vercel-accent-ring: #0d0d0d;
+
+  /* ── Border ── */
+  --vercel-border: #e8e8e8;
+
+  /* ── Status ── */
+  --vercel-status-destructive: #e7000b;
+  --vercel-status-success: #16a34a;
+  --vercel-status-warning: #ca8a04;
+  --vercel-status-info: #2563eb;
+
+  /* ── Chart ── */
+  --vercel-chart-1: #91c5ff;
+  --vercel-chart-2: #3a81f6;
+  --vercel-chart-3: #2563eb;
+  --vercel-chart-4: #1a4eda;
+  --vercel-chart-5: #1f3fad;
+
+  /* ── Sidebar ── */
+  --vercel-sidebar-bg: #fafafa;
+  --vercel-sidebar-foreground: #0a0a0a;
+  --vercel-sidebar-primary: #171717;
+  --vercel-sidebar-primary-foreground: #fafafa;
+  --vercel-sidebar-accent: #f5f5f5;
+  --vercel-sidebar-accent-foreground: #171717;
+  --vercel-sidebar-border: #e5e5e5;
+  --vercel-sidebar-ring: #a1a1a1;
+
+  /* ── Typography ── */
+  --vercel-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --vercel-font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  --vercel-font-size-xs: 0.75rem;
+  --vercel-font-size-sm: 0.8125rem;
+  --vercel-font-size-base: 0.875rem;
+  --vercel-font-size-lg: 1rem;
+  --vercel-font-size-xl: 1.25rem;
+  --vercel-font-size-2xl: 1.5rem;
+  --vercel-font-size-3xl: 1.875rem;
+  --vercel-line-height-tight: 1.25;
+  --vercel-line-height-normal: 1.5;
+  --vercel-line-height-relaxed: 1.625;
+
+  /* ── Spacing ── */
+  --vercel-spacing-unit: 0.25rem;
+  --vercel-spacing-1: 0.25rem;
+  --vercel-spacing-2: 0.5rem;
+  --vercel-spacing-3: 0.75rem;
+  --vercel-spacing-4: 1rem;
+  --vercel-spacing-5: 1.25rem;
+  --vercel-spacing-6: 1.5rem;
+  --vercel-spacing-8: 2rem;
+  --vercel-spacing-10: 2.5rem;
+  --vercel-spacing-12: 3rem;
+
+  /* ── Radius ── */
+  --vercel-radius: 0.5rem;
+  --vercel-radius-sm: 0.25rem;
+  --vercel-radius-md: 0.5rem;
+  --vercel-radius-lg: 0.5rem;
+  --vercel-radius-full: 9999px;
+
+  /* ── Shadow ── */
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+
+  /* ── Transition ── */
+  --vercel-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --vercel-transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark mode ── */
+.dark {
+  --vercel-bg-background: #0a0a0a;
+  --vercel-bg-card: #171717;
+  --vercel-bg-popover: #262626;
+  --vercel-bg-muted: #262626;
+
+  --vercel-text-foreground: #fafafa;
+  --vercel-text-card-foreground: #fafafa;
+  --vercel-text-popover-foreground: #fafafa;
+  --vercel-text-primary-foreground: #171717;
+  --vercel-text-secondary-foreground: #fafafa;
+  --vercel-text-muted-foreground: #a1a1a1;
+  --vercel-text-accent-foreground: #fafafa;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  --vercel-accent-primary: #e5e5e5;
+  --vercel-accent-secondary: #262626;
+  --vercel-accent-accent: #262626;
+  --vercel-accent-input: #404040;
+  --vercel-accent-ring: #a3a3a3;
+
+  --vercel-border: #404040;
+
+  --vercel-status-destructive: #ff3b4a;
+
+  --vercel-chart-1: #5b9aff;
+  --vercel-chart-2: #5b9aff;
+  --vercel-chart-3: #91c5ff;
+  --vercel-chart-4: #91c5ff;
+  --vercel-chart-5: #5b9aff;
+
+  --vercel-sidebar-bg: #0a0a0a;
+  --vercel-sidebar-foreground: #fafafa;
+  --vercel-sidebar-primary: #e5e5e5;
+  --vercel-sidebar-primary-foreground: #0a0a0a;
+  --vercel-sidebar-accent: #262626;
+  --vercel-sidebar-accent-foreground: #fafafa;
+  --vercel-sidebar-border: #262626;
+  --vercel-sidebar-ring: #525252;
+
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-border: var(--vercel-border);
+    --color-chart-1: var(--vercel-chart-1);
+    --color-chart-2: var(--vercel-chart-2);
+    --color-chart-3: var(--vercel-chart-3);
+    --color-chart-4: var(--vercel-chart-4);
+    --color-chart-5: var(--vercel-chart-5);
+    --color-sidebar-foreground: var(--vercel-sidebar-foreground);
+    --color-sidebar-primary: var(--vercel-sidebar-primary);
+    --color-sidebar-primary-foreground: var(--vercel-sidebar-primary-foreground);
+    --color-sidebar-accent: var(--vercel-sidebar-accent);
+    --color-sidebar-accent-foreground: var(--vercel-sidebar-accent-foreground);
+  }
+  @layer base {
+    body { background: var(--vercel-background); color: var(--vercel-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--vercel-bg-background); color: var(--vercel-text-foreground);">
+
+    <!-- Mobile hamburger overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-black/50 transition-opacity lg:hidden" onclick="closeSidebar()"></div>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-[240px] flex-col border-r transition-transform duration-200 -translate-x-full lg:translate-x-0" style="background: var(--vercel-sidebar-bg); border-color: var(--vercel-sidebar-border);">
+            <div class="flex h-14 items-center px-5 border-b" style="border-color: var(--vercel-sidebar-border);">
+                <span class="text-sm font-bold tracking-tight" style="color: var(--vercel-sidebar-foreground);">2c2a</span>
+            </div>
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+                <a href="#" data-dom-id="nav-overview" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="layout-dashboard" class="h-4 w-4 shrink-0"></i><span class="truncate">概览</span>
+                </a>
+                <a href="#" data-dom-id="nav-users" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="users" class="h-4 w-4 shrink-0"></i><span class="truncate">用户管理</span>
+                </a>
+                <a href="#" data-dom-id="nav-hosts" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="monitor" class="h-4 w-4 shrink-0"></i><span class="truncate">主机管理</span>
+                </a>
+                <a href="#" data-dom-id="nav-tickets" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="ticket" class="h-4 w-4 shrink-0"></i><span class="truncate">工单管理</span>
+                </a>
+                <a href="#" data-dom-id="nav-openings" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium" style="background: var(--vercel-sidebar-accent); color: var(--vercel-sidebar-accent-foreground);">
+                    <i data-lucide="user-plus" class="h-4 w-4 shrink-0"></i><span class="truncate">开户申请</span>
+                </a>
+                <a href="#" data-dom-id="nav-products" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="package" class="h-4 w-4 shrink-0"></i><span class="truncate">产品管理</span>
+                </a>
+                <a href="#" data-dom-id="nav-points" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="coins" class="h-4 w-4 shrink-0"></i><span class="truncate">积分管理</span>
+                </a>
+                <a href="#" data-dom-id="nav-audit" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="file-text" class="h-4 w-4 shrink-0"></i><span class="truncate">审计日志</span>
+                </a>
+                <a href="#" data-dom-id="nav-sitegroups" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="building" class="h-4 w-4 shrink-0"></i><span class="truncate">站点组管理</span>
+                </a>
+                <a href="#" data-dom-id="nav-settings" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm" style="color: var(--vercel-sidebar-foreground);">
+                    <i data-lucide="settings" class="h-4 w-4 shrink-0"></i><span class="truncate">系统配置</span>
+                </a>
+            </nav>
+            <div class="border-t px-3 py-3" style="border-color: var(--vercel-sidebar-border);">
+                <div class="flex items-center gap-3 px-3 py-2">
+                    <div class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium" style="background: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">A</div>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-xs font-medium" style="color: var(--vercel-sidebar-foreground);">Admin</p>
+                        <p class="truncate text-xs" style="color: var(--vercel-text-muted-foreground);">admin</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content area -->
+        <div class="flex flex-1 flex-col lg:pl-[240px]">
+            <!-- Top bar -->
+            <header class="sticky top-0 z-20 flex h-14 items-center gap-4 border-b px-4 sm:px-6" style="background: var(--vercel-bg-background); border-color: var(--vercel-border);">
+                <button class="inline-flex h-8 w-8 items-center justify-center rounded-md border lg:hidden" style="border-color: var(--vercel-border);" onclick="openSidebar()" aria-label="打开菜单">
+                    <i data-lucide="menu" class="h-4 w-4"></i>
+                </button>
+                <nav class="flex items-center gap-1.5 text-xs" style="color: var(--vercel-text-muted-foreground);">
+                    <a href="#" data-dom-id="nav-openings" class="truncate hover:underline" style="color: var(--vercel-text-muted-foreground);">开户申请</a>
+                    <i data-lucide="chevron-right" class="h-3 w-3 shrink-0"></i>
+                    <span class="truncate font-medium" style="color: var(--vercel-text-foreground);">审核详情</span>
+                </nav>
+                <div class="flex-1"></div>
+                <div class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium" style="background: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">A</div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6">
+                <!-- Page title row -->
+                <div class="mb-6 flex items-center justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <h1 class="text-lg font-bold tracking-tight" style="font-size: var(--vercel-font-size-xl); color: var(--vercel-text-foreground);">开户审核详情</h1>
+                        <p class="mt-1 text-xs" style="color: var(--vercel-text-muted-foreground);">审核开户申请并管理创建结果</p>
+                    </div>
+                    <span class="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold whitespace-nowrap" style="background: var(--vercel-status-warning); color: var(--vercel-text-destructive-foreground);">待审核</span>
+                </div>
+
+                <!-- 1. 申请信息卡片 -->
+                <section class="rounded-md border p-4 sm:p-6 mb-4 sm:mb-6" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);">
+                    <h2 class="text-sm font-semibold mb-4" style="color: var(--vercel-text-foreground);">申请信息</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">申请人</p>
+                            <p class="text-sm font-medium truncate" style="color: var(--vercel-text-foreground);">王小红</p>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">目标产品</p>
+                            <p class="text-sm font-medium truncate" style="color: var(--vercel-text-foreground);">高性能套餐 — GPU 云桌面</p>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">联系邮箱</p>
+                            <p class="text-sm font-medium truncate" style="color: var(--vercel-text-foreground);">wangxh@example.com</p>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">申请时间</p>
+                            <p class="text-sm font-medium whitespace-nowrap" style="color: var(--vercel-text-foreground);">2026-06-24 16:45</p>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">当前状态</p>
+                            <span class="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold whitespace-nowrap" style="background: var(--vercel-status-warning); color: var(--vercel-text-destructive-foreground);">待审核</span>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">备注</p>
+                            <p class="text-sm line-clamp-2" style="color: var(--vercel-text-foreground);">需要用于 AI 训练作业，希望分配 RTX 4090 节点</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. 审核操作区 -->
+                <section class="rounded-md border p-4 sm:p-6 mb-4 sm:mb-6" style="background: var(--vercel-bg-card); border-color: var(--vercel-border); border-top: 2px solid var(--vercel-accent-primary);">
+                    <h2 class="text-sm font-semibold mb-4" style="color: var(--vercel-text-foreground);">审核操作</h2>
+                    <div class="mb-4">
+                        <label class="block text-xs font-medium mb-1.5" style="color: var(--vercel-text-muted-foreground);">审核备注</label>
+                        <textarea rows="3" placeholder="填写审核意见..." class="w-full rounded-md border px-3 py-2 text-sm resize-none outline-none transition-colors" style="background: var(--vercel-bg-background); border-color: var(--vercel-accent-input); color: var(--vercel-text-foreground); font-family: var(--vercel-font-sans);"></textarea>
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <button class="inline-flex h-8 items-center rounded-md border px-4 text-xs font-medium transition-colors" style="background: var(--vercel-status-success); border-color: var(--vercel-status-success); color: var(--vercel-text-destructive-foreground);">通过</button>
+                        <button class="inline-flex h-8 items-center rounded-md border px-4 text-xs font-medium transition-colors" style="background: transparent; border-color: var(--vercel-status-destructive); color: var(--vercel-status-destructive);">拒绝</button>
+                    </div>
+                    <p class="text-xs" style="color: var(--vercel-text-muted-foreground);">通过后将自动创建云桌面实例并扣除相应积分</p>
+                </section>
+
+                <!-- 3. 创建结果区域 (mock: 已通过状态) -->
+                <section class="rounded-md border p-4 sm:p-6 mb-4 sm:mb-6" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-semibold" style="color: var(--vercel-text-foreground);">创建结果</h2>
+                        <span class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold whitespace-nowrap" style="background: var(--vercel-status-success); color: var(--vercel-text-destructive-foreground);">
+                            <i data-lucide="check-circle" class="h-3.5 w-3.5"></i>创建成功
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mb-5">
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">分配主机</p>
+                            <p class="text-sm font-medium font-mono truncate" style="color: var(--vercel-text-foreground);">gpu-node-03</p>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">RDP 端口</p>
+                            <p class="text-sm font-medium font-mono whitespace-nowrap" style="color: var(--vercel-text-foreground);">33890</p>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">显示主机名</p>
+                            <p class="text-sm font-medium font-mono truncate" style="color: var(--vercel-text-foreground);">gpu-vm-wangxh</p>
+                        </div>
+                        <div>
+                            <p class="text-xs mb-1" style="color: var(--vercel-text-muted-foreground);">创建时间</p>
+                            <p class="text-sm font-medium whitespace-nowrap" style="color: var(--vercel-text-foreground);">2026-06-24 16:50</p>
+                        </div>
+                    </div>
+
+                    <!-- 连接信息 -->
+                    <div class="rounded-md border p-4" style="background: var(--vercel-bg-muted); border-color: var(--vercel-border);">
+                        <h3 class="text-xs font-semibold mb-3" style="color: var(--vercel-text-foreground);">连接信息</h3>
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs" style="color: var(--vercel-text-muted-foreground);">地址</p>
+                                    <p class="text-sm font-mono truncate mt-0.5" style="color: var(--vercel-text-foreground);">rdp://gpu-node-03:33890</p>
+                                </div>
+                                <button class="inline-flex h-7 shrink-0 items-center rounded border px-2 text-xs transition-colors" style="border-color: var(--vercel-border); color: var(--vercel-text-muted-foreground);" aria-label="复制地址">
+                                    <i data-lucide="copy" class="h-3.5 w-3.5"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs" style="color: var(--vercel-text-muted-foreground);">用户名</p>
+                                    <p class="text-sm font-mono truncate mt-0.5" style="color: var(--vercel-text-foreground);">wangxh</p>
+                                </div>
+                                <button class="inline-flex h-7 shrink-0 items-center rounded border px-2 text-xs transition-colors" style="border-color: var(--vercel-border); color: var(--vercel-text-muted-foreground);" aria-label="复制用户名">
+                                    <i data-lucide="copy" class="h-3.5 w-3.5"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs" style="color: var(--vercel-text-muted-foreground);">密码</p>
+                                    <p class="text-sm font-mono truncate mt-0.5" id="password-display" style="color: var(--vercel-text-foreground);">********</p>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-1.5">
+                                    <button class="inline-flex h-7 items-center rounded border px-2 text-xs transition-colors" style="border-color: var(--vercel-border); color: var(--vercel-text-muted-foreground);" onclick="togglePassword()" aria-label="显示/隐藏密码">
+                                        <i data-lucide="eye" class="h-3.5 w-3.5" id="pwd-icon"></i>
+                                    </button>
+                                    <button class="inline-flex h-7 items-center rounded border px-2 text-xs transition-colors" style="border-color: var(--vercel-border); color: var(--vercel-text-muted-foreground);" aria-label="复制密码">
+                                        <i data-lucide="copy" class="h-3.5 w-3.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. 重试区域 (collapsed) -->
+                <section class="rounded-md border p-4 sm:p-6" style="background: var(--vercel-bg-card); border-color: var(--vercel-border);">
+                    <button class="flex w-full items-center justify-between text-left" onclick="toggleRetry()" aria-expanded="false" aria-controls="retry-content">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <i data-lucide="alert-triangle" class="h-4 w-4 shrink-0" style="color: var(--vercel-status-warning);"></i>
+                            <span class="text-sm font-medium truncate" style="color: var(--vercel-text-foreground);">创建失败时重试</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 transition-transform" id="retry-chevron" style="color: var(--vercel-text-muted-foreground);"></i>
+                    </button>
+                    <div id="retry-content" class="hidden mt-4 pt-4 border-t" style="border-color: var(--vercel-border);">
+                        <div class="rounded-md border p-3 mb-3" style="background: var(--vercel-bg-muted); border-color: var(--vercel-border);">
+                            <p class="text-xs font-medium mb-1" style="color: var(--vercel-status-destructive);">失败原因</p>
+                            <p class="text-xs" style="color: var(--vercel-text-foreground);">主机 gpu-node-03 端口 33890 已被占用</p>
+                        </div>
+                        <button class="inline-flex h-8 items-center rounded-md border px-4 text-xs font-medium transition-colors" style="background: var(--vercel-accent-primary); border-color: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">重试创建</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+    function openSidebar() {
+        document.getElementById('sidebar').classList.remove('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.remove('hidden');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.add('hidden');
+    }
+    function togglePassword() {
+        var el = document.getElementById('password-display');
+        var ico = document.getElementById('pwd-icon');
+        if (el.textContent === '********') {
+            el.textContent = 'P@ssw0rd!xK9m';
+            ico.setAttribute('data-lucide', 'eye-off');
+        } else {
+            el.textContent = '********';
+            ico.setAttribute('data-lucide', 'eye');
+        }
+        lucide.createIcons();
+    }
+    function toggleRetry() {
+        var content = document.getElementById('retry-content');
+        var chevron = document.getElementById('retry-chevron');
+        var btn = chevron.closest('button');
+        var isHidden = content.classList.contains('hidden');
+        content.classList.toggle('hidden');
+        if (isHidden) {
+            chevron.style.transform = 'rotate(180deg)';
+            btn.setAttribute('aria-expanded', 'true');
+        } else {
+            chevron.style.transform = 'rotate(0deg)';
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    }
+    </script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

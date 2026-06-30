@@ -1,0 +1,68 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 200" width="700" height="200">
+  <defs>
+    <linearGradient id="step1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+    <linearGradient id="step2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00aeff"/>
+      <stop offset="100%" stop-color="#0043ff"/>
+    </linearGradient>
+    <linearGradient id="step3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#11998e"/>
+      <stop offset="100%" stop-color="#38ef7d"/>
+    </linearGradient>
+    <linearGradient id="step4" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f093fb"/>
+      <stop offset="100%" stop-color="#f5576c"/>
+    </linearGradient>
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="700" height="200" fill="#f8fafc" rx="12"/>
+
+  <!-- 标题 -->
+  <text x="350" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1e293b" text-anchor="middle">快速开始流程</text>
+
+  <!-- 步骤1 -->
+  <circle cx="100" cy="100" r="40" fill="url(#step1)"/>
+  <text x="100" y="95" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">1</text>
+  <text x="100" y="115" font-family="system-ui, sans-serif" font-size="10" fill="white" text-anchor="middle">配置</text>
+  <text x="100" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">复制 .env 文件</text>
+
+  <!-- 箭头1 -->
+  <line x1="145" y1="100" x2="195" y2="100" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- 步骤2 -->
+  <circle cx="240" cy="100" r="40" fill="url(#step2)"/>
+  <text x="240" y="95" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">2</text>
+  <text x="240" y="115" font-family="system-ui, sans-serif" font-size="10" fill="white" text-anchor="middle">安装</text>
+  <text x="240" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">uv sync</text>
+
+  <!-- 箭头2 -->
+  <line x1="285" y1="100" x2="335" y2="100" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- 步骤3 -->
+  <circle cx="380" cy="100" r="40" fill="url(#step3)"/>
+  <text x="380" y="95" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">3</text>
+  <text x="380" y="115" font-family="system-ui, sans-serif" font-size="10" fill="white" text-anchor="middle">迁移</text>
+  <text x="380" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">migrate</text>
+
+  <!-- 箭头3 -->
+  <line x1="425" y1="100" x2="475" y2="100" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- 步骤4 -->
+  <circle cx="520" cy="100" r="40" fill="url(#step4)"/>
+  <text x="520" y="95" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">4</text>
+  <text x="520" y="115" font-family="system-ui, sans-serif" font-size="10" fill="white" text-anchor="middle">启动</text>
+  <text x="520" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">runserver</text>
+
+  <!-- 完成 -->
+  <line x1="565" y1="100" x2="610" y2="100" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="620" y="80" width="60" height="40" fill="#10b981" rx="8"/>
+  <text x="650" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="white" text-anchor="middle">完成</text>
+</svg>

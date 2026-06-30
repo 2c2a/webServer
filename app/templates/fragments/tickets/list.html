@@ -1,0 +1,52 @@
+{# 我的工单列表片段（前台，对齐 2c2a-frontend 设计稿，使用 --c-* 主题 token）。 #}
+<div class="flex flex-col gap-3">
+    {% if tickets %}
+    {% for t in tickets %}
+    <a href="/tickets/{{ t.id }}"
+       class="block bg-white rounded-lg p-3 flex flex-col gap-2 cursor-pointer transition-colors hover:bg-[var(--c-bg-secondary)]"
+       style="border: 1px solid rgba(115,115,115,0.08); text-decoration: none;">
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs" style="color: var(--c-text-tertiary);">{{ t.ticket_no }}</span>
+            {# 状态徽章 #}
+            {% if t.status == 'open' or t.status == 'pending' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
+                  style="background-color: var(--c-warning);">待处理</span>
+            {% elif t.status == 'in_progress' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
+                  style="background-color: var(--c-info);">处理中</span>
+            {% elif t.status == 'resolved' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
+                  style="background-color: var(--c-success);">已解决</span>
+            {% elif t.status == 'closed' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
+                  style="background-color: #737373;">已关闭</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
+                  style="background-color: #737373;">{{ t.status }}</span>
+            {% endif %}
+            {# 优先级徽章 #}
+            {% if t.priority == 'urgent' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  style="color: var(--c-error); background-color: rgba(255,71,87,0.12);">紧急</span>
+            {% elif t.priority == 'high' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  style="color: var(--c-error); background-color: rgba(255,71,87,0.12);">高优先级</span>
+            {% elif t.priority == 'normal' or t.priority == 'medium' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  style="color: var(--c-warning); background-color: rgba(242,169,12,0.12);">中优先级</span>
+            {% elif t.priority == 'low' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                  style="color: var(--c-info); background-color: rgba(63,133,255,0.12);">低优先级</span>
+            {% endif %}
+        </div>
+        <p class="text-sm font-medium" style="color: var(--c-text-primary);">{{ t.title }}</p>
+        <span class="text-xs" style="color: var(--c-text-tertiary);">{{ t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else '-' }}</span>
+    </a>
+    {% endfor %}
+    {% else %}
+    <div style="text-align:center;padding:48px 16px;color:var(--c-text-tertiary);">
+        <p class="text-sm">暂无工单</p>
+        <p class="mt-1 text-xs">点击右上角"新建工单"提交</p>
+    </div>
+    {% endif %}
+</div>

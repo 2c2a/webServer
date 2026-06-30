@@ -1,0 +1,13 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "hosts" %}
+{% set page_title = "主机表单" %}
+{% set breadcrumbs = [{"label": "首页", "href": "/admin/"}, {"label": "主机管理", "href": "/admin/hosts"}, {"label": "主机表单"}] %}
+
+{% block content %}
+      <div hx-get="/fragments/admin/hosts/form?host_id={{ host_id | default('') }}"
+           hx-trigger="load"
+           hx-target="this"
+           hx-swap="innerHTML">
+        <div class="p-8 text-center text-[var(--vercel-text-muted-foreground)]">加载中...</div>
+      </div>
+{% endblock %}

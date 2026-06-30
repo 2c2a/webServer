@@ -1,0 +1,44 @@
+{# 后台主机组列表片段 #}
+<div class="rounded-lg border overflow-hidden" style="border-color: var(--vercel-border); background: var(--vercel-bg-card);">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b text-left" style="border-color: var(--vercel-border);">
+                    <th class="px-5 py-3 font-medium whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">分组名称</th>
+                    <th class="px-5 py-3 font-medium whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">描述</th>
+                    <th class="px-5 py-3 font-medium whitespace-nowrap text-center" style="color: var(--vercel-text-muted-foreground);">主机数</th>
+                    <th class="px-5 py-3 font-medium whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">站点组</th>
+                    <th class="px-5 py-3 font-medium whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">创建时间</th>
+                    <th class="px-5 py-3 font-medium whitespace-nowrap text-right" style="color: var(--vercel-text-muted-foreground);">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if items %}
+                {% for g in items %}
+                <tr class="border-b" style="border-color: var(--vercel-border);">
+                    <td class="px-5 py-3 font-medium truncate" style="color: var(--vercel-text-foreground); max-width: 180px;">{{ g.name }}</td>
+                    <td class="px-5 py-3 truncate" style="color: var(--vercel-text-muted-foreground); max-width: 220px;">{{ g.description or '-' }}</td>
+                    <td class="px-5 py-3 text-center whitespace-nowrap">
+                        <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" style="background: var(--vercel-accent-secondary); color: var(--vercel-text-accent-foreground);">{{ g.hosts|length }} 台</span>
+                    </td>
+                    <td class="px-5 py-3 whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">
+                        {{ g.site_group.name if g.site_group else '默认' }}
+                    </td>
+                    <td class="px-5 py-3 whitespace-nowrap" style="color: var(--vercel-text-muted-foreground);">
+                        {{ g.created_at.strftime('%Y-%m-%d %H:%M') if g.created_at else '-' }}
+                    </td>
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        <button class="inline-flex h-7 items-center rounded-md px-2 text-xs transition-colors" style="color: var(--vercel-text-muted-foreground);">编辑</button>
+                        <button class="inline-flex h-7 items-center rounded-md px-2 text-xs transition-colors" style="color: var(--vercel-status-destructive);">删除</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-5 py-8 text-center text-sm" style="color: var(--vercel-text-muted-foreground);">暂无主机组</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>

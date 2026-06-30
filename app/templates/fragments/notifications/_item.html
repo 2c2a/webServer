@@ -1,0 +1,77 @@
+{# 单条站内信卡片（复刻 2c2a-frontend/pages/notifications.html 卡片样式）。
+   变量：n（Notification 对象），type_meta（type → (icon_path, default_level) 映射）。 #}
+{% set meta = type_meta.get(n.type) %}
+{% set icon_path = meta[0] if meta else 'M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0' %}
+{% set level = n.level or (meta[1] if meta else 'info') %}
+
+{# level → 图标色与背景色（背景为色值 alpha 0.1） #}
+{% set color_map = {
+    'info':    'var(--c-info)',
+    'success': 'var(--c-success)',
+    'warning': 'var(--c-warning)',
+    'error':   'var(--c-error)',
+    'brand':   'var(--c-brand)'
+} %}
+{% set bg_map = {
+    'info':    'rgba(63,133,255,0.1)',
+    'success': 'rgba(0,185,131,0.1)',
+    'warning': 'rgba(242,169,12,0.1)',
+    'error':   'rgba(255,71,87,0.1)',
+    'brand':   'rgba(75,63,227,0.1)'
+} %}
+{% set icon_color = color_map.get(level, color_map['info']) %}
+{% set icon_bg = bg_map.get(level, bg_map['info']) %}
+
+<div style="background: var(--c-bg); border-radius: 10px; margin-bottom: 8px; padding: 14px 16px; display: flex; gap: 12px; position: relative; overflow: hidden;">
+    {# 未读左侧色条 #}
+    {% if not n.is_read %}
+    <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c-info); border-radius: 10px 0 0 10px;"></div>
+    {% endif %}
+
+    {# 图标 #}
+    <div style="width: 36px; height: 36px; border-radius: 10px; background: {{ icon_bg }}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="{{ icon_color }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="{{ icon_path }}"/>
+        </svg>
+    </div>
+
+    {# 内容 #}
+    <div style="flex: 1; min-width: 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <p style="font-size: 14px; {% if not n.is_read %}font-weight: 600;{% else %}font-weight: 400;{% endif %} color: var(--c-text-primary); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">{{ n.title }}</p>
+            <span style="font-size: 11px; color: var(--c-text-tertiary); flex-shrink: 0; margin-left: 8px;">{{ n.created_at|relative_time }}</span>
+        </div>
+        <p style="font-size: 13px; color: var(--c-text-tertiary); margin: 0; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">{{ n.content }}</p>
+    </div>
+
+    {# 操作按钮（点击已读/删除，避免撑乱布局）。
+       hx-post URL 携带当前 filter，保证写操作后保持过滤上下文。 #}
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0;">
+        {% if not n.is_read %}
+        <button hx-post="/fragments/notifications/{{ n.id }}/read?filter={{ current_filter }}"
+                hx-target="#notifications-list"
+                hx-swap="innerHTML"
+                title="标记已读"
+                style="background: none; border: none; cursor: pointer; color: var(--c-text-tertiary); padding: 0; display: flex; align-items: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5"/>
+            </svg>
+        </button>
+        {% endif %}
+        <button hx-post="/fragments/notifications/{{ n.id }}/delete?filter={{ current_filter }}"
+                hx-target="#notifications-list"
+                hx-swap="innerHTML"
+                hx-confirm="确定删除该通知？"
+                title="删除"
+                style="background: none; border: none; cursor: pointer; color: var(--c-text-tertiary); padding: 0; display: flex; align-items: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+        </button>
+    </div>
+</div>

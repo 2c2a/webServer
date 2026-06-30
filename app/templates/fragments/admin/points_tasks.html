@@ -1,0 +1,56 @@
+{# 后台积分任务列表片段 #}
+<div class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+    <div class="flex items-center justify-between border-b border-[var(--vercel-border)] px-4 py-3 sm:px-5">
+        <h2 class="text-sm font-semibold tracking-tight text-[var(--vercel-text-foreground)]">积分任务</h2>
+        <a href="/admin/points/tasks/new" type="button" class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[var(--vercel-accent-primary)] px-3 text-xs font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+            <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+            <span>新增任务</span>
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                    <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">任务名称</th>
+                    <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">描述</th>
+                    <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">检测方式</th>
+                    <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">获得积分</th>
+                    <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">状态</th>
+                    <th class="whitespace-nowrap px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--vercel-border)]">
+                {% if items %}
+                {% for t in items %}
+                <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                    <td class="whitespace-nowrap px-4 py-3 font-medium text-[var(--vercel-text-foreground)]">{{ t.name }}</td>
+                    <td class="truncate px-4 py-3 text-[var(--vercel-text-muted-foreground)]" style="max-width:200px">{{ t.description or '-' }}</td>
+                    <td class="whitespace-nowrap px-4 py-3">
+                        <span class="inline-flex items-center rounded-md border border-[var(--vercel-border)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]">{{ t.detection_method }}</span>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 font-mono" style="color: {% if t.points < 0 %}var(--vercel-status-destructive){% else %}var(--vercel-status-success){% endif %};">
+                        {% if t.points >= 0 %}+{% endif %}{{ t.points }}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3">
+                        {% if t.is_active %}
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-success)]" style="background:rgba(22,163,74,0.1)">启用</span>
+                        {% else %}
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]" style="background:rgba(115,115,115,0.1)">禁用</span>
+                        {% endif %}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-right">
+                        <div class="inline-flex items-center gap-1">
+                            <a href="/admin/points/tasks/{{ t.id }}/edit" type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--vercel-text-muted-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)] hover:text-[var(--vercel-text-foreground)]" title="编辑"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无积分任务</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>

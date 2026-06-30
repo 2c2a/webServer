@@ -1,0 +1,9 @@
+{# 未读数徽章片段（顶栏铃铛角标）。
+   变量：unread_count（int）。
+   >0 显示红点 + 数字，=0 不渲染任何元素（保持铃铛容器干净）。
+   外层 id="notification-badge" 由调用方（铃铛容器或 OOB 包裹）提供。 #}
+{% if unread_count > 0 %}
+<span style="position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--c-error); color: #fff; font-size: 10px; line-height: 16px; text-align: center; font-weight: 600; border: 1.5px solid var(--c-bg);">
+    {% if unread_count > 99 %}99+{% else %}{{ unread_count }}{% endif %}
+</span>
+{% endif %}

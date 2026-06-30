@@ -1,0 +1,39 @@
+{
+  "data": [
+    {
+      "id": "page-index",
+      "title": "主页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782812400000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/index.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "主视觉背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1782812600000,
+      "canvasData": {
+        "x": 0,
+        "y": 462
+      },
+      "devMetadata": {
+        "imageSrc": "assets/hero-main.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "2c2a 主页"
+  }
+}

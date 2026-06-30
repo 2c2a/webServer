@@ -1,0 +1,59 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "hosts" %}
+{% set page_title = "主机分组" %}
+{% set breadcrumbs = [{"label": "首页", "href": "/admin/"}, {"label": "主机管理", "href": "/admin/hosts"}, {"label": "主机分组"}] %}
+
+{% block content %}
+            <!-- Page header -->
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-xl font-semibold tracking-tight" style="color: var(--vercel-text-foreground);">主机分组管理</h1>
+                <button id="toggle-add-form" class="inline-flex h-9 items-center gap-2 rounded-md px-4 text-sm font-medium transition-colors" style="background: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">
+                    <i data-lucide="plus" class="h-4 w-4"></i>
+                    <span>新增分组</span>
+                </button>
+            </div>
+
+            <!-- Add group form (collapsed) -->
+            <div id="add-group-form" class="hidden mb-6 rounded-lg border p-5" style="border-color: var(--vercel-border); background: var(--vercel-bg-card);">
+                <h2 class="mb-4 text-sm font-semibold" style="color: var(--vercel-text-foreground);">新增分组</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="mb-1.5 block text-sm" style="color: var(--vercel-text-foreground);">分组名称</label>
+                        <input type="text" placeholder="输入分组名称" class="h-9 w-full rounded-md border px-3 text-sm outline-none transition-colors" style="border-color: var(--vercel-border); background: var(--vercel-bg-background); color: var(--vercel-text-foreground);">
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-sm" style="color: var(--vercel-text-foreground);">描述</label>
+                        <textarea rows="2" placeholder="输入分组描述（可选）" class="w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors resize-none" style="border-color: var(--vercel-border); background: var(--vercel-bg-background); color: var(--vercel-text-foreground);"></textarea>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="inline-flex h-9 items-center rounded-md px-4 text-sm font-medium transition-colors" style="background: var(--vercel-accent-primary); color: var(--vercel-text-primary-foreground);">保存</button>
+                        <button id="cancel-add-form" class="inline-flex h-9 items-center rounded-md border px-4 text-sm font-medium transition-colors" style="border-color: var(--vercel-border); background: var(--vercel-bg-card); color: var(--vercel-text-foreground);">取消</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group table (HTMX) -->
+            <div hx-get="/fragments/admin/host-groups/list"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+                <span class="text-xs" style="color: var(--vercel-text-muted-foreground);">加载中...</span>
+            </div>
+{% endblock %}
+
+{% block scripts %}
+    /* Add form toggle */
+    var addBtn = document.getElementById('toggle-add-form');
+    var form = document.getElementById('add-group-form');
+    var cancelBtn = document.getElementById('cancel-add-form');
+    if (addBtn && form) {
+        addBtn.addEventListener('click', function() {
+            form.classList.toggle('hidden');
+        });
+    }
+    if (cancelBtn && form) {
+        cancelBtn.addEventListener('click', function() {
+            form.classList.add('hidden');
+        });
+    }
+{% endblock %}

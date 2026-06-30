@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Untitled</title>
+    <style id="theme-vars">
+:root {
+  /* Brand Primary */
+  --c-primary: #4b3fe3;
+  --c-primary-hover: #6a6fff;
+  --c-primary-active: #3a30b8;
+  --c-primary-light: #e8e6fd;
+  --c-primary-bg: #f4f3ff;
+
+  /* Neutrals */
+  --c-bg: #ffffff;
+  --c-bg-secondary: #f7f8fa;
+  --c-bg-tertiary: #f0f1f5;
+  --c-surface: #ffffff;
+  --c-surface-raised: #ffffff;
+  --c-border: rgba(0, 0, 0, 0.08);
+  --c-border-strong: rgba(0, 0, 0, 0.15);
+
+  /* Text */
+  --c-text-primary: #1a1a2e;
+  --c-text-secondary: #5a5a7a;
+  --c-text-tertiary: #8a8aa0;
+  --c-text-inverse: #ffffff;
+
+  /* State Colors */
+  --state-success: #10b981;
+  --state-warning: #f59e0b;
+  --state-error: #ef4444;
+  --state-info: #3b82f6;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows — static surfaces use border first */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  /* Typography */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* Spacing Scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+}
+
+/* Typography Classes */
+.text-display {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--c-text-primary);
+}
+
+.text-h1 {
+  font-family: var(--font-heading);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--c-text-primary);
+}
+
+.text-h2 {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--c-text-primary);
+}
+
+.text-h3 {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--c-text-primary);
+}
+
+.text-body-lg {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--c-text-secondary);
+}
+
+.text-body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--c-text-secondary);
+}
+
+.text-body-sm {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--c-text-tertiary);
+}
+
+.text-caption {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--c-text-tertiary);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--c-primary);
+    --color-border: var(--c-border);
+  }
+  @layer base {
+    body { background: var(--c-surface); color: var(--c-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+        <!-- Fixed Top Navigation -->
+        <nav class="fixed top-0 left-0 right-0 z-50 border-b" style="background: var(--c-surface); border-color: var(--c-border);">
+            <div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+                <!-- Brand Logo -->
+                <a href="#" class="text-xl font-bold whitespace-nowrap" style="color: var(--c-primary); font-family: var(--font-heading); letter-spacing: -0.02em;">2c2a</a>
+
+                <!-- Center Navigation Links -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm whitespace-nowrap transition-colors duration-150 hover:opacity-80" style="color: var(--c-text-secondary);">功能特性</a>
+                    <a href="#" class="text-sm whitespace-nowrap transition-colors duration-150 hover:opacity-80" style="color: var(--c-text-secondary);">解决方案</a>
+                    <a href="#" class="text-sm whitespace-nowrap transition-colors duration-150 hover:opacity-80" style="color: var(--c-text-secondary);">文档</a>
+                </div>
+
+                <!-- Login Button (Right) -->
+                <button type="button" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 cursor-pointer" style="padding: 8px 20px; border-radius: var(--radius-md); border: 1px solid var(--c-border); color: var(--c-primary); background: transparent;" onmouseover="this.style.background='var(--c-primary-bg)'" onmouseout="this.style.background='transparent'">
+                    登录
+                </button>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="relative flex items-center justify-center overflow-hidden" style="min-height: 600px; padding-top: 80px;">
+            <!-- Background Image with Overlay -->
+            <div class="absolute inset-0 z-0">
+                <img src="../assets/hero-main.jpg" alt="" class="w-full h-full object-cover" aria-hidden="true">
+                <div class="absolute inset-0" style="background: linear-gradient(135deg, rgba(75,63,227,0.85) 0%, rgba(26,26,46,0.9) 100%);"></div>
+            </div>
+
+            <!-- Hero Content -->
+            <div class="relative z-10 max-w-[1200px] mx-auto px-6 text-center">
+                <h1 style="font-family: var(--font-heading); font-size: clamp(36px, 5vw, 56px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--c-text-inverse); text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;">
+                    2c2a 零代理安全管控
+                </h1>
+                <p class="mx-auto mt-6" style="max-width: 640px; font-family: var(--font-body); font-size: 18px; font-weight: 400; line-height: 1.6; color: rgba(255,255,255,0.8);">
+                    高性能异步架构，原生站点隔离与插件系统，为企业云终端提供专业级安全管控方案
+                </p>
+                <div class="flex items-center justify-center gap-4 mt-10">
+                    <a href="#" class="inline-flex items-center gap-2 whitespace-nowrap font-semibold transition-all duration-150 cursor-pointer" style="padding: 12px 28px; border-radius: var(--radius-md); font-size: 15px; background: var(--c-text-inverse); color: var(--c-primary); border: none; text-decoration: none;" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        立即登录
+                    </a>
+                    <a href="https://github.com/2c2a/webServer" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 whitespace-nowrap font-medium transition-all duration-150" style="padding: 12px 28px; border-radius: var(--radius-md); font-size: 15px; color: var(--c-text-inverse); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); text-decoration: none;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+                        获取软件
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" style="padding: 80px 0; background: var(--c-bg);">
+            <div class="max-w-[1200px] mx-auto px-6">
+                <h2 class="text-center" style="font-family: var(--font-heading); font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.25; color: var(--c-text-primary); letter-spacing: -0.015em; text-wrap: balance; word-break: keep-all;">
+                    核心能力
+                </h2>
+                <p class="text-center mx-auto mt-4" style="max-width: 520px; font-size: 15px; line-height: 1.6; color: var(--c-text-secondary);">
+                    从架构层面构建安全管控基座，每一项能力都为生产环境设计
+                </p>
+
+                <!-- Feature Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+                    <!-- Feature 1: Security Control -->
+                    <div class="flex flex-col transition-all duration-200" style="background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 24px; min-height: 200px;" onmouseover="this.style.borderColor='var(--c-primary-light)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--c-border)';this.style.transform='translateY(0)'">
+                        <div class="flex items-center justify-center shrink-0" style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--c-primary-bg);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--c-primary);">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </div>
+                        <h3 class="mt-4" style="font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--c-text-primary); line-height: 1.35;">安全管控</h3>
+                        <p class="mt-2 flex-1" style="font-size: 14px; line-height: 1.6; color: var(--c-text-secondary);">Ed25519 非对称签名、Argon2id 密码哈希、AES-256-GCM 字段加密，全链路安全原语</p>
+                    </div>
+
+                    <!-- Feature 2: Multi-tenant Isolation -->
+                    <div class="flex flex-col transition-all duration-200" style="background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 24px; min-height: 200px;" onmouseover="this.style.borderColor='var(--c-primary-light)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--c-border)';this.style.transform='translateY(0)'">
+                        <div class="flex items-center justify-center shrink-0" style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--c-primary-bg);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--c-primary);">
+                                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                                <path d="M8 21h8"/>
+                                <path d="M12 17v4"/>
+                            </svg>
+                        </div>
+                        <h3 class="mt-4" style="font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--c-text-primary); line-height: 1.35;">站点隔离</h3>
+                        <p class="mt-2 flex-1" style="font-size: 14px; line-height: 1.6; color: var(--c-text-secondary);">域名解析租户，所有数据按站点组隔离，中间件层强制过滤，杜绝跨租户泄漏</p>
+                    </div>
+
+                    <!-- Feature 3: Async High Performance -->
+                    <div class="flex flex-col transition-all duration-200" style="background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 24px; min-height: 200px;" onmouseover="this.style.borderColor='var(--c-primary-light)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--c-border)';this.style.transform='translateY(0)'">
+                        <div class="flex items-center justify-center shrink-0" style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--c-primary-bg);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--c-primary);">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                        </div>
+                        <h3 class="mt-4" style="font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--c-text-primary); line-height: 1.35;">异步高性能</h3>
+                        <p class="mt-2 flex-1" style="font-size: 14px; line-height: 1.6; color: var(--c-text-secondary);">Granian + FastAPI + SQLAlchemy Async 全异步栈，App Shell 边缘缓存，零阻塞响应</p>
+                    </div>
+
+                    <!-- Feature 4: Plugin System -->
+                    <div class="flex flex-col transition-all duration-200" style="background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 24px; min-height: 200px;" onmouseover="this.style.borderColor='var(--c-primary-light)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--c-border)';this.style.transform='translateY(0)'">
+                        <div class="flex items-center justify-center shrink-0" style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--c-primary-bg);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--c-primary);">
+                                <path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.315 8.685a.98.98 0 0 1 .837-.276c.47.07.802.48.968.925a2.501 2.501 0 1 0 3.214-3.214c-.446-.166-.855-.497-.925-.968a.979.979 0 0 1 .276-.837l1.61-1.61a2.404 2.404 0 0 1 1.705-.707c.618 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.289.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02z"/>
+                            </svg>
+                        </div>
+                        <h3 class="mt-4" style="font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--c-text-primary); line-height: 1.35;">插件系统</h3>
+                        <p class="mt-2 flex-1" style="font-size: 14px; line-height: 1.6; color: var(--c-text-secondary);">原生插件架构，支持路由注册、服务提供、UI 扩展与事件钩子，按需扩展能力</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer style="background: var(--c-bg-secondary); border-top: 1px solid var(--c-border);">
+            <div class="max-w-[1200px] mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-semibold" style="color: var(--c-primary); font-family: var(--font-heading);">2c2a</span>
+                    <span class="text-sm" style="color: var(--c-text-tertiary);">Zero Agent Security Control</span>
+                </div>
+                <p class="text-sm" style="color: var(--c-text-tertiary);">
+                    &copy; 2025 2c2a. All rights reserved.
+                </p>
+            </div>
+        </footer>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{# 后台开户申请列表片段 #}
+<div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+    <table class="w-full min-w-[720px] text-left text-[var(--vercel-font-size-sm)]">
+        <thead>
+            <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--vercel-text-muted-foreground)]">申请人</th>
+                <th class="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--vercel-text-muted-foreground)]">目标产品</th>
+                <th class="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--vercel-text-muted-foreground)]">联系邮箱</th>
+                <th class="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--vercel-text-muted-foreground)]">状态</th>
+                <th class="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--vercel-text-muted-foreground)]">申请时间</th>
+                <th class="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--vercel-text-muted-foreground)]">操作</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--vercel-border)]">
+            {% if items %}
+            {% for o in items %}
+            <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--vercel-text-foreground)]">
+                    {{ o.user_fullname or o.username }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-2.5 text-[var(--vercel-text-foreground)]">
+                    {{ o.target_product.display_name or o.target_product.name if o.target_product else '-' }}
+                </td>
+                <td class="truncate px-4 py-2.5 text-[var(--vercel-text-muted-foreground)]">{{ o.contact_email }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5">
+                    {% if o.status == 'pending' %}
+                    <span class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[var(--vercel-font-size-xs)] font-medium" style="background:rgba(202,138,4,0.12);color:var(--vercel-status-warning)">待审核</span>
+                    {% elif o.status == 'approved' %}
+                    <span class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[var(--vercel-font-size-xs)] font-medium" style="background:rgba(22,163,74,0.12);color:var(--vercel-status-success)">已通过</span>
+                    {% elif o.status == 'rejected' %}
+                    <span class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[var(--vercel-font-size-xs)] font-medium" style="background:rgba(231,0,11,0.1);color:var(--vercel-status-destructive)">已拒绝</span>
+                    {% else %}
+                    <span class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[var(--vercel-font-size-xs)] font-medium" style="background:var(--vercel-bg-muted);color:var(--vercel-text-muted-foreground)">{{ o.status }}</span>
+                    {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-2.5 text-[var(--vercel-text-muted-foreground)]">
+                    {{ o.created_at.strftime('%Y-%m-%d %H:%M') if o.created_at else '-' }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-2.5">
+                    {% if o.status == 'pending' %}
+                    <button class="inline-flex items-center gap-1 rounded-md bg-[var(--vercel-accent-primary)] px-2.5 py-1 text-[var(--vercel-font-size-xs)] font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                        <i data-lucide="eye" class="h-3.5 w-3.5"></i>审核
+                    </button>
+                    {% else %}
+                    <button class="inline-flex items-center gap-1 rounded-md border border-[var(--vercel-border)] px-2.5 py-1 text-[var(--vercel-font-size-xs)] text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                        <i data-lucide="file-text" class="h-3.5 w-3.5"></i>查看详情
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无开户申请</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

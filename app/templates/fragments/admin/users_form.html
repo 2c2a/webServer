@@ -1,0 +1,139 @@
+{# 后台用户创建/编辑表单片段（对齐 2c2a-admin-console/pages/user-form.html 设计稿）。
+   toggle 开关使用纯 CSS peer-checked: 模式，无需 JavaScript。 #}
+<div class="mx-auto max-w-[720px]">
+    <h1 class="text-base font-semibold tracking-tight text-[var(--vercel-text-foreground)]">{% if item %}编辑用户{% else %}新增用户{% endif %}</h1>
+    <p class="mt-1 text-sm text-[var(--vercel-text-muted-foreground)]">{% if item %}修改用户账户信息{% else %}创建新的管理后台用户账户{% endif %}</p>
+
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <form class="p-5 sm:p-6"
+              {% if item %}
+              hx-put="/fragments/admin/users/{{ item.id }}"
+              {% else %}
+              hx-post="/fragments/admin/users/create"
+              {% endif %}
+              hx-target="#admin-content"
+              hx-swap="innerHTML">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                <!-- 用户名 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        用户名 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="text" name="username" required
+                           value="{{ item.username | default('') }}"
+                           {% if item %}readonly{% endif %}
+                           placeholder="请输入用户名"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] {% if item %}cursor-not-allowed bg-[var(--vercel-bg-muted)]{% endif %}">
+                    {% if item %}<p class="text-xs text-[var(--vercel-text-muted-foreground)]">用户名创建后不可修改</p>{% endif %}
+                </div>
+
+                <!-- 邮箱 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        邮箱 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="email" name="email" required
+                           value="{{ item.email | default('') }}"
+                           placeholder="user@example.com"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 手机号 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">手机号</label>
+                    <input type="text" name="phone"
+                           value="{{ item.phone | default('') }}"
+                           placeholder="13800138000"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 密码 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        密码 {% if item %}<span class="text-[var(--vercel-text-muted-foreground)]">(留空不修改)</span>{% else %}<span class="text-[var(--vercel-status-destructive)]">*</span>{% endif %}
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="password"
+                               {% if not item %}required{% endif %}
+                               placeholder="{% if item %}留空表示不修改{% else %}请输入初始密码{% endif %}"
+                               class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 pr-9 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                        <button type="button" class="absolute right-2 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[var(--vercel-text-muted-foreground)] transition-colors hover:text-[var(--vercel-text-foreground)]" onclick="const inp=this.previousElementSibling;inp.type=inp.type==='password'?'text':'password';const i=this.querySelector('i');i.setAttribute('data-lucide',inp.type==='password'?'eye':'eye-off');lucide.createIcons()" aria-label="切换密码可见性">
+                            <i data-lucide="eye" class="h-3.5 w-3.5"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-[var(--vercel-text-muted-foreground)]">密码经 BLAKE2b + Argon2id 双重哈希存储</p>
+                </div>
+
+                <!-- Separator -->
+                <div class="sm:col-span-2"><hr class="border-[var(--vercel-border)]"></div>
+
+                <!-- 配置开关分区 -->
+                <div class="sm:col-span-2">
+                    <legend class="text-sm font-semibold text-[var(--vercel-text-foreground)] mb-4">配置开关</legend>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                        <!-- 账户状态 -->
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">启用账户</span>
+                            <div class="relative">
+                                <input type="checkbox" name="is_active" value="true" class="peer sr-only" {% if not item or item.is_active %}checked{% endif %}>
+                                <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+
+                        <!-- Staff 权限 -->
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">Staff 权限</span>
+                            <div class="relative">
+                                <input type="checkbox" name="is_staff" value="true" class="peer sr-only" {% if item and item.is_staff %}checked{% endif %}>
+                                <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+
+                        <!-- Superuser 权限 -->
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">Superuser 权限</span>
+                            <div class="relative">
+                                <input type="checkbox" name="is_superuser" value="true" class="peer sr-only" {% if item and item.is_superuser %}checked{% endif %}>
+                                <div class="h-5 w-9 rounded-full bg-[var(--vercel-accent-input)] peer-checked:bg-[var(--vercel-status-success)] transition-colors duration-200"></div>
+                                <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-transform duration-200 peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                {% if item %}
+                <!-- 所属站点组（编辑态只读展示） -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">所属站点组</label>
+                    <div class="flex items-center gap-1.5 flex-wrap rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 min-h-[36px]">
+                        {% if item.site_groups %}
+                            {% for sg in item.site_groups %}
+                                <span class="inline-flex items-center rounded-md border border-[var(--vercel-border)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]">{{ sg.site_name or sg.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-xs text-[var(--vercel-text-muted-foreground)]">未加入任何站点组</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-xs text-[var(--vercel-text-muted-foreground)]">站点组通过成员管理页面调整</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Separator -->
+            <div class="my-5 border-t border-[var(--vercel-border)]"></div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3">
+                <a href="/admin/users" class="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                    取消
+                </a>
+                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--vercel-accent-primary)] px-4 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    保存
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

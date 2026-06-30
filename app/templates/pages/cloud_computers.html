@@ -1,0 +1,15 @@
+{% extends "app_shell.html" %}
+{% block title %} - 我的云电脑{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <h1>我的云电脑</h1>
+    <div id="cloud-computers-content"
+         hx-get="/fragments/cloud-computers"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML">
+        <span class="loading">加载中...</span>
+    </div>
+</div>
+{% endblock %}

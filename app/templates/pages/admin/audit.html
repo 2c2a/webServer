@@ -1,0 +1,178 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "audit" %}
+{% set page_title = "审计日志" %}
+
+{% block content %}
+      <!-- Page header with export action -->
+      <div class="flex items-center justify-between gap-4 mb-5">
+        <div>
+          <h1 class="text-lg font-semibold tracking-tight truncate" style="color:var(--vercel-text-foreground)">审计日志</h1>
+          <p class="mt-1 text-xs" style="color:var(--vercel-text-muted-foreground)">系统操作审计、安全事件与会话活动记录</p>
+        </div>
+        <button class="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors border border-[var(--vercel-border)] hover:bg-[var(--vercel-bg-muted)]" style="color:var(--vercel-text-foreground)" data-dom-id="btn-export">
+          <i data-lucide="download" class="h-4 w-4"></i>
+          <span class="hidden sm:inline">导出</span>
+        </button>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="flex items-center gap-0 border-b border-[var(--vercel-border)] mb-5 overflow-x-auto no-scrollbar">
+        <button class="audit-tab shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px" style="color:var(--vercel-text-foreground);border-color:var(--vercel-accent-primary)" data-tab="audit" data-dom-id="tab-audit">审计日志</button>
+        <button class="audit-tab shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px" style="color:var(--vercel-text-muted-foreground);border-color:transparent" data-tab="security" data-dom-id="tab-security">安全事件</button>
+        <button class="audit-tab shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px" style="color:var(--vercel-text-muted-foreground);border-color:transparent" data-tab="sessions" data-dom-id="tab-sessions">会话活动</button>
+      </div>
+
+      <!-- Section 1: Audit Log -->
+      <div id="panel-audit" class="audit-panel">
+        <!-- Filters -->
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3 mb-5">
+          <select class="h-9 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)" data-dom-id="filter-type">
+            <option value="">全部类型</option>
+            <option value="login">登录</option>
+            <option value="data">数据修改</option>
+            <option value="permission">权限变更</option>
+            <option value="delete">删除</option>
+            <option value="config">系统配置</option>
+          </select>
+          <div class="flex items-center gap-2">
+            <input type="date" class="h-9 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)" data-dom-id="filter-date-start">
+            <span class="text-sm whitespace-nowrap" style="color:var(--vercel-text-muted-foreground)">-</span>
+            <input type="date" class="h-9 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)" data-dom-id="filter-date-end">
+          </div>
+          <div class="relative flex-1 min-w-0 sm:max-w-xs">
+            <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style="color:var(--vercel-text-muted-foreground)"></i>
+            <input type="text" placeholder="搜索操作人..." class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] pl-9 pr-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)" data-dom-id="filter-operator">
+          </div>
+        </div>
+
+        <!-- Audit table (HTMX) -->
+        <div hx-get="/fragments/admin/audit/logs"
+             hx-trigger="load"
+             hx-target="this"
+             hx-swap="innerHTML">
+          <span class="text-xs text-[var(--vercel-text-muted-foreground)]">加载中...</span>
+        </div>
+      </div>
+
+      <!-- Section 2: Security Events -->
+      <div id="panel-security" class="audit-panel hidden">
+        <div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[160px]" style="color:var(--vercel-text-muted-foreground)">时间</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[80px]" style="color:var(--vercel-text-muted-foreground)">事件级别</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[140px]" style="color:var(--vercel-text-muted-foreground)">事件类型</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[200px]" style="color:var(--vercel-text-muted-foreground)">详情</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[130px]" style="color:var(--vercel-text-muted-foreground)">IP 地址</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 08:45:12</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-destructive);color:var(--vercel-text-destructive-foreground)">严重</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">权限越权尝试</td>
+                <td class="px-4 py-2.5 truncate max-w-[300px]" style="color:var(--vercel-text-secondary-foreground)">用户 guest 尝试访问 /api/v1/users 管理接口，被拦截</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">203.0.113.42</td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 09:30:05</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-destructive);color:var(--vercel-text-destructive-foreground)">高</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">登录失败 5 次</td>
+                <td class="px-4 py-2.5 truncate max-w-[300px]" style="color:var(--vercel-text-secondary-foreground)">用户 admin 在 5 分钟内连续登录失败 5 次，已触发临时锁定</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">198.51.100.17</td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 11:15:38</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-warning);color:var(--vercel-text-destructive-foreground)">中</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">异常 IP 登录</td>
+                <td class="px-4 py-2.5 truncate max-w-[300px]" style="color:var(--vercel-text-secondary-foreground)">用户 ops-user 从非常用 IP 45.33.32.156 登录，已记录</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">45.33.32.156</td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 13:50:20</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-destructive);color:var(--vercel-text-destructive-foreground)">高</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">令牌伪造检测</td>
+                <td class="px-4 py-2.5 truncate max-w-[300px]" style="color:var(--vercel-text-secondary-foreground)">检测到过期 ban_version 的 JWT 令牌使用，来源 IP 已标记</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">192.0.2.88</td>
+              </tr>
+              <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 16:22:44</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">低</span></td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">频繁 API 请求</td>
+                <td class="px-4 py-2.5 truncate max-w-[300px]" style="color:var(--vercel-text-secondary-foreground)">IP 10.0.1.200 在 1 分钟内发起 120 次 API 请求，已限流</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">10.0.1.200</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 3: Session Activity -->
+      <div id="panel-sessions" class="audit-panel hidden">
+        <div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[100px]" style="color:var(--vercel-text-muted-foreground)">用户</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[180px]" style="color:var(--vercel-text-muted-foreground)">会话 ID</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[130px]" style="color:var(--vercel-text-muted-foreground)">IP 地址</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[200px]" style="color:var(--vercel-text-muted-foreground)">User-Agent</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[160px]" style="color:var(--vercel-text-muted-foreground)">登录时间</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[160px]" style="color:var(--vercel-text-muted-foreground)">最后活动</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium min-w-[80px]" style="color:var(--vercel-text-muted-foreground)">状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">admin</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs truncate" style="color:var(--vercel-text-secondary-foreground)">a3f8c1e2...7b4d</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">10.0.1.50</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate max-w-[260px]" style="color:var(--vercel-text-secondary-foreground)">Chrome 127.0 / Windows 11</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 09:12</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 15:45</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">活跃</span></td>
+              </tr>
+              <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">ops-user</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs truncate" style="color:var(--vercel-text-secondary-foreground)">d9e2b4a7...3c1f</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">10.0.1.78</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate max-w-[260px]" style="color:var(--vercel-text-secondary-foreground)">Firefox 128 / macOS 15</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 08:50</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 14:22</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">活跃</span></td>
+              </tr>
+              <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">zhangsan</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs truncate" style="color:var(--vercel-text-secondary-foreground)">f1a7c3b8...9e2d</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">172.16.0.33</td>
+                <td class="px-4 py-2.5 whitespace-nowrap truncate max-w-[260px]" style="color:var(--vercel-text-secondary-foreground)">Chrome 127.0 / Ubuntu 24</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 14:10</td>
+                <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">2026-06-26 14:55</td>
+                <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">已过期</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.audit-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var target = this.getAttribute('data-tab');
+      document.querySelectorAll('.audit-tab').forEach(function(t) {
+        t.style.color = 'var(--vercel-text-muted-foreground)';
+        t.style.borderColor = 'transparent';
+      });
+      this.style.color = 'var(--vercel-text-foreground)';
+      this.style.borderColor = 'var(--vercel-accent-primary)';
+      document.querySelectorAll('.audit-panel').forEach(function(p) {
+        p.classList.add('hidden');
+      });
+      document.getElementById('panel-' + target).classList.remove('hidden');
+    });
+  });
+</script>
+{% endblock %}

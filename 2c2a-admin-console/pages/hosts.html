@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主机管理 — 2c2a</title>
+    <style id="theme-vars">
+/* 2c2a Admin Console — Vercel-inspired design tokens */
+/* Brand prefix: vercel */
+
+:root {
+  /* ── Background ── */
+  --vercel-bg-background: #ffffff;
+  --vercel-bg-card: #ffffff;
+  --vercel-bg-popover: #ffffff;
+  --vercel-bg-muted: #f5f5f5;
+
+  /* ── Text ── */
+  --vercel-text-foreground: #0a0a0a;
+  --vercel-text-card-foreground: #0a0a0a;
+  --vercel-text-popover-foreground: #0a0a0a;
+  --vercel-text-primary-foreground: #fafafa;
+  --vercel-text-secondary-foreground: #171717;
+  --vercel-text-muted-foreground: #858585;
+  --vercel-text-accent-foreground: #171717;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  /* ── Accent ── */
+  --vercel-accent-primary: #121212;
+  --vercel-accent-secondary: #f5f5f5;
+  --vercel-accent-accent: #f5f5f5;
+  --vercel-accent-input: #e5e5e5;
+  --vercel-accent-ring: #0d0d0d;
+
+  /* ── Border ── */
+  --vercel-border: #e8e8e8;
+
+  /* ── Status ── */
+  --vercel-status-destructive: #e7000b;
+  --vercel-status-success: #16a34a;
+  --vercel-status-warning: #ca8a04;
+  --vercel-status-info: #2563eb;
+
+  /* ── Chart ── */
+  --vercel-chart-1: #91c5ff;
+  --vercel-chart-2: #3a81f6;
+  --vercel-chart-3: #2563eb;
+  --vercel-chart-4: #1a4eda;
+  --vercel-chart-5: #1f3fad;
+
+  /* ── Sidebar ── */
+  --vercel-sidebar-bg: #fafafa;
+  --vercel-sidebar-foreground: #0a0a0a;
+  --vercel-sidebar-primary: #171717;
+  --vercel-sidebar-primary-foreground: #fafafa;
+  --vercel-sidebar-accent: #f5f5f5;
+  --vercel-sidebar-accent-foreground: #171717;
+  --vercel-sidebar-border: #e5e5e5;
+  --vercel-sidebar-ring: #a1a1a1;
+
+  /* ── Typography ── */
+  --vercel-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --vercel-font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  --vercel-font-size-xs: 0.75rem;
+  --vercel-font-size-sm: 0.8125rem;
+  --vercel-font-size-base: 0.875rem;
+  --vercel-font-size-lg: 1rem;
+  --vercel-font-size-xl: 1.25rem;
+  --vercel-font-size-2xl: 1.5rem;
+  --vercel-font-size-3xl: 1.875rem;
+  --vercel-line-height-tight: 1.25;
+  --vercel-line-height-normal: 1.5;
+  --vercel-line-height-relaxed: 1.625;
+
+  /* ── Spacing ── */
+  --vercel-spacing-unit: 0.25rem;
+  --vercel-spacing-1: 0.25rem;
+  --vercel-spacing-2: 0.5rem;
+  --vercel-spacing-3: 0.75rem;
+  --vercel-spacing-4: 1rem;
+  --vercel-spacing-5: 1.25rem;
+  --vercel-spacing-6: 1.5rem;
+  --vercel-spacing-8: 2rem;
+  --vercel-spacing-10: 2.5rem;
+  --vercel-spacing-12: 3rem;
+
+  /* ── Radius ── */
+  --vercel-radius: 0.5rem;
+  --vercel-radius-sm: 0.25rem;
+  --vercel-radius-md: 0.5rem;
+  --vercel-radius-lg: 0.5rem;
+  --vercel-radius-full: 9999px;
+
+  /* ── Shadow ── */
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+
+  /* ── Transition ── */
+  --vercel-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --vercel-transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark mode ── */
+.dark {
+  --vercel-bg-background: #0a0a0a;
+  --vercel-bg-card: #171717;
+  --vercel-bg-popover: #262626;
+  --vercel-bg-muted: #262626;
+
+  --vercel-text-foreground: #fafafa;
+  --vercel-text-card-foreground: #fafafa;
+  --vercel-text-popover-foreground: #fafafa;
+  --vercel-text-primary-foreground: #171717;
+  --vercel-text-secondary-foreground: #fafafa;
+  --vercel-text-muted-foreground: #a1a1a1;
+  --vercel-text-accent-foreground: #fafafa;
+  --vercel-text-destructive-foreground: #ffffff;
+
+  --vercel-accent-primary: #e5e5e5;
+  --vercel-accent-secondary: #262626;
+  --vercel-accent-accent: #262626;
+  --vercel-accent-input: #404040;
+  --vercel-accent-ring: #a3a3a3;
+
+  --vercel-border: #404040;
+
+  --vercel-status-destructive: #ff3b4a;
+
+  --vercel-chart-1: #5b9aff;
+  --vercel-chart-2: #5b9aff;
+  --vercel-chart-3: #91c5ff;
+  --vercel-chart-4: #91c5ff;
+  --vercel-chart-5: #5b9aff;
+
+  --vercel-sidebar-bg: #0a0a0a;
+  --vercel-sidebar-foreground: #fafafa;
+  --vercel-sidebar-primary: #e5e5e5;
+  --vercel-sidebar-primary-foreground: #0a0a0a;
+  --vercel-sidebar-accent: #262626;
+  --vercel-sidebar-accent-foreground: #fafafa;
+  --vercel-sidebar-border: #262626;
+  --vercel-sidebar-ring: #525252;
+
+  --vercel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --vercel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-border: var(--vercel-border);
+    --color-chart-1: var(--vercel-chart-1);
+    --color-chart-2: var(--vercel-chart-2);
+    --color-chart-3: var(--vercel-chart-3);
+    --color-chart-4: var(--vercel-chart-4);
+    --color-chart-5: var(--vercel-chart-5);
+    --color-sidebar-foreground: var(--vercel-sidebar-foreground);
+    --color-sidebar-primary: var(--vercel-sidebar-primary);
+    --color-sidebar-primary-foreground: var(--vercel-sidebar-primary-foreground);
+    --color-sidebar-accent: var(--vercel-sidebar-accent);
+    --color-sidebar-accent-foreground: var(--vercel-sidebar-accent-foreground);
+  }
+  @layer base {
+    body { background: var(--vercel-background); color: var(--vercel-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+<main>
+<!-- Mobile hamburger -->
+<button id="sidebar-toggle" class="lg:hidden fixed top-3 left-3 z-50 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]" aria-label="打开侧边栏">
+  <i data-lucide="menu" class="h-4 w-4"></i>
+</button>
+
+<!-- Mobile overlay -->
+<div id="sidebar-overlay" class="hidden fixed inset-0 z-40 bg-black/40 lg:hidden"></div>
+
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-60 -translate-x-full border-r border-[var(--vercel-sidebar-border)] bg-[var(--vercel-sidebar-bg)] transition-transform duration-200 lg:static lg:translate-x-0">
+    <div class="flex h-14 items-center px-5 border-b border-[var(--vercel-sidebar-border)]">
+      <span class="text-sm font-semibold tracking-tight" style="color:var(--vercel-sidebar-primary)">2c2a</span>
+    </div>
+    <nav class="flex flex-col gap-0.5 px-3 pt-4">
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-overview">
+        <i data-lucide="layout-dashboard" class="h-4 w-4"></i> 概览
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-users">
+        <i data-lucide="users" class="h-4 w-4"></i> 用户管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-hosts">
+        <i data-lucide="server" class="h-4 w-4"></i> 主机管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-tickets">
+        <i data-lucide="ticket" class="h-4 w-4"></i> 工单管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-openings">
+        <i data-lucide="user-plus" class="h-4 w-4"></i> 开户申请
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-products">
+        <i data-lucide="package" class="h-4 w-4"></i> 产品管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-points">
+        <i data-lucide="coins" class="h-4 w-4"></i> 积分管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-audit">
+        <i data-lucide="file-text" class="h-4 w-4"></i> 审计日志
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-sitegroups">
+        <i data-lucide="building-2" class="h-4 w-4"></i> 站点组管理
+      </a>
+      <a href="#" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[var(--vercel-sidebar-accent)]" style="color:var(--vercel-sidebar-accent-foreground)" data-dom-id="nav-settings">
+        <i data-lucide="settings" class="h-4 w-4"></i> 系统配置
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <div class="flex-1 min-w-0 lg:ml-0">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-background)]/95 backdrop-blur">
+      <div class="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <h1 class="text-lg font-semibold tracking-tight truncate" style="color:var(--vercel-text-foreground)">主机管理</h1>
+        <button class="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-white transition-colors" style="background:var(--vercel-accent-primary)" data-dom-id="btn-add-host">
+          <i data-lucide="plus" class="h-4 w-4"></i>
+          <span class="hidden sm:inline">新增主机</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content area -->
+    <div class="px-4 py-5 sm:px-6 lg:px-8">
+      <!-- Filters -->
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3 mb-5">
+        <div class="relative flex-1 min-w-0 sm:max-w-xs">
+          <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style="color:var(--vercel-text-muted-foreground)"></i>
+          <input type="text" placeholder="搜索主机名称、IP..." class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] pl-9 pr-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)" data-dom-id="filter-search">
+        </div>
+        <select class="h-9 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)" data-dom-id="filter-status">
+          <option value="">全部状态</option>
+          <option value="running">运行中</option>
+          <option value="stopped">已停止</option>
+          <option value="error">异常</option>
+        </select>
+      </div>
+
+      <!-- Host table -->
+      <div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+              <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">名称</th>
+              <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">主机名</th>
+              <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">IP</th>
+              <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">端口</th>
+              <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">站点组</th>
+              <th class="whitespace-nowrap px-4 py-2.5 text-left font-medium" style="color:var(--vercel-text-muted-foreground)">状态</th>
+              <th class="whitespace-nowrap px-4 py-2.5 text-right font-medium" style="color:var(--vercel-text-muted-foreground)">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">Web-Prod-01</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">web-prod-01.example.local</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">192.168.1.10</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">5985</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">默认站点</td>
+              <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">运行中</span></td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-1"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-1"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">DB-Prod-01</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">db-prod-01.example.local</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">192.168.1.20</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">5985</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">默认站点</td>
+              <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">运行中</span></td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-2"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-2"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">Cache-Prod-01</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">cache-prod-01.example.local</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">192.168.1.30</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">5986</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">默认站点</td>
+              <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-text-muted-foreground);color:var(--vercel-text-destructive-foreground)">已停止</span></td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-3"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-3"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">Web-Staging-01</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">web-staging-01.example.local</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">10.0.2.15</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">5985</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">测试站点</td>
+              <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-destructive);color:var(--vercel-text-destructive-foreground)">异常</span></td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-4"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-4"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="border-b border-[var(--vercel-border)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">DB-Staging-01</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">db-staging-01.example.local</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">10.0.2.20</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">5985</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">测试站点</td>
+              <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">运行中</span></td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-5"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-5"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-foreground)">Monitor-01</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">monitor-01.example.local</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">192.168.1.100</td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-xs" style="color:var(--vercel-text-secondary-foreground)">5985</td>
+              <td class="px-4 py-2.5 whitespace-nowrap truncate" style="color:var(--vercel-text-secondary-foreground)">默认站点</td>
+              <td class="px-4 py-2.5 whitespace-nowrap"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-status-success);color:var(--vercel-text-destructive-foreground)">运行中</span></td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="编辑" data-dom-id="edit-6"><i data-lucide="pencil" class="h-3.5 w-3.5" style="color:var(--vercel-text-muted-foreground)"></i></button>
+                  <button class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--vercel-bg-muted)]" aria-label="删除" data-dom-id="delete-6"><i data-lucide="trash-2" class="h-3.5 w-3.5" style="color:var(--vercel-status-destructive)"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Expandable form section -->
+      <div class="mt-5">
+        <button id="form-toggle" class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--vercel-border)] px-3.5 py-2 text-sm transition-colors hover:bg-[var(--vercel-bg-muted)]" style="color:var(--vercel-text-foreground)" data-dom-id="btn-toggle-form">
+          <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" id="form-chevron"></i>
+          展开添加表单
+        </button>
+
+        <div id="host-form" class="hidden mt-4 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] p-5">
+          <h3 class="mb-4 text-sm font-semibold" style="color:var(--vercel-text-foreground)">新增主机</h3>
+          <form>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <!-- 名称 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">名称</label>
+                <input type="text" placeholder="例：Web-Prod-02" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 主机名 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">主机名</label>
+                <input type="text" placeholder="例：web-prod-02.example.local" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- IP -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">IP</label>
+                <input type="text" placeholder="例：192.168.1.40" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 端口 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">端口</label>
+                <input type="number" value="5985" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 用户名 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">用户名</label>
+                <input type="text" placeholder="例：administrator" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 密码 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">密码</label>
+                <input type="password" placeholder="输入连接密码" class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+              </div>
+              <!-- 站点组 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">站点组</label>
+                <select class="h-9 w-full rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 text-sm outline-none transition-colors focus:border-[var(--vercel-accent-ring)] focus:ring-1 focus:ring-[var(--vercel-accent-ring)]" style="color:var(--vercel-text-foreground)">
+                  <option value="">请选择站点组</option>
+                  <option value="default">默认站点</option>
+                  <option value="test">测试站点</option>
+                </select>
+              </div>
+              <!-- 提供商 -->
+              <div>
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">提供商</label>
+                <div class="flex flex-wrap gap-1.5 items-center min-h-9 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-2 py-1">
+                  <span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-bg-muted);color:var(--vercel-text-foreground)">阿里云 <button type="button" class="ml-0.5 hover:opacity-60" style="color:var(--vercel-text-muted-foreground)" aria-label="移除"><i data-lucide="x" class="h-3 w-3"></i></button></span>
+                  <span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-bg-muted);color:var(--vercel-text-foreground)">腾讯云 <button type="button" class="ml-0.5 hover:opacity-60" style="color:var(--vercel-text-muted-foreground)" aria-label="移除"><i data-lucide="x" class="h-3 w-3"></i></button></span>
+                </div>
+              </div>
+              <!-- 管理员 (full width) -->
+              <div class="sm:col-span-2">
+                <label class="mb-1.5 block text-xs font-medium" style="color:var(--vercel-text-muted-foreground)">管理员</label>
+                <div class="flex flex-wrap gap-1.5 items-center min-h-9 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-2 py-1">
+                  <span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-bg-muted);color:var(--vercel-text-foreground)">admin <button type="button" class="ml-0.5 hover:opacity-60" style="color:var(--vercel-text-muted-foreground)" aria-label="移除"><i data-lucide="x" class="h-3 w-3"></i></button></span>
+                  <span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium" style="background:var(--vercel-bg-muted);color:var(--vercel-text-foreground)">ops-user <button type="button" class="ml-0.5 hover:opacity-60" style="color:var(--vercel-text-muted-foreground)" aria-label="移除"><i data-lucide="x" class="h-3 w-3"></i></button></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-5 flex items-center gap-3">
+              <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors" style="background:var(--vercel-accent-primary)" data-dom-id="btn-save-host">
+                <i data-lucide="check" class="h-4 w-4"></i> 保存
+              </button>
+              <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--vercel-border)] px-4 py-2 text-sm font-medium transition-colors hover:bg-[var(--vercel-bg-muted)]" style="color:var(--vercel-text-foreground)" data-dom-id="btn-cancel-host">
+                取消
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar toggle + form toggle scripts -->
+<style>
+  @layer components {
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  }
+</style>
+<script>
+  document.getElementById('sidebar-toggle').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.remove('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.remove('hidden');
+  });
+  document.getElementById('sidebar-overlay').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    this.classList.add('hidden');
+  });
+  document.getElementById('form-toggle').addEventListener('click', function() {
+    var form = document.getElementById('host-form');
+    var chevron = document.getElementById('form-chevron');
+    var isHidden = form.classList.contains('hidden');
+    if (isHidden) {
+      form.classList.remove('hidden');
+      chevron.style.transform = 'rotate(180deg)';
+    } else {
+      form.classList.add('hidden');
+      chevron.style.transform = 'rotate(0deg)';
+    }
+  });
+</script>
+</main>
+<script>lucide.createIcons();</script>
+</body>
+</html>

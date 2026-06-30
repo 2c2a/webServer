@@ -1,0 +1,41 @@
+{# 云电脑产品列表片段（对齐 2c2a-frontend/pages/cloud-computers.html 设计稿）。
+   展示可申请的产品卡片，点击"申请开通"跳转 /cloud-computers/apply。 #}
+<div class="flex flex-col gap-3">
+    {% if products %}
+    {% for p in products %}
+    <div class="bg-white rounded-lg flex gap-3 p-3" style="border: 1px solid var(--c-border);">
+        <!-- Product Image Placeholder -->
+        <div class="flex-shrink-0 rounded-md" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-hover) 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+            <span class="text-white font-semibold text-lg">{{ (p.display_name or p.name)[:1] | upper }}</span>
+        </div>
+        <!-- Product Info -->
+        <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+                <h3 class="text-[15px] font-semibold leading-tight" style="color: var(--c-text-primary);">{{ p.display_name or p.name }}</h3>
+                <p class="text-[12px] mt-1 truncate" style="color: var(--c-text-tertiary);">{{ p.display_description or p.description or '云电脑产品' }}</p>
+            </div>
+            <div class="flex items-center justify-between mt-2">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2 py-[2px] rounded text-[11px] font-medium"
+                          style="background: rgba(34,197,94,0.1); color: #16a34a;">可用</span>
+                    {% if p.required_points and p.required_points > 0 %}
+                    <span class="text-[13px] font-semibold" style="color: var(--c-brand);">{{ p.required_points }}积分/月</span>
+                    {% else %}
+                    <span class="text-[13px] font-semibold" style="color: var(--c-brand);">免费</span>
+                    {% endif %}
+                </div>
+                <a href="/cloud-computers/apply?product_id={{ p.id }}"
+                   class="flex-shrink-0 flex items-center justify-center rounded-md text-[12px] font-medium transition-colors"
+                   style="height: 28px; padding: 0 12px; border: 1px solid var(--c-brand); color: var(--c-brand); border-radius: 6px;">
+                    申请开通
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="text-align:center;padding:48px 16px;color:var(--c-text-tertiary);">
+        <p class="text-sm">暂无可用的云电脑产品</p>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,40 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "openings" %}
+{% set page_title = "开户申请" %}
+
+{% block content %}
+<!-- Page content -->
+<div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-[var(--vercel-font-size-2xl)] font-semibold tracking-tight text-[var(--vercel-text-foreground)]" style="text-wrap:balance;word-break:keep-all;overflow-wrap:break-word">开户申请</h1>
+    <p class="mt-1 text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-muted-foreground)]">处理用户提交的云桌面开户申请</p>
+  </div>
+
+  <!-- Tab filters -->
+  <div class="mb-6 flex flex-nowrap gap-1 overflow-x-auto border-b border-[var(--vercel-border)] no-scrollbar">
+    <button class="shrink-0 border-b-2 border-[var(--vercel-accent-primary)] px-3 pb-2.5 pt-1 text-[var(--vercel-font-size-sm)] font-medium text-[var(--vercel-text-foreground)]">
+      全部
+    </button>
+    <button class="shrink-0 border-b-2 border-transparent px-3 pb-2.5 pt-1 text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-muted-foreground)] transition-colors hover:text-[var(--vercel-text-foreground)]">
+      待审核
+    </button>
+    <button class="shrink-0 border-b-2 border-transparent px-3 pb-2.5 pt-1 text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-muted-foreground)] transition-colors hover:text-[var(--vercel-text-foreground)]">
+      已通过
+    </button>
+    <button class="shrink-0 border-b-2 border-transparent px-3 pb-2.5 pt-1 text-[var(--vercel-font-size-sm)] text-[var(--vercel-text-muted-foreground)] transition-colors hover:text-[var(--vercel-text-foreground)]">
+      已拒绝
+    </button>
+  </div>
+
+  <!-- Table card (HTMX) -->
+  <div hx-get="/fragments/admin/openings/list"
+       hx-trigger="load"
+       hx-target="this"
+       hx-swap="innerHTML">
+    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">加载中...</span>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "app_shell.html" %}
+{% block title %} - 仪表盘{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {# 静态骨架：产品组容器，内容由 HTMX 加载（动态、基于用户/租户） #}
+    <section id="product-groups" class="product-groups"
+             hx-get="/fragments/product-groups" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <p class="placeholder">加载产品组...</p>
+    </section>
+
+    {# 统计片段：HTMX 加载后填充（动态、不可缓存） #}
+    <section id="stats" class="stats"
+             hx-get="/fragments/stats" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <p class="placeholder">加载统计...</p>
+    </section>
+
+    {# 我的云电脑：HTMX 加载 #}
+    <section id="cloud-computers" class="cloud-computers"
+             hx-get="/fragments/cloud-computers" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <p class="placeholder">加载我的云电脑...</p>
+    </section>
+</div>
+{% endblock %}

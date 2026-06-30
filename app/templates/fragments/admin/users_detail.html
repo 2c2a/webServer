@@ -1,0 +1,188 @@
+{# 后台用户详情片段 #}
+<div class="space-y-4">
+    <!-- User header card -->
+    <div class="flex flex-col gap-4 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--vercel-accent-primary)] text-sm font-semibold text-[var(--vercel-text-primary-foreground)]">
+                {{ item.username[:1] | upper }}
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="truncate text-base font-semibold text-[var(--vercel-text-foreground)]">{{ item.username }}</span>
+                    {% if item.is_active %}
+                        <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-success)]" style="background:rgba(22,163,74,0.1)">启用</span>
+                    {% else %}
+                        <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]" style="background:rgba(107,114,128,0.1)">停用</span>
+                    {% endif %}
+                    {% if item.active_ban %}
+                        <span class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-destructive)]" style="background:rgba(231,0,11,0.1)">已封禁</span>
+                    {% endif %}
+                </div>
+                <span class="truncate text-sm text-[var(--vercel-text-muted-foreground)]">{{ item.email or '—' }}</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-[var(--vercel-status-destructive)] px-3 py-1.5 text-sm font-medium text-[var(--vercel-status-destructive)] transition-colors hover:bg-[var(--vercel-status-destructive)] hover:text-[var(--vercel-text-destructive-foreground)]">
+                <i data-lucide="ban" class="h-3.5 w-3.5"></i>
+                <span>封禁用户</span>
+            </button>
+            <button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-[var(--vercel-accent-input)] px-3 py-1.5 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
+                <span>重置密码</span>
+            </button>
+            <a href="/admin/users/{{ item.id }}/edit" class="inline-flex items-center gap-1.5 rounded-md border border-[var(--vercel-accent-input)] px-3 py-1.5 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <i data-lucide="pencil" class="h-3.5 w-3.5"></i>
+                <span>编辑</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Info grid -->
+    <div class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <div class="divide-y divide-[var(--vercel-border)]">
+            <!-- Row 1 -->
+            <div class="grid grid-cols-1 gap-4 px-4 py-3 sm:grid-cols-2">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">用户名</span>
+                    <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.username }}</span>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">邮箱</span>
+                    <span class="truncate text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.email or '—' }}</span>
+                </div>
+            </div>
+            <!-- Row 2 -->
+            <div class="grid grid-cols-1 gap-4 px-4 py-3 sm:grid-cols-2">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">手机号</span>
+                    <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.phone or '—' }}</span>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">角色</span>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        {% if item.is_superuser %}
+                            <span class="inline-flex items-center rounded-md border border-[var(--vercel-status-destructive)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-destructive)]">Superuser</span>
+                        {% endif %}
+                        {% if item.is_staff %}
+                            <span class="inline-flex items-center rounded-md border border-[var(--vercel-accent-primary)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]">Staff</span>
+                        {% endif %}
+                        {% if not item.is_staff and not item.is_superuser %}
+                            <span class="inline-flex items-center rounded-md border border-[var(--vercel-border)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]">普通用户</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Row 3 -->
+            <div class="grid grid-cols-1 gap-4 px-4 py-3 sm:grid-cols-2">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">状态</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ '启用' if item.is_active else '停用' }}</span>
+                        {% if item.is_verified %}<span class="text-xs text-[var(--vercel-text-muted-foreground)]">已验证邮箱</span>{% endif %}
+                    </div>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">所属站点组</span>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        {% if item.site_groups %}
+                            {% for sg in item.site_groups %}
+                                <span class="inline-flex items-center rounded-md border border-[var(--vercel-border)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]">{{ sg.site_name or sg.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-sm text-[var(--vercel-text-muted-foreground)]">—</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Row 4 -->
+            <div class="grid grid-cols-1 gap-4 px-4 py-3 sm:grid-cols-2">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">注册时间</span>
+                    <span class="whitespace-nowrap text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.date_joined.strftime('%Y-%m-%d %H:%M') if item.date_joined else '—' }}</span>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">最后登录</span>
+                    <span class="whitespace-nowrap text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.last_login.strftime('%Y-%m-%d %H:%M') if item.last_login else '从未登录' }}</span>
+                </div>
+            </div>
+            <!-- Row 5 -->
+            <div class="grid grid-cols-1 gap-4 px-4 py-3 sm:grid-cols-2">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">最后登录 IP</span>
+                    <span class="whitespace-nowrap text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.last_login_ip or '—' }}</span>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-xs text-[var(--vercel-text-muted-foreground)]">ban_version</span>
+                    <span class="whitespace-nowrap text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.ban_version }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if item.profile %}
+    <!-- Profile -->
+    <div class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <div class="border-b border-[var(--vercel-border)] px-4 py-3">
+            <h2 class="text-sm font-semibold text-[var(--vercel-text-foreground)]">用户资料</h2>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-4 py-3 sm:grid-cols-2">
+            <div class="flex flex-col gap-0.5">
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">昵称</span>
+                <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.profile.nickname or '—' }}</span>
+            </div>
+            <div class="flex flex-col gap-0.5">
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">性别</span>
+                <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.profile.gender or '—' }}</span>
+            </div>
+            <div class="flex flex-col gap-0.5">
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">生日</span>
+                <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.profile.birthday.strftime('%Y-%m-%d') if item.profile.birthday else '—' }}</span>
+            </div>
+            <div class="flex flex-col gap-0.5">
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">所在地</span>
+                <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.profile.location or '—' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.active_ban %}
+    <!-- Active ban -->
+    <div class="rounded-lg border border-[var(--vercel-status-destructive)] bg-[var(--vercel-bg-card)]">
+        <div class="border-b border-[var(--vercel-status-destructive)] px-4 py-3">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-[var(--vercel-status-destructive)]">
+                <i data-lucide="ban" class="h-4 w-4"></i>
+                当前封禁
+            </h2>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-4 py-3 sm:grid-cols-2">
+            <div class="flex flex-col gap-0.5">
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">封禁原因</span>
+                <span class="text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.active_ban.reason or '—' }}</span>
+            </div>
+            <div class="flex flex-col gap-0.5">
+                <span class="text-xs text-[var(--vercel-text-muted-foreground)]">封禁时间</span>
+                <span class="whitespace-nowrap text-sm font-medium text-[var(--vercel-text-foreground)]">{{ item.active_ban.created_at.strftime('%Y-%m-%d %H:%M') if item.active_ban.created_at else '—' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Administered site groups -->
+    <div class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <div class="border-b border-[var(--vercel-border)] px-4 py-3">
+            <h2 class="text-sm font-semibold text-[var(--vercel-text-foreground)]">管理的站点组</h2>
+        </div>
+        <div class="px-4 py-3">
+            {% if item.admin_site_groups %}
+            <div class="flex items-center gap-1.5 flex-wrap">
+                {% for sg in item.admin_site_groups %}
+                    <span class="inline-flex items-center rounded-md border border-[var(--vercel-accent-primary)] px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-foreground)]">{{ sg.site_name or sg.name }}</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <span class="text-sm text-[var(--vercel-text-muted-foreground)]">未管理任何站点组</span>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,52 @@
+{# 后台主机列表片段 #}
+<div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">名称</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">主机名</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">连接方式</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">认证</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">端口</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">状态</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">操作</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--vercel-border)]">
+            {% if hosts %}
+            {% for h in hosts %}
+            <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="whitespace-nowrap px-4 py-3 font-medium text-[var(--vercel-text-foreground)]">{{ h.name }}</td>
+                <td class="truncate px-4 py-3 text-[var(--vercel-text-muted-foreground)]" style="max-width:200px">{{ h.hostname }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ h.connection_type }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ h.auth_method }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ h.port }}</td>
+                <td class="whitespace-nowrap px-4 py-3">
+                    {% if h.status == 'running' %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-success)]" style="background:rgba(22,163,74,0.1)">运行中</span>
+                    {% elif h.status == 'stopped' %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]" style="background:rgba(115,115,115,0.1)">已停止</span>
+                    {% else %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-destructive)]" style="background:rgba(231,0,11,0.1)">{{ h.status or '异常' }}</span>
+                    {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right">
+                    <div class="inline-flex items-center gap-1">
+                        <a href="/admin/hosts/{{ h.id }}/edit" type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--vercel-text-muted-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)] hover:text-[var(--vercel-text-foreground)]" title="编辑"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></a>
+                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--vercel-text-muted-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)] hover:text-[var(--vercel-status-destructive)]" title="删除"
+                                hx-delete="/fragments/admin/hosts/{{ h.id }}"
+                                hx-confirm="确定删除该主机？"
+                                hx-target="#admin-content"
+                                hx-swap="innerHTML"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i></button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无主机</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

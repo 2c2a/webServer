@@ -1,0 +1,118 @@
+{# 运行中云电脑详情片段（对齐 2c2a-frontend/pages/cloud-detail-active.html 设计稿）。
+   上下文：ccu（CloudComputerUser，已预加载 product.host），revealed_password（可选，查看密码后传入）。 #}
+
+{# 1. 状态横幅 #}
+<div style="margin: 12px 16px 0; background: var(--c-success); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--c-bg); display: inline-block;"></span>
+        <span style="font-size: 14px; font-weight: 500; color: var(--c-bg);">{% if ccu.status == 'active' %}运行中{% elif ccu.status == 'disabled' or ccu.status == 'inactive' %}已停止{% else %}{{ ccu.status }}{% endif %}</span>
+    </div>
+    <span style="font-size: 12px; color: var(--c-bg);">创建于 {{ ccu.created_at.strftime('%Y-%m-%d') if ccu.created_at else '-' }}</span>
+</div>
+
+{# 2. 账号信息卡片 #}
+<div style="margin: 12px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+    <h2 style="font-size: 15px; font-weight: 500; color: var(--c-text-primary); margin: 0 0 12px;">账号信息</h2>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">账号</span>
+        <span style="font-size: 14px; color: var(--c-text-primary);">{{ ccu.username }}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">产品</span>
+        <span style="font-size: 14px; color: var(--c-text-primary);">{{ ccu.product.display_name or ccu.product.name if ccu.product else '-' }}</span>
+    </div>
+    {% if ccu.disk_quota %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">磁盘配额</span>
+        <span style="font-size: 14px; color: var(--c-text-primary);">{{ ccu.disk_quota | tojson }}</span>
+    </div>
+    {% endif %}
+    {% if ccu.fullname %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">全名</span>
+        <span style="font-size: 14px; color: var(--c-text-primary);">{{ ccu.fullname }}</span>
+    </div>
+    {% endif %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">创建时间</span>
+        <span style="font-size: 14px; color: var(--c-text-primary);">{{ ccu.created_at.strftime('%Y-%m-%d %H:%M') if ccu.created_at else '-' }}</span>
+    </div>
+</div>
+
+{# 3. 连接信息卡片 #}
+{% if ccu.product and ccu.product.host %}
+{% set host = ccu.product.host %}
+{% set rdp_host = ccu.product.display_hostname or host.hostname %}
+{% set rdp_port = ccu.product.rdp_port or 3389 %}
+<div style="margin: 12px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+    <h2 style="font-size: 15px; font-weight: 500; color: var(--c-text-primary); margin: 0 0 12px;">连接信息</h2>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">IP 地址</span>
+        <span style="font-size: 14px; color: var(--c-text-primary);">{{ host.hostname }}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--c-border);">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">端口</span>
+        <span style="font-size: 14px; color: var(--c-text-primary);">{{ rdp_port }}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+        <span style="font-size: 14px; color: var(--c-text-tertiary);">RDP 地址</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px; color: var(--c-text-primary);">{{ rdp_host }}:{{ rdp_port }}</span>
+            <button onclick="navigator.clipboard.writeText('{{ rdp_host }}:{{ rdp_port }}')"
+                    style="font-size: 12px; padding: 2px 10px; border: 1px solid var(--c-brand); border-radius: 4px; background: transparent; color: var(--c-brand); cursor: pointer; font-family: inherit; white-space: nowrap;">复制</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# 4. 初始密码区（阅后即焚） #}
+<div style="margin: 12px 16px 0; background: var(--c-bg); border-radius: 8px; padding: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: 15px; font-weight: 500; color: var(--c-text-primary);">初始密码</span>
+        {% if revealed_password %}
+        {# 已查看（本次刚揭示）— 不再显示按钮 #}
+        <span style="font-size: 12px; color: var(--c-text-tertiary);">已查看</span>
+        {% elif ccu.password_viewed or not ccu.initial_password_cipher %}
+        <span style="font-size: 12px; color: var(--c-text-tertiary);">已查看</span>
+        {% else %}
+        <button hx-post="/fragments/my-cloud/{{ ccu.id }}/view-password"
+                hx-target="#cloud-detail-container"
+                hx-swap="innerHTML"
+                hx-confirm="初始密码仅显示一次，查看后将无法再次查看。确认查看？"
+                style="font-size: 12px; padding: 2px 10px; border: 1px solid var(--c-brand); border-radius: 4px; background: transparent; color: var(--c-brand); cursor: pointer; font-family: inherit;">查看</button>
+        {% endif %}
+    </div>
+
+    {% if revealed_password %}
+    {# 揭示密码 #}
+    <div style="font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; font-size: 16px; font-weight: 500; color: var(--c-text-primary); padding: 10px 12px; background: var(--c-bg-secondary); border-radius: 6px; letter-spacing: 0.5px; word-break: break-all;">
+        {{ revealed_password }}
+    </div>
+    <p style="font-size: 12px; color: var(--c-warning); margin: 8px 0 0; line-height: 1.4;">此密码仅显示一次，请立即妥善记录并保存</p>
+    {% elif ccu.password_viewed or not ccu.initial_password_cipher %}
+    {# 已查看过或无密码 #}
+    <div style="font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; font-size: 16px; font-weight: 500; color: var(--c-text-tertiary); padding: 10px 12px; background: var(--c-bg-secondary); border-radius: 6px; letter-spacing: 0.5px;">
+        ••••••••
+    </div>
+    <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 8px 0 0; line-height: 1.4;">密码已查看，如需重置请点击下方"重置密码"</p>
+    {% else %}
+    {# 未查看 #}
+    <div style="font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; font-size: 16px; font-weight: 500; color: var(--c-text-tertiary); padding: 10px 12px; background: var(--c-bg-secondary); border-radius: 6px; letter-spacing: 0.5px;">
+        ••••••••
+    </div>
+    <p style="font-size: 12px; color: var(--c-text-tertiary); margin: 8px 0 0; line-height: 1.4;">点击"查看"显示初始密码（仅一次）</p>
+    {% endif %}
+</div>
+
+{# 5. 操作按钮行 #}
+<div style="margin: 16px 16px 0; display: flex; gap: 12px;">
+    <button onclick="window.alert('重置密码功能开发中')"
+            style="flex: 1; height: 40px; border: 1px solid var(--c-brand); border-radius: 8px; background: transparent; color: var(--c-brand); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;">重置密码</button>
+    <button onclick="window.alert('远程管理功能开发中')"
+            style="flex: 1; height: 40px; border: none; border-radius: 8px; background: var(--c-brand); color: var(--c-bg); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;">管理</button>
+</div>
+
+{# 底部占位避开 Tab 栏 #}
+<div style="height: 16px;"></div>

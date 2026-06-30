@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱管理</title>
+    <style id="theme-vars">
+{"color":{"bg-brand":{"bg-brand":{"hex":"#4b3fe3","opacity":"1"},"bg-brand-hover":{"hex":"#6a6fff","opacity":"1"},"bg-brand-active":{"hex":"#3f31c6","opacity":"1"},"bg-brand-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"bg-brand-popup":{"hex":"#aab7ff","opacity":"0.36"},"color-primary":{"hex":"#4b3fe3","opacity":"1"},"color-primary-hover":{"hex":"#6a6fff","opacity":"1"},"color-primary-disabled":{"hex":"#4b3fe3","opacity":"0.22"},"color-primary-soft":{"hex":"#aab7ff","opacity":"0.36"},"color-accent":{"hex":"#4b3fe3","opacity":"1"}},"bg":{"bg-base-default":{"hex":"#ffffff","opacity":"1"},"bg-base-secondary":{"hex":"#f5f5f5","opacity":"1"},"bg-base-tertiary":{"hex":"#e5e5e5","opacity":"1"},"bg-overlay-l1":{"hex":"#737373","opacity":"0.08"},"bg-overlay-l2":{"hex":"#737373","opacity":"0.12"},"bg-overlay-l3":{"hex":"#737373","opacity":"0.16"},"bg-overlay-l4":{"hex":"#737373","opacity":"0.2"},"bg-white":{"hex":"#ffffff","opacity":"1"},"bg-menu":{"hex":"#ffffff","opacity":"1"},"bg-tooltip":{"hex":"#ffffff","opacity":"1"},"bg-invert":{"hex":"#262626","opacity":"1"},"bg-invert-hover":{"hex":"#404040","opacity":"1"},"bg-invert-active":{"hex":"#171717","opacity":"1"},"bg-invert-disabled":{"hex":"#737373","opacity":"0.2"},"color-background":{"hex":"#ffffff","opacity":"1"},"color-surface":{"hex":"#f5f5f5","opacity":"1"},"color-surface-variant":{"hex":"#e5e5e5","opacity":"1"},"color-overlay-1":{"hex":"#737373","opacity":"0.08"},"color-overlay-2":{"hex":"#737373","opacity":"0.12"},"color-overlay-3":{"hex":"#737373","opacity":"0.16"},"color-overlay-4":{"hex":"#737373","opacity":"0.2"},"color-card":{"hex":"#f5f5f5","opacity":"1"},"color-tooltip":{"hex":"#ffffff","opacity":"1"},"color-menu":{"hex":"#ffffff","opacity":"1"}},"icon":{"icon-default":{"hex":"#262626","opacity":"1"},"icon-default-hover":{"hex":"#171717","opacity":"1"},"icon-default-active":{"hex":"#171717","opacity":"1"},"icon-secondary":{"hex":"#404040","opacity":"1"},"icon-secondary-hover":{"hex":"#262626","opacity":"1"},"icon-tertiary":{"hex":"#737373","opacity":"1"},"icon-brand":{"hex":"#4b3fe3","opacity":"1"},"icon-brand-hover":{"hex":"#6a6fff","opacity":"1"},"icon-inverse":{"hex":"#ffffff","opacity":"1"},"icon-inverse-hover":{"hex":"#ffffff","opacity":"1"},"icon-success":{"hex":"#00b983","opacity":"1"},"icon-warning":{"hex":"#f2a90c","opacity":"1"},"icon-error":{"hex":"#ff4757","opacity":"1"},"icon-info":{"hex":"#3f85ff","opacity":"1"}},"text":{"text-primary":{"hex":"#171717","opacity":"1"},"text-default":{"hex":"#262626","opacity":"1"},"text-secondary":{"hex":"#404040","opacity":"1"},"text-tertiary":{"hex":"#737373","opacity":"1"},"text-disabled":{"hex":"#737373","opacity":"0.38"},"text-inverse":{"hex":"#ffffff","opacity":"1"},"text-inverse-secondary":{"hex":"#ffffff","opacity":"0.7"},"text-brand":{"hex":"#4b3fe3","opacity":"1"},"text-success":{"hex":"#00b983","opacity":"1"},"text-warning":{"hex":"#f2a90c","opacity":"1"},"text-error":{"hex":"#ff4757","opacity":"1"},"text-link":{"hex":"#4b3fe3","opacity":"1"},"text-link-hover":{"hex":"#6a6fff","opacity":"1"}},"border":{"border-default":{"hex":"#737373","opacity":"0.12"},"border-strong":{"hex":"#737373","opacity":"0.24"},"border-brand":{"hex":"#4b3fe3","opacity":"0.36"}},"shadow":{"shadow-xs":{"hex":"#737373","opacity":"0.06"},"shadow-sm":{"hex":"#737373","opacity":"0.08"},"shadow-md":{"hex":"#737373","opacity":"0.12"},"shadow-lg":{"hex":"#737373","opacity":"0.16"}},"radius":{"radius-none":{"value":"0px","type":"px"},"radius-xs":{"value":"4px","type":"px"},"radius-sm":{"value":"6px","type":"px"},"radius-md":{"value":"8px","type":"px"},"radius-lg":{"value":"12px","type":"px"},"radius-xl":{"value":"16px","type":"px"},"radius-full":{"value":"9999px","type":"px"}},"spacing":{"space-0":{"value":"0px","type":"px"},"space-1":{"value":"4px","type":"px"},"space-2":{"value":"8px","type":"px"},"space-3":{"value":"12px","type":"px"},"space-4":{"value":"16px","type":"px"},"space-5":{"value":"20px","type":"px"},"space-6":{"value":"24px","type":"px"},"space-8":{"value":"32px","type":"px"},"space-10":{"value":"40px","type":"px"}},"font":{"font-sans":{"value":"'SF Pro Text', 'PingFang SC', system-ui, sans-serif"},"font-mono":{"value":"'SF Mono', 'Fira Code', monospace"}}}
+    </style>
+    <style>:root{--c-brand:#4b3fe3;--c-brand-hover:#6a6fff;--c-brand-active:#3f31c6;--c-brand-disabled:rgba(75,63,227,0.22);--c-brand-soft:rgba(170,183,255,0.36);--c-bg:#ffffff;--c-bg-secondary:#f5f5f5;--c-bg-tertiary:#e5e5e5;--c-text-primary:#171717;--c-text-default:#262626;--c-text-secondary:#404040;--c-text-tertiary:#737373;--c-border:rgba(115,115,115,0.12);--c-success:#00b983;--c-warning:#f2a90c;--c-error:#ff4757;--c-info:#3f85ff}</style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+
+  @layer base {
+    body { background: var(--c-bg); color: var(--c-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--c-bg-secondary); color: var(--c-text-primary); font-family: 'SF Pro Text', 'PingFang SC', system-ui, sans-serif; overflow-y: auto;">
+
+    <!-- Custom Nav Bar -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-[44px] flex items-center px-4"
+            style="background: var(--c-bg); border-bottom: 1px solid var(--c-border);">
+        <a href="#" data-dom-id="back-profile" class="flex items-center" style="color: var(--c-text-primary); text-decoration: none; margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </a>
+        <span style="font-size: 17px; font-weight: 600; color: var(--c-text-primary);">邮箱管理</span>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" style="padding-top: 44px; padding-bottom: 72px;">
+
+        <!-- Primary Email Section -->
+        <div style="margin: 12px 16px 0;">
+            <div style="background: var(--c-bg); border-radius: 12px; overflow: hidden;">
+                <!-- Section Header -->
+                <div style="padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <p style="font-size: 13px; font-weight: 500; color: var(--c-text-secondary); margin: 0;">主邮箱</p>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+
+                <!-- Primary Email Card -->
+                <div style="margin: 0 12px 12px; padding: 14px; border: 1.5px solid rgba(75,63,227,0.25); border-radius: 10px; background: rgba(170,183,255,0.06);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--c-brand); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+                                <span style="font-size: 15px; font-weight: 500; color: var(--c-text-primary); word-break: break-all;">zhang***@example.com</span>
+                                <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--c-brand); background: rgba(170,183,255,0.2); border-radius: 9999px; padding: 2px 7px; white-space: nowrap; font-weight: 500;">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="var(--c-brand)" stroke="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    默认
+                                </span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 11px; color: var(--c-bg); background: var(--c-success); border-radius: 9999px; padding: 1px 7px; font-weight: 500;">已验证</span>
+                                <span style="font-size: 11px; color: var(--c-text-tertiary);">2024-01-15 绑定</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Emails Section -->
+        <div style="margin: 12px 16px 0;">
+            <div style="background: var(--c-bg); border-radius: 12px; overflow: hidden;">
+                <!-- Section Header -->
+                <div style="padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <p style="font-size: 13px; font-weight: 500; color: var(--c-text-secondary); margin: 0;">其他邮箱 (2)</p>
+                    <span style="font-size: 11px; color: var(--c-text-tertiary);">最多 4 个</span>
+                </div>
+
+                <!-- Secondary Email 1 -->
+                <div style="padding: 12px 16px; border-bottom: 1px solid var(--c-border);">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                <span style="font-size: 14px; color: var(--c-text-primary); word-break: break-all;">work***@company.com</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 11px; color: var(--c-bg); background: var(--c-success); border-radius: 9999px; padding: 1px 7px; font-weight: 500;">已验证</span>
+                                <span style="font-size: 11px; color: var(--c-text-tertiary);">2024-03-22 绑定</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0; margin-left: 12px; align-items: flex-start;">
+                            <button data-dom-id="btn-set-primary-1" style="font-size: 11px; padding: 3px 9px; border: 1px solid var(--c-brand); border-radius: 6px; background: transparent; color: var(--c-brand); cursor: pointer; font-family: inherit; white-space: nowrap; font-weight: 500;">设为主邮箱</button>
+                            <button style="font-size: 11px; padding: 3px 9px; border: 1px solid var(--c-error); border-radius: 6px; background: transparent; color: var(--c-error); cursor: pointer; font-family: inherit; white-space: nowrap;">删除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Email 2 -->
+                <div style="padding: 12px 16px;">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                <span style="font-size: 14px; color: var(--c-text-primary); word-break: break-all;">back***@gmail.com</span>
+                                <span style="font-size: 11px; color: var(--c-warning); background: rgba(242,169,12,0.12); border-radius: 9999px; padding: 1px 7px; font-weight: 500; flex-shrink: 0; white-space: nowrap;">未验证</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 11px; color: var(--c-text-tertiary);">2024-06-20 绑定</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0; margin-left: 12px; align-items: flex-start;">
+                            <button data-dom-id="btn-set-primary-2" style="font-size: 11px; padding: 3px 9px; border: 1px solid var(--c-brand); border-radius: 6px; background: transparent; color: var(--c-brand); cursor: pointer; font-family: inherit; white-space: nowrap; font-weight: 500; opacity: 0.4; pointer-events: none;">设为主邮箱</button>
+                            <button style="font-size: 11px; padding: 3px 9px; border: 1px solid var(--c-warning); border-radius: 6px; background: transparent; color: var(--c-warning); cursor: pointer; font-family: inherit; white-space: nowrap;">验证</button>
+                            <button style="font-size: 11px; padding: 3px 9px; border: 1px solid var(--c-error); border-radius: 6px; background: transparent; color: var(--c-error); cursor: pointer; font-family: inherit; white-space: nowrap;">删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Email Button -->
+        <div style="margin: 12px 16px 0;">
+            <button data-dom-id="btn-add-email"
+                    style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 44px; border: 1px dashed var(--c-border); border-radius: 12px; background: transparent; color: var(--c-text-secondary); font-size: 14px; cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s;"
+                    onmouseenter="this.style.borderColor='var(--c-brand)';this.style.color='var(--c-brand)'" onmouseleave="this.style.borderColor='var(--c-border)';this.style.color='var(--c-text-secondary)'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                添加新邮箱
+            </button>
+        </div>
+
+        <!-- Confirm Set Primary Dialog (hidden by default) -->
+        <div data-dom-id="dialog-set-primary" style="display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;">
+            <div style="background: var(--c-bg); border-radius: 16px; margin: 24px; width: 100%; max-width: 320px; overflow: hidden;">
+                <div style="padding: 24px 20px 16px; text-align: center;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(170,183,255,0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                    <p style="font-size: 16px; font-weight: 600; color: var(--c-text-primary); margin: 0 0 8px;">设为主邮箱</p>
+                    <p style="font-size: 13px; color: var(--c-text-secondary); margin: 0; line-height: 1.5;">将 <span style="font-weight: 500; color: var(--c-text-primary);">work***@company.com</span> 设为主邮箱？<br>原主邮箱将变为普通邮箱。</p>
+                </div>
+                <div style="display: flex; border-top: 1px solid var(--c-border);">
+                    <button onclick="document.getElementById('dialog-set-primary').style.display='none'" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; border-right: 1px solid var(--c-border); color: var(--c-text-secondary); cursor: pointer; font-family: inherit;">取消</button>
+                    <button onclick="document.getElementById('dialog-set-primary').style.display='none'" style="flex: 1; padding: 14px; font-size: 15px; background: transparent; border: none; color: var(--c-brand); font-weight: 600; cursor: pointer; font-family: inherit;">确认</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips Card -->
+        <div style="margin: 12px 16px 0;">
+            <div style="background: rgba(170,183,255,0.1); border-radius: 12px; padding: 12px 16px; display: flex; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <p style="font-size: 12px; color: var(--c-text-secondary); margin: 0; line-height: 1.6;">主邮箱用于接收系统通知和工单回复，每个账号最多绑定 5 个邮箱。未验证的邮箱无法设为主邮箱。</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Tab Bar (profile tab active) -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white flex items-center justify-around h-[56px]"
+         style="border-top: 1px solid var(--c-border);">
+      <a href="#" data-dom-id="nav-dashboard" data-nav-key="dashboard" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span style="font-size: 10px;">仪表盘</span>
+      </a>
+      <a href="#" data-dom-id="nav-products" data-nav-key="products" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-8l-2 4h12z"/></svg>
+        <span style="font-size: 10px;">产品列表</span>
+      </a>
+      <a href="#" data-dom-id="nav-my-cloud" data-nav-key="my-cloud" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span style="font-size: 10px;">云电脑</span>
+      </a>
+      <a href="#" data-dom-id="nav-tickets" data-nav-key="tickets" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span style="font-size: 10px;">工单</span>
+      </a>
+      <a href="#" data-dom-id="nav-points" data-nav-key="points" data-active="false" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-text-tertiary);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27"/></svg>
+        <span style="font-size: 10px;">积分</span>
+      </a>
+      <a href="#" data-dom-id="nav-profile" data-nav-key="profile" data-active="true" class="flex flex-col items-center justify-center flex-1 gap-[2px] py-[6px]" style="text-decoration: none; color: var(--c-brand);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span style="font-size: 10px;">我的</span>
+      </a>
+    </nav>
+
+    <script>lucide.createIcons();</script>
+
+</body>
+</html>
