@@ -72,7 +72,18 @@ from app.models.points import (
     PointTask,
     UserPoints,
 )
+from app.models.announcement import Announcement
 from app.models.notification import Notification
+from app.models.user import (
+    LoginLog,
+    RegistrationLink,
+    User,
+    UserBan,
+    UserBanHistory,
+    UserEmail,
+    UserGroup,
+    UserProfile,
+)
 
 __all__ = [
     # base
