@@ -19,7 +19,6 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Form, Request
 from pydantic import BaseModel, Field
-from starlette.responses import HTMLResponse
 
 from app.cache.fragments import fragment_response
 from app.captcha.registry import captcha_registry
@@ -384,20 +383,3 @@ async def health():
         "registered_types": [p.type_id for p in captcha_registry.list_all()],
         "redis_enabled": settings.redis_enabled,
     }
-
-
-@router.get("/demo")
-async def demo_page(
-    request: Request,  # noqa: ARG001
-    tenant: TenantContext = Depends(get_tenant),  # noqa: ARG001
-):
-    """验证码交互演示页。
-
-    用于开发 / 测试期间可视化验证所有类型。
-    生产环境可通过 ``settings.debug=False`` 隐藏入口（仍可访问，仅未链接）。
-    """
-    html = await render_template(
-        "captcha_demo.html",
-        types=captcha_registry.list_metadata(),
-    )
-    return HTMLResponse(content=html)

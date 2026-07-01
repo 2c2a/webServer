@@ -1,64 +1,294 @@
-{% extends "app_shell.html" %}
-{% block title %} - 登录{% endblock %}
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>登录</title>
+    <style id="theme-vars">
+:root{--c-brand:#4b3fe3;--c-brand-hover:#6a6fff;--c-brand-active:#3f31c6;--c-brand-disabled:rgba(75,63,227,0.22);--c-brand-soft:rgba(170,183,255,0.36);--c-bg:#ffffff;--c-bg-secondary:#f5f5f5;--c-bg-tertiary:#e5e5e5;--c-text-primary:#171717;--c-text-default:#262626;--c-text-secondary:#404040;--c-text-tertiary:#737373;--c-border:rgba(115,115,115,0.12);--c-success:#00b983;--c-warning:#f2a90c;--c-error:#ff4757;--c-info:#3f85ff}
+    </style>
+    <script src="/static/vendor/tailwind-browser.min.js"></script>
+    <script src="/static/vendor/lucide.min.js"></script>
+    <style type="text/tailwindcss">
 
-{% block content %}
-<div class="auth-container">
-    <div class="auth-card">
-        <h1 class="auth-title">登录</h1>
-        <form id="login-form" class="auth-form" hx-post="/auth/login" hx-ext="json-enc">
-            <div class="form-group">
-                <label for="username">用户名</label>
-                <input type="text" id="username" name="username" required autocomplete="username">
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+      /* 入场动画 */
+      @keyframes auth-fade-up {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .auth-anim { opacity: 0; animation: auth-fade-up 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+      .auth-anim-1 { animation-delay: 0.02s; }
+      .auth-anim-2 { animation-delay: 0.08s; }
+      .auth-anim-3 { animation-delay: 0.14s; }
+      .auth-anim-4 { animation-delay: 0.20s; }
+      .auth-anim-5 { animation-delay: 0.26s; }
+      .auth-anim-6 { animation-delay: 0.32s; }
+      @media (prefers-reduced-motion: reduce) {
+        .auth-anim { opacity: 1; animation: none; }
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--c-bg-secondary); font-family: 'SF Pro Text', 'PingFang SC', system-ui, sans-serif;">
+    <main class="min-h-screen flex items-end sm:items-center sm:justify-center">
+        <div class="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl px-6 pt-10 pb-8 mx-auto sm:shadow-sm" style="border-top: 1px solid var(--c-border);">
+
+            <!-- Brand -->
+            <div class="text-center mb-2 auth-anim auth-anim-1">
+                <span class="text-[28px] font-semibold" style="color: var(--c-brand); font-family: 'SF Pro', 'PingFang SC', system-ui, sans-serif;">2c2a</span>
             </div>
-            <div class="form-group">
-                <label for="password">密码</label>
-                <input type="password" id="password" required autocomplete="current-password">
-            </div>
-            <button type="submit" class="btn btn-primary">登录</button>
-        </form>
-        <div id="auth-error" class="auth-error"></div>
-    </div>
-</div>
+            <p class="text-center text-sm mb-8 auth-anim auth-anim-2" style="color: var(--c-text-secondary);">登录您的账户</p>
 
-<script src="/static/vendor/hash-wasm.js"></script>
-<script>
-// 前端 BLAKE2b 预哈希：对原始密码做 BLAKE2b（定长输出），防超长密码 DoS 后端 Argon2id
-async function blake2bPrehash(password) {
-    // hash-wasm 默认输出 512 bits（64 字节），对应后端要求的 128 字符 hex
-    return await hashwasm.blake2b(password, 512);
-}
+            <!-- Form -->
+            <form id="login-form" autocomplete="off" class="space-y-4">
+                <!-- Username -->
+                <div class="auth-anim auth-anim-3">
+                    <input
+                        type="text"
+                        name="username"
+                        placeholder="用户名"
+                        required
+                        autocomplete="username"
+                        class="w-full h-11 px-3 text-sm outline-none transition-colors"
+                        style="border: 1px solid var(--c-border); border-radius: 8px; color: var(--c-text-primary); background: #fff;"
+                        onfocus="this.style.borderColor='var(--c-brand)'"
+                        onblur="this.style.borderColor='var(--c-border)'"
+                    />
+                </div>
 
-document.getElementById('login-form').addEventListener('htmx:configRequest', async function(evt) {
-    evt.preventDefault(); // 阻止默认提交，改为异步处理
-    const form = evt.detail.elt;
-    const btn = form.querySelector('button[type="submit"]');
-    const username = form.querySelector('#username').value;
-    const password = form.querySelector('#password').value;
-    // 显示加载动画并禁用按钮
-    btn.classList.add('htmx-request');
-    btn.disabled = true;
-    const prehash = await blake2bPrehash(password);
-    try {
-        const resp = await fetch('/auth/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: username, password: prehash})
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            // Access Token 存入前端内存（不落 Cookie/Storage，防 XSS）
-            window.__ACCESS_TOKEN__ = data.access_token;
-            window.__TOKEN_EXPIRES_IN__ = data.expires_in;
-            location.href = '/';
-        } else {
-            document.getElementById('auth-error').textContent = data.message || '登录失败';
-        }
-    } catch (e) {
-        document.getElementById('auth-error').textContent = '网络错误';
-    } finally {
-        btn.classList.remove('htmx-request');
-        btn.disabled = false;
+                <!-- Password (with visibility toggle) -->
+                <div class="auth-anim auth-anim-4">
+                    <div style="position: relative;">
+                        <input
+                            type="password"
+                            name="password"
+                            id="input-password"
+                            placeholder="密码"
+                            required
+                            autocomplete="current-password"
+                            style="width: 100%; height: 44px; padding: 0 40px 0 12px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 14px; color: var(--c-text-primary); background: #fff; outline: none; box-sizing: border-box; transition: border-color 0.15s;"
+                            onfocus="this.style.borderColor='var(--c-brand)'"
+                            onblur="this.style.borderColor='var(--c-border)'"
+                        />
+                        <button type="button" id="toggle-pw" aria-label="显示密码"
+                                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 6px; color: var(--c-text-tertiary); display: flex; align-items: center; justify-content: center;"
+                                onclick="togglePassword()">
+                            <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Forgot password link -->
+                <p class="text-right auth-anim auth-anim-4" style="color: var(--c-text-tertiary); margin: -4px 0 0; font-size: 13px;">
+                    <a href="/forgot-password" class="transition-colors" style="color: var(--c-brand); text-decoration: none;">忘记密码？</a>
+                </p>
+
+                <!-- 错误提示 -->
+                <p id="auth-error" class="text-xs text-center auth-anim auth-anim-5" style="color: var(--c-error); min-height: 16px; margin: 0;"></p>
+
+                <!-- 行为验证码：点击按钮弹出模态框 -->
+                <div class="auth-anim auth-anim-5" style="margin-bottom: 4px;">
+                    <button type="button" id="captcha-trigger"
+                            class="w-full h-11 px-3 text-sm flex items-center justify-center gap-2 transition-colors"
+                            style="border: 1px solid var(--c-border); border-radius: 8px; color: var(--c-text-secondary); background: #fff; cursor: pointer;"
+                            onfocus="this.style.borderColor='var(--c-brand)'"
+                            onblur="this.style.borderColor='var(--c-border)'">
+                        <svg id="captcha-trigger-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span id="captcha-trigger-text">点击进行安全验证</span>
+                    </button>
+                    <!-- 隐藏字段由 captcha.js 写入 -->
+                    <input type="hidden" name="captcha_id" value="" data-captcha-id-input>
+                    <input type="hidden" name="captcha" value="" data-captcha-answer-input>
+                </div>
+
+                <div class="pt-2 auth-anim auth-anim-6">
+                    <button
+                        type="submit"
+                        id="login-btn"
+                        data-dom-id="cta-login"
+                        class="w-full h-11 text-sm font-medium text-white transition-colors cursor-pointer"
+                        style="background: var(--c-brand); border-radius: 8px; border: none;"
+                        onmouseenter="if(!this.disabled){this.style.background='var(--c-brand-hover)'}"
+                        onmouseleave="if(!this.disabled){this.style.background='var(--c-brand)'}"
+                    >登录</button>
+                </div>
+            </form>
+
+            <!-- Register link -->
+            <p class="text-center text-sm mt-6 auth-anim auth-anim-6" style="color: var(--c-text-tertiary);">
+                没有账户？<a href="/register" class="transition-colors" style="color: var(--c-brand);">立即注册</a>
+            </p>
+
+        </div>
+    </main>
+    <script src="/static/vendor/hash-wasm.js"></script>
+    <script src="/static/js/captcha.min.js?v=20260629d" defer></script>
+    <script>
+    // 前端 BLAKE2b 预哈希：对原始密码做 BLAKE2b（digest_size=64 → 128 字符 hex），
+    // 防超长密码 DoS 后端 Argon2id，与后端 hash_password 链路一致。
+    async function blake2bPrehash(password) {
+        return await hashwasm.blake2b(password, 512);
     }
-});
-</script>
-{% endblock %}
+
+    // 密码显示/隐藏切换
+    function togglePassword() {
+        var input = document.getElementById('input-password');
+        var eye = document.getElementById('eye-icon');
+        var isPw = input.type === 'password';
+        input.type = isPw ? 'text' : 'password';
+        if (isPw) {
+            eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+        } else {
+            eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+        }
+    }
+
+    const form = document.getElementById('login-form');
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('auth-error');
+    const ORIG_BTN_BG = 'var(--c-brand)';
+
+    // 验证码触发按钮
+    const captchaTrigger = document.getElementById('captcha-trigger');
+    const captchaTriggerText = document.getElementById('captcha-trigger-text');
+    const captchaTriggerIcon = document.getElementById('captcha-trigger-icon');
+    const captchaIdInput = document.querySelector('[data-captcha-id-input]');
+    const captchaAnswerInput = document.querySelector('[data-captcha-answer-input]');
+
+    // 已验证状态标记
+    let captchaVerified = false;
+    // 场景配置：登录场景是否启用 + 类型
+    let captchaSceneConfig = { enabled: true, type: '' };
+
+    // 加载场景配置
+    async function loadCaptchaSceneConfig() {
+        try {
+            const resp = await fetch('/captcha/config/login');
+            if (resp.ok) {
+                captchaSceneConfig = await resp.json();
+            }
+        } catch (e) { /* 默认启用 */ }
+        // 不启用时隐藏触发按钮
+        if (!captchaSceneConfig.enabled) {
+            captchaTrigger.style.display = 'none';
+        } else {
+            captchaTrigger.style.display = '';
+        }
+    }
+    loadCaptchaSceneConfig();
+
+    async function openCaptchaModal() {
+        if (!captchaSceneConfig.enabled) {
+            captchaVerified = true;
+            captchaIdInput.value = '';
+            captchaAnswerInput.value = 'verified';
+            return;
+        }
+        captchaTriggerText.textContent = '加载中...';
+        try {
+            const opts = { title: '安全验证' };
+            if (captchaSceneConfig.type) opts.type = captchaSceneConfig.type;
+            const captchaId = await window.Captcha.openModal(opts);
+            captchaIdInput.value = captchaId;
+            captchaAnswerInput.value = 'verified';
+            captchaVerified = true;
+            captchaTriggerText.textContent = '已验证';
+            captchaTrigger.style.borderColor = 'var(--c-success)';
+            captchaTrigger.style.color = 'var(--c-success)';
+            captchaTriggerIcon.innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+            errEl.textContent = '';
+        } catch (e) {
+            captchaTriggerText.textContent = '点击进行安全验证';
+            if (e && e.message && e.message.indexOf('取消') === -1) {
+                errEl.textContent = '验证失败：' + (e.message || '');
+            }
+        }
+    }
+
+    captchaTrigger.addEventListener('click', function() {
+        // 已验证状态不允许再次打开，除非登录失败已重置
+        if (captchaVerified) return;
+        openCaptchaModal();
+    });
+
+    form.addEventListener('submit', async function(evt) {
+        evt.preventDefault();
+        const username = form.username.value.trim();
+        const password = form.password.value;
+        if (!username || !password) {
+            errEl.textContent = '请输入用户名和密码';
+            return;
+        }
+        // 检查验证码是否已完成
+        if (!captchaVerified || !captchaIdInput.value) {
+            errEl.textContent = '请先完成安全验证';
+            // 自动弹出 modal
+            openCaptchaModal();
+            return;
+        }
+        errEl.textContent = '';
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'not-allowed';
+        try {
+            const prehash = await blake2bPrehash(password);
+            const resp = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: username,
+                    password: prehash,
+                    captcha_id: captchaIdInput.value,
+                    captcha: 'verified'
+                })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                window.__ACCESS_TOKEN__ = data.access_token;
+                window.__TOKEN_EXPIRES_IN__ = data.expires_in;
+                location.href = '/';
+            } else {
+                errEl.textContent = data.message || data.detail || '登录失败';
+                // 失败后重置验证码状态，需重新验证
+                captchaVerified = false;
+                captchaIdInput.value = '';
+                captchaAnswerInput.value = '';
+                captchaTriggerText.textContent = '点击进行安全验证';
+                captchaTrigger.style.borderColor = 'var(--c-border)';
+                captchaTrigger.style.color = 'var(--c-text-secondary)';
+                captchaTriggerIcon.innerHTML = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
+            }
+        } catch (e) {
+            errEl.textContent = '网络错误，请稍后重试';
+        } finally {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.background = ORIG_BTN_BG;
+        }
+    });
+    lucide.createIcons();
+    </script>
+
+</body>
+</html>
