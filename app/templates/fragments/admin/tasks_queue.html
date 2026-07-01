@@ -1,0 +1,115 @@
+{# 后台 Huey 任务队列只读片段 #}
+<div class="space-y-4">
+  {# 错误提示 #}
+  {% if error_msg %}
+  <div class="rounded-lg border border-[var(--vercel-status-destructive)] bg-[rgba(231,0,11,0.05)] px-4 py-3 text-sm text-[var(--vercel-status-destructive)]">
+    <div class="flex items-center gap-2">
+      <i data-lucide="alert-circle" class="h-4 w-4 shrink-0"></i>
+      <span>{{ error_msg }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  {# KPI 卡片 #}
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">待执行</span>
+        <i data-lucide="list-todo" class="h-4 w-4 text-[var(--vercel-text-muted-foreground)]"></i>
+      </div>
+      <p class="mt-2 text-2xl font-semibold text-[var(--vercel-text-foreground)]">{{ pending_count }}</p>
+      <p class="mt-1 text-xs text-[var(--vercel-text-muted-foreground)]">FIFO 队列中等待执行</p>
+    </div>
+    <div class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">调度中</span>
+        <i data-lucide="clock" class="h-4 w-4 text-[var(--vercel-text-muted-foreground)]"></i>
+      </div>
+      <p class="mt-2 text-2xl font-semibold text-[var(--vercel-text-foreground)]">{{ scheduled_count }}</p>
+      <p class="mt-1 text-xs text-[var(--vercel-text-muted-foreground)]">带计划执行时间（eta）</p>
+    </div>
+    <div class="rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)] p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">已完成结果</span>
+        <i data-lucide="check-circle-2" class="h-4 w-4 text-[var(--vercel-text-muted-foreground)]"></i>
+      </div>
+      <p class="mt-2 text-2xl font-semibold text-[var(--vercel-text-foreground)]">{{ result_count }}</p>
+      <p class="mt-1 text-xs text-[var(--vercel-text-muted-foreground)]">结果存储中的条目数</p>
+    </div>
+  </div>
+
+  {# 待执行任务表 #}
+  <div>
+    <h2 class="mb-2 text-sm font-semibold text-[var(--vercel-text-foreground)]">待执行任务（Pending）</h2>
+    <div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">任务名</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">任务 ID</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">参数</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">重试</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">优先级</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--vercel-border)]">
+          {% if pending_rows %}
+          {% for t in pending_rows %}
+          <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+            <td class="whitespace-nowrap px-4 py-3 font-medium text-[var(--vercel-text-foreground)]">{{ t.name }}</td>
+            <td class="truncate px-4 py-3 text-[var(--vercel-text-muted-foreground)]" style="max-width:200px" title="{{ t.id }}"><code class="text-xs">{{ t.id }}</code></td>
+            <td class="px-4 py-3 text-[var(--vercel-text-muted-foreground)]" style="max-width:320px"><code class="text-xs break-all">{{ t.params }}</code></td>
+            <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ t.retries }}</td>
+            <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ t.priority if t.priority is not none else '—' }}</td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无待执行任务</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# 调度任务表 #}
+  <div>
+    <h2 class="mb-2 text-sm font-semibold text-[var(--vercel-text-foreground)]">调度任务（Scheduled）</h2>
+    <div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">任务名</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">任务 ID</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">参数</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">计划执行时间</th>
+            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">重试</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--vercel-border)]">
+          {% if scheduled_rows %}
+          {% for t in scheduled_rows %}
+          <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+            <td class="whitespace-nowrap px-4 py-3 font-medium text-[var(--vercel-text-foreground)]">{{ t.name }}</td>
+            <td class="truncate px-4 py-3 text-[var(--vercel-text-muted-foreground)]" style="max-width:200px" title="{{ t.id }}"><code class="text-xs">{{ t.id }}</code></td>
+            <td class="px-4 py-3 text-[var(--vercel-text-muted-foreground)]" style="max-width:320px"><code class="text-xs break-all">{{ t.params }}</code></td>
+            <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-foreground)]">{{ t.eta or '—' }}</td>
+            <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">{{ t.retries }}</td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无调度任务</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="text-xs text-[var(--vercel-text-muted-foreground)]">
+    <i data-lucide="info" class="inline h-3 w-3 align-text-bottom"></i>
+    本页为只读视图，仅展示 Huey 队列当前状态。Worker 重启或 Redis 刷新后队列内容会变化。
+  </p>
+</div>

@@ -1,0 +1,13 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "notifications" %}
+{% set page_title = "新建推送" %}
+{% set breadcrumbs = [{"label": "首页", "href": "/admin/"}, {"label": "站内信推送", "href": "/admin/notifications"}, {"label": "新建推送"}] %}
+
+{% block content %}
+      <div hx-get="/fragments/admin/notifications/form"
+           hx-trigger="load"
+           hx-target="this"
+           hx-swap="innerHTML">
+        <div class="p-8 text-center text-[var(--vercel-text-muted-foreground)]">加载中...</div>
+      </div>
+{% endblock %}

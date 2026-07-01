@@ -1,11 +1,12 @@
 """后台管理列表页 HTMX 片段（不可缓存、仅 staff/superuser）。
 
 包含概览 KPI、待处理工单、待审核开户、系统任务、用户、主机组、开户申请、
-积分任务、积分明细、审计日志、站点组、系统配置等列表片段。
+积分任务、积分明细、审计日志、站点组、系统配置、Huey 任务队列等列表片段。
 所有片段均通过 fragment_response 返回，标记为 no-store。
 """
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, Request
@@ -635,3 +636,102 @@ async def admin_settings_smtp_test(
         f'<span style="color:var(--vercel-status-destructive);">✗ {msg}</span>',
         request=request,
     )
+
+
+# ──────────────────────────────────────────────
+# Huey 任务队列（只读）
+# ──────────────────────────────────────────────
+
+
+def _format_arg(value) -> str:
+    """格式化任务参数值为字符串（截断长值）。"""
+    try:
+        s = repr(value)
+    except Exception:  # noqa: BLE001
+        s = "<unreprable>"
+    if len(s) > 80:
+        s = s[:77] + "..."
+    return s
+
+
+def _task_row(task) -> dict:
+    """从 Huey Task 对象提取展示字段。"""
+    args_str = ", ".join(_format_arg(a) for a in (task.args or ()))
+    kwargs_str = ", ".join(f"{k}={_format_arg(v)}" for k, v in (task.kwargs or {}).items())
+    params = args_str
+    if kwargs_str:
+        params = f"{params}, {kwargs_str}" if params else kwargs_str
+    eta = None
+    if task.eta:
+        try:
+            eta = task.eta.strftime("%Y-%m-%d %H:%M:%S")
+        except (AttributeError, ValueError):
+            eta = str(task.eta)
+    return {
+        "id": task.id,
+        "name": task.name,
+        "params": params or "—",
+        "eta": eta,
+        "retries": task.retries or 0,
+        "priority": task.priority,
+        "expires": task.expires,
+    }
+
+
+@router.get("/tasks/queue")
+async def admin_tasks_queue(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    _=Depends(require_staff),
+):
+    """后台 Huey 任务队列只读片段。
+
+    展示三类信息：
+    - 待执行任务（pending，FIFO 队列中）
+    - 调度任务（scheduled，带 eta 尚未到点）
+    - 结果计数（result_count，已完成的任务结果数量）
+
+    注意：Huey 的 ``pending()`` / ``scheduled()`` / ``all_results()`` 等方法
+    均为同步阻塞调用（直接读 Redis），必须用 ``asyncio.to_thread`` 包装，
+    否则违反铁律 #1（禁止同步阻塞调用出现在异步上下文）。
+
+    Redis 不可用时优雅降级：返回空列表 + 错误提示。
+    """
+    from app.tasks.huey_app import huey
+
+    error_msg: str | None = None
+    pending_rows: list[dict] = []
+    scheduled_rows: list[dict] = []
+    pending_count = 0
+    scheduled_count = 0
+    result_count = 0
+
+    try:
+        # 用 asyncio.to_thread 包装同步阻塞的 Redis 读取
+        pending_tasks, scheduled_tasks = await asyncio.gather(
+            asyncio.to_thread(huey.pending),
+            asyncio.to_thread(huey.scheduled),
+        )
+        pending_count, scheduled_count, result_count = await asyncio.gather(
+            asyncio.to_thread(huey.pending_count),
+            asyncio.to_thread(huey.scheduled_count),
+            asyncio.to_thread(huey.result_count),
+        )
+        pending_rows = [_task_row(t) for t in pending_tasks]
+        scheduled_rows = [_task_row(t) for t in scheduled_tasks]
+    except Exception as exc:  # noqa: BLE001
+        # Redis 不可用 / immediate 模式 / 反序列化失败等情况
+        error_msg = f"无法读取任务队列：{exc}"
+
+    html = await render_template(
+        "admin/tasks_queue.html",
+        pending_rows=pending_rows,
+        scheduled_rows=scheduled_rows,
+        pending_count=pending_count,
+        scheduled_count=scheduled_count,
+        result_count=result_count,
+        error_msg=error_msg,
+    )
+    return fragment_response(html, request=request)
+

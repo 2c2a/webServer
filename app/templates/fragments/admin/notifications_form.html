@@ -1,0 +1,207 @@
+{# 站内信推送表单片段。
+   支持推送目标切换：全体用户 / 指定用户（多选 chip）。
+   提交后服务端返回列表片段 + OOB toast + 重置脚本（模式 B）。 #}
+<div class="mx-auto max-w-[720px]">
+    <h1 class="text-base font-semibold tracking-tight text-[var(--vercel-text-foreground)]">新建推送</h1>
+    <p class="mt-1 text-sm text-[var(--vercel-text-muted-foreground)]">向用户推送站内消息，支持单用户、多用户与全体广播</p>
+
+    <div class="mt-6 rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-card)]">
+        <form class="p-5 sm:p-6"
+              hx-post="/fragments/admin/notifications/create"
+              hx-target="#admin-content"
+              hx-swap="innerHTML"
+              id="notification-push-form">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                <!-- 推送目标 -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        推送目标 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="target_type" value="all" checked class="text-[var(--vercel-accent-primary)] focus:ring-[var(--vercel-accent-ring)]"
+                                   onchange="togglePushTarget('all')">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">全体用户</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="target_type" value="selected" class="text-[var(--vercel-accent-primary)] focus:ring-[var(--vercel-accent-ring)]"
+                                   onchange="togglePushTarget('selected')">
+                            <span class="text-sm text-[var(--vercel-text-foreground)]">指定用户</span>
+                        </label>
+                    </div>
+
+                    <!-- 指定用户选择容器（默认隐藏） -->
+                    <div id="selected-users-section" class="hidden mt-2">
+                        <!-- 已选用户 chip 列表 -->
+                        <div id="selected-users-chips" class="flex flex-wrap gap-1.5 mb-1.5 min-h-[28px]"></div>
+                        <!-- 搜索输入 -->
+                        <input id="notif-user-search-input"
+                               type="text"
+                               placeholder="输入用户名搜索..."
+                               autocomplete="off"
+                               class="w-full rounded-md border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-[var(--vercel-accent-ring)] focus:outline-none focus:ring-1 focus:ring-[var(--vercel-accent-ring)]"
+                               hx-get="/fragments/admin/notifications/users/search"
+                               hx-trigger="keyup changed delay:300ms"
+                               hx-target="#notif-user-search-dropdown"
+                               hx-swap="innerHTML"
+                               hx-include="this"
+                               name="q" />
+                        <!-- 下拉候选容器 -->
+                        <div id="notif-user-search-dropdown" class="relative z-10"></div>
+                        <p class="mt-1 text-xs text-[var(--vercel-text-muted-foreground)]">可添加多个用户，每个用户都会收到一条站内信</p>
+                    </div>
+                </div>
+
+                <!-- 类型 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        类型 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <select name="type" required
+                            class="w-full h-9 rounded-md border px-3 text-sm outline-none focus:ring-1 appearance-none bg-[var(--vercel-bg-background)] border-[var(--vercel-border)] text-[var(--vercel-text-foreground)]"
+                            style="--tw-ring-color: var(--vercel-accent-ring);">
+                        <option value="system">系统</option>
+                        <option value="maintenance">维护</option>
+                        <option value="product">产品</option>
+                        <option value="security">安全</option>
+                        <option value="ticket">工单</option>
+                        <option value="points">积分</option>
+                    </select>
+                </div>
+
+                <!-- 等级 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        等级 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <select name="level" required
+                            class="w-full h-9 rounded-md border px-3 text-sm outline-none focus:ring-1 appearance-none bg-[var(--vercel-bg-background)] border-[var(--vercel-border)] text-[var(--vercel-text-foreground)]"
+                            style="--tw-ring-color: var(--vercel-accent-ring);">
+                        <option value="info">信息</option>
+                        <option value="success">成功</option>
+                        <option value="warning">警告</option>
+                        <option value="error">错误</option>
+                        <option value="brand">品牌</option>
+                    </select>
+                </div>
+
+                <!-- 标题 -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        标题 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="text" name="title" required maxlength="200"
+                           placeholder="请输入站内信标题"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 摘要 -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">
+                        摘要 <span class="text-[var(--vercel-status-destructive)]">*</span>
+                    </label>
+                    <input type="text" name="content" required maxlength="500"
+                           placeholder="列表展示的简短描述"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+
+                <!-- 详情（可选） -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">详情</label>
+                    <textarea name="body" rows="4" placeholder="可选，点击查看的完整内容"
+                              class="w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)] resize-y"></textarea>
+                </div>
+
+                <!-- 跳转链接（可选） -->
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-medium text-[var(--vercel-text-foreground)]">跳转链接</label>
+                    <input type="text" name="action_url" maxlength="500"
+                           placeholder="可选，如 /tickets/123"
+                           class="h-9 w-full rounded-lg border border-[var(--vercel-accent-input)] bg-[var(--vercel-bg-background)] px-3 text-sm text-[var(--vercel-text-foreground)] placeholder:text-[var(--vercel-text-muted-foreground)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--vercel-accent-ring)]">
+                </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="my-5 border-t border-[var(--vercel-border)]"></div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3">
+                <a href="/admin/notifications" class="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-4 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                    取消
+                </a>
+                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--vercel-accent-primary)] px-4 text-sm font-medium text-[var(--vercel-text-primary-foreground)] transition-colors hover:opacity-90">
+                    推送
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// ── 推送目标切换 ──
+function togglePushTarget(type) {
+    var section = document.getElementById('selected-users-section');
+    if (type === 'selected') {
+        section.classList.remove('hidden');
+    } else {
+        section.classList.add('hidden');
+    }
+}
+
+// ── 多用户选择（chip 模式） ──
+var selectedNotifUsers = [];
+
+function selectNotificationUser(id, username) {
+    if (selectedNotifUsers.some(function(u){ return u.id === id; })) return;
+    selectedNotifUsers.push({ id: id, username: username });
+    renderSelectedUsers();
+    // 清空搜索输入与下拉
+    var input = document.getElementById('notif-user-search-input');
+    var dropdown = document.getElementById('notif-user-search-dropdown');
+    if (input) input.value = '';
+    if (dropdown) dropdown.innerHTML = '';
+}
+
+function removeNotifUser(id) {
+    selectedNotifUsers = selectedNotifUsers.filter(function(u){ return u.id !== id; });
+    renderSelectedUsers();
+}
+
+function renderSelectedUsers() {
+    var container = document.getElementById('selected-users-chips');
+    if (!container) return;
+    container.innerHTML = selectedNotifUsers.map(function(u) {
+        return '<span class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs" '
+             + 'style="border-color: var(--vercel-accent-ring); background: var(--vercel-bg-muted); color: var(--vercel-text-foreground);">'
+             + '<span>' + u.username + '</span>'
+             + '<button type="button" onclick="removeNotifUser(' + u.id + ')" '
+             + 'class="text-[var(--vercel-text-muted-foreground)] hover:text-[var(--vercel-status-destructive)]">×</button>'
+             + '</span>';
+    }).join('');
+    // 同步 hidden inputs（每次重新生成，确保与服务端状态一致）
+    var form = document.getElementById('notification-push-form');
+    // 移除旧的 hidden inputs
+    var oldInputs = form.querySelectorAll('input[name="user_ids"]');
+    oldInputs.forEach(function(el){ el.remove(); });
+    // 添加新的
+    selectedNotifUsers.forEach(function(u) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'user_ids';
+        input.value = u.id;
+        form.appendChild(input);
+    });
+}
+
+// 表单提交前校验：若选"指定用户"但未选任何用户，阻止提交
+document.addEventListener('htmx:configRequest', function(evt) {
+    var form = document.getElementById('notification-push-form');
+    if (!form || !form.contains(evt.detail.elt)) return;
+    var targetType = form.querySelector('input[name="target_type"]:checked');
+    if (targetType && targetType.value === 'selected' && selectedNotifUsers.length === 0) {
+        evt.preventDefault();
+        alert('请至少选择一个用户');
+    }
+});
+</script>
