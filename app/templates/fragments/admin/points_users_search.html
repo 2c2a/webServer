@@ -5,7 +5,7 @@
 <div class="rounded-md border bg-white shadow-sm overflow-hidden" style="border-color: var(--vercel-border);">
     {% for u in users %}
     <button type="button"
-            onclick="selectPointsUser({{ u.id }}, {{ u.username | tojson }}, {{ u.is_active | tojson }}, {{ u.is_staff | tojson }}, {{ u.is_superuser | tojson }})"
+            onclick='selectPointsUser({{ u.id }}, {{ u.username | tojson }}, {{ u.is_active | tojson }}, {{ u.is_staff | tojson }}, {{ u.is_superuser | tojson }})'
             class="w-full text-left px-3 py-2 text-sm hover:bg-[var(--vercel-bg-muted)] transition-colors border-b last:border-b-0"
             style="border-color: var(--vercel-border); color: var(--vercel-text-foreground);">
         <div class="flex items-center justify-between gap-2">
