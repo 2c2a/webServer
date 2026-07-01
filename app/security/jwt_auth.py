@@ -27,7 +27,7 @@ def _load_private_key() -> Ed25519PrivateKey:
     pem = settings.ed25519_private_key_pem
     if pem:
         return serialization.load_pem_private_key(pem.encode(), password=None)  # type: ignore[return-value]
-    if settings.debug or settings.demo:
+    if settings.debug:
         # 开发模式：从 secret_key 派生确定性 Ed25519 密钥（仅用于本地）
         import hashlib
 

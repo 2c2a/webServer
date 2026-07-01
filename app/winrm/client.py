@@ -7,7 +7,6 @@
 --------
 - 全异步，绝不阻塞事件循环（aiohttp + ``asyncio.sleep``）
 - 连接池复用（由 transport 维护 ``aiohttp.ClientSession``，limit=10）
-- demo 模式短路：所有 ``execute_*`` 直接返回模拟成功结果（对应 2C2A_DEMO 模式）
 - 注入防护：用户名白名单 + PowerShell 字符串转义 + here-string 防护
 """
 from __future__ import annotations
@@ -15,7 +14,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
-import os
 import secrets
 import string
 from dataclasses import dataclass
@@ -55,7 +53,7 @@ from app.winrm.transport import (
 
 logger = logging.getLogger("2c2a")
 
-# 默认密码策略（获取失败或 demo 模式时使用）
+# 默认密码策略（获取失败时使用）
 DEFAULT_PASSWORD_POLICY = {
     "minimum_length": 8,
     "complexity_required": True,
@@ -117,7 +115,6 @@ class AsyncWinRMClient:
         cert_key_path: Optional[str] = None,
         timeout: int = 30,
         max_retries: int = 3,
-        demo: bool = False,
     ):
         """
         :param host: 主机名或 IP 地址
@@ -130,7 +127,6 @@ class AsyncWinRMClient:
         :param cert_key_path: 客户端私钥 PEM 路径（证书认证必填）
         :param timeout: 单次请求超时（秒）
         :param max_retries: 失败最大重试次数
-        :param demo: demo 模式，所有方法返回模拟成功结果，不实际连接
         """
         self.host = host
         self.port = port
@@ -142,8 +138,6 @@ class AsyncWinRMClient:
         self.cert_key_path = cert_key_path
         self.timeout = timeout
         self.max_retries = max_retries
-        # demo 模式：显式传入或环境变量 2C2A_DEMO=1 均生效
-        self.demo = bool(demo) or os.environ.get("2C2A_DEMO", "").lower() == "1"
 
         # 缓存的密码策略，供同步方法 generate_strong_password 使用
         self._cached_policy: Optional[dict] = None
@@ -183,12 +177,11 @@ class AsyncWinRMClient:
         )
 
         logger.info(
-            "初始化异步 WinRM 客户端: host=%s, port=%s, ssl=%s, auth=%s, demo=%s",
+            "初始化异步 WinRM 客户端: host=%s, port=%s, ssl=%s, auth=%s",
             host,
             port,
             self.use_ssl,
             auth_method,
-            self.demo,
         )
 
     # ------------------------------------------------------------------
@@ -287,13 +280,6 @@ class AsyncWinRMClient:
         return s
 
     # ------------------------------------------------------------------
-    # demo 模式短路
-    # ------------------------------------------------------------------
-    def _demo_result(self) -> WinRMResult:
-        """demo 模式统一返回的模拟成功结果。"""
-        return WinRMResult(status_code=0, std_out="DEMO MODE", std_err="")
-
-    # ------------------------------------------------------------------
     # 命令执行（WS-Management 协议编排）
     # ------------------------------------------------------------------
     async def execute_command(
@@ -304,9 +290,6 @@ class AsyncWinRMClient:
         :param command: 命令名，如 ``whoami`` / ``cmd``
         :param arguments: 命令参数列表
         """
-        if self.demo:
-            logger.info("DEMO 模式: 模拟执行命令: %s %s", command, arguments)
-            return self._demo_result()
         return await self._run_shell_command(RSRC_CMD, command, arguments or [])
 
     async def execute_powershell(self, script: str) -> WinRMResult:
@@ -316,9 +299,6 @@ class AsyncWinRMClient:
         ``powershell.exe -EncodedCommand`` 执行。这是 pywinrm 的标准做法，
         可正确处理 Unicode 与特殊字符，避免命令行转义问题。
         """
-        if self.demo:
-            logger.info("DEMO 模式: 模拟执行 PowerShell 脚本")
-            return self._demo_result()
         encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
         return await self._run_shell_command(
             RSRC_CMD,
@@ -795,10 +775,6 @@ class AsyncWinRMClient:
         结果会缓存到 ``self._cached_policy``，供同步方法
         :meth:`generate_strong_password` 使用。
         """
-        if self.demo:
-            self._cached_policy = dict(DEFAULT_PASSWORD_POLICY)
-            return self._cached_policy
-
         try:
             result = await self.execute_powershell(GET_PASSWORD_POLICY_PS)
             policy: dict = {}

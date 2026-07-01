@@ -125,9 +125,8 @@ api_endpoints.py
 H_dev.md
 opening_system_documentation.md
 
-# Demo/test template components
+# Test template components
 templates/components/test_*.html
-templates/components/demo.html
 templates/components/input_simple.html
 
 # Old project copies
@@ -153,4 +152,3 @@ _test_shots/
 !**/__init__.py
 # 临时测试页面
 app/templates/pages/test123.html
-app/templates/pages/captcha_demo.html

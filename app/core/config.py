@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     # ── 运行环境 ──
     app_name: str = "2c2a"
     debug: bool = False
-    demo: bool = Field(False, alias="2C2A_DEMO")
     env: str = "production"  # production / staging / development
 
     # ── Granian / FastAPI ──
@@ -121,12 +120,12 @@ class Settings(BaseSettings):
     trusted_proxy_ips: str = ""
     use_x_forwarded_for: bool = True
 
-    # ── 演示模式自动生成密钥 ──
+    # ── 开发模式自动生成密钥 ──
     @field_validator("secret_key")
     @classmethod
     def _ensure_secret(cls, v: str, info) -> str:
         if not v:
-            if info.data.get("demo") or info.data.get("debug"):
+            if info.data.get("debug"):
                 return secrets.token_urlsafe(48)
             raise ValueError("SECRET_KEY 必须在生产环境显式配置")
         return v

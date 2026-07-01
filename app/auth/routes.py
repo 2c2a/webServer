@@ -208,7 +208,7 @@ async def send_email_code(
     3. 后端二次校验行为验证码（一次性消费）
     4. 频率限制：同一邮箱 60 秒内只能发送一次
     5. SMTP 已配置：发送 6 位数字验证码邮件，返回 ``sent=True``
-    6. SMTP 未配置（dev/demo）：直接返回 ``dev_code`` 供前端填入
+    6. SMTP 未配置（dev）：直接返回 ``dev_code`` 供前端填入
 
     返回值：
     - ``sent=True`` + ``expires_in``：邮件已发送
@@ -263,14 +263,14 @@ async def send_email_code(
             )
             return SendEmailCodeResponse(sent=True, expires_in=result.ttl)
 
-        # 发送失败：回退到 dev_code（仅 dev/demo 模式）
+        # 发送失败：回退到 dev_code（仅 dev 模式）
         log.error(
             "send_email_code_failed",
             email=body.email,
             ip=ip,
             error=send_result.error,
         )
-        if settings.debug or settings.demo:
+        if settings.debug:
             return SendEmailCodeResponse(
                 sent=False, expires_in=result.ttl, dev_code=result.code
             )
@@ -279,7 +279,7 @@ async def send_email_code(
             sent=False, expires_in=result.ttl, resend_in=result.resend_in
         )
 
-    # SMTP 未配置（dev/demo 回退）：直接返回 code
+    # SMTP 未配置（dev 回退）：直接返回 code
     log.info("send_email_code_dev", email=body.email, ip=ip)
     return SendEmailCodeResponse(
         sent=False, expires_in=result.ttl, dev_code=result.code
@@ -387,7 +387,7 @@ async def forgot_password(
     分两种响应模式：
     - SMTP 已配置：向邮箱发送含重置链接的邮件，返回 ``email_sent=True``
       （不泄漏邮箱是否匹配，防止账号枚举；邮件发送失败时回退返回 token）
-    - SMTP 未配置（dev/demo 回退）：直接返回 ``reset_token``，前端凭令牌
+    - SMTP 未配置（dev 回退）：直接返回 ``reset_token``，前端凭令牌
       调用 ``/auth/reset-password`` 设置新密码
 
     安全设计：
@@ -460,7 +460,7 @@ async def forgot_password(
     )
 
     if not use_email_flow:
-        # SMTP 未配置（dev/demo 回退）：直接返回 token
+        # SMTP 未配置（dev 回退）：直接返回 token
         log.info(
             "forgot_password_issued_dev",
             user_id=user.id,

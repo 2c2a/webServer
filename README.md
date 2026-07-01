@@ -127,7 +127,6 @@ cp .env.example .env
 # 运行环境
 ENV=development          # development / staging / production
 DEBUG=true               # 开发模式
-2C2A_DEMO=1              # 演示模式（自动生成密钥，WinRM 返回模拟结果）
 
 # 数据库
 DB_ENGINE=sqlite         # sqlite / postgresql / mysql
@@ -143,7 +142,7 @@ PORT=8000
 WORKERS=1
 ```
 
-**开发模式**（`DEBUG=true` 或 `2C2A_DEMO=1`）：未配置的密钥从 `SECRET_KEY` 自动派生，WinRM 操作返回模拟结果，无需真实 Windows 主机。
+**开发模式**（`DEBUG=true`）：未配置的密钥从 `SECRET_KEY` 自动派生。
 
 **生产模式**（`ENV=production`）：必须显式配置所有密钥，否则启动失败。
 
@@ -419,7 +418,6 @@ class MyPlugin(PluginInterface, RouteProvider):
 | --- | --- | --- |
 | `ENV` | `production` | `development` / `staging` / `production` |
 | `DEBUG` | `false` | 开发模式，开启后密钥可从 SECRET_KEY 派生 |
-| `2C2A_DEMO` | `0` | 演示模式，WinRM 返回模拟结果 |
 
 ### 数据库
 

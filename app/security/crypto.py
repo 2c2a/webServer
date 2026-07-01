@@ -33,7 +33,7 @@ def _load_master_key() -> bytes:
         if len(key) != 32:
             raise ValueError("crypto_master_key_b64 必须为 32 字节（base64 编码）")
         return key
-    if settings.debug or settings.demo:
+    if settings.debug:
         # 开发模式：从 secret_key 派生稳定主密钥
         return hashlib.sha256(settings.secret_key.encode()).digest()
     raise ValueError("crypto_master_key_b64 必须在生产环境显式配置")
@@ -54,7 +54,7 @@ def _cache_key_material() -> bytes:
     raw = settings.cache_signing_key
     if raw:
         return raw.encode()
-    if settings.debug or settings.demo:
+    if settings.debug:
         return hashlib.sha256(b"cache-key:" + settings.secret_key.encode()).digest()
     raise ValueError("cache_signing_key 必须在生产环境显式配置")
 

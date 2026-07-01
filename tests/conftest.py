@@ -3,7 +3,7 @@
 在导入任何 app 模块之前设置测试环境变量，确保：
 - 使用 SQLite 文件数据库（无需 PostgreSQL）
 - 禁用 Redis（无需真实 Redis 服务）
-- DEMO 模式自动派生密钥（无需显式配置 Ed25519/AES/BLAKE2b 密钥）
+- DEBUG 模式自动派生密钥（无需显式配置 Ed25519/AES/BLAKE2b 密钥）
 
 关键：测试引擎必须在事件循环内创建（session 级 async fixture），
 不能在模块导入时创建。aiosqlite 的连接与创建时的事件循环绑定，
@@ -13,7 +13,6 @@ import os
 import tempfile
 
 # ── 必须在导入 app 模块之前设置环境变量 ──
-os.environ["2C2A_DEMO"] = "1"
 os.environ["DEBUG"] = "1"
 os.environ["DB_ENGINE"] = "sqlite"
 os.environ["REDIS_ENABLED"] = "false"

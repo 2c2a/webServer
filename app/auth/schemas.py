@@ -39,7 +39,7 @@ class SendEmailCodeResponse(BaseModel):
 
     - 成功：``sent=True`` + ``expires_in``（剩余有效期秒）
     - 频率限制：``sent=False`` + ``resend_in``（距下次可发送秒数）
-    - SMTP 未配置：``sent=False`` + ``dev_code``（dev 回退，仅 DEBUG/DEMO 下）
+    - SMTP 未配置：``sent=False`` + ``dev_code``（dev 回退，仅 DEBUG 下）
     """
 
     sent: bool
@@ -81,7 +81,7 @@ class ForgotPasswordRequest(BaseModel):
     校验通过后：
     - 若 SMTP 已配置：向邮箱发送含重置链接的邮件，返回通用「邮件已发送」响应
       （不泄漏邮箱是否匹配账号，防止枚举）
-    - 若 SMTP 未配置（dev/demo）：返回 reset_token 供前端直接进入重置步骤
+    - 若 SMTP 未配置（dev）：返回 reset_token 供前端直接进入重置步骤
     """
 
     username: str = Field(..., min_length=1, max_length=150)

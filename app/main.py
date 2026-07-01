@@ -42,7 +42,7 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """应用生命周期：启动时初始化，关闭时清理。"""
     setup_logging()
-    log.info("app_starting", env=settings.env, debug=settings.debug, demo=settings.demo)
+    log.info("app_starting", env=settings.env, debug=settings.debug)
 
     # 注册内置积分检测器
     try:
