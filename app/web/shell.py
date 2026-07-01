@@ -68,7 +68,7 @@ async def dashboard_page(
     tenant: TenantContext = Depends(get_tenant),
 ):
     """仪表盘。"""
-    return await _render(tenant, db, "dashboard_new.html")
+    return await _render(tenant, db, "dashboard.html")
 
 
 @router.get("/login")
@@ -78,7 +78,7 @@ async def login_page(
     tenant: TenantContext = Depends(get_tenant),
 ):
     """登录页（独立模板，无导航）。"""
-    return await _render(tenant, db, "login_new.html")
+    return await _render(tenant, db, "login.html")
 
 
 @router.get("/register")
@@ -88,7 +88,7 @@ async def register_page(
     tenant: TenantContext = Depends(get_tenant),
 ):
     """注册页（独立模板，无导航）。"""
-    return await _render(tenant, db, "register_new.html")
+    return await _render(tenant, db, "register.html")
 
 
 @router.get("/forgot-password")
@@ -127,7 +127,7 @@ async def cloud_computers_page(
     tenant: TenantContext = Depends(get_tenant),
 ):
     """云电脑列表。"""
-    return await _render(tenant, db, "cloud_computers_new.html")
+    return await _render(tenant, db, "cloud_computers.html")
 
 
 @router.get("/cloud-computers/apply")
@@ -186,7 +186,7 @@ async def tickets_page(
     tenant: TenantContext = Depends(get_tenant),
 ):
     """工单列表。"""
-    return await _render(tenant, db, "tickets_new.html")
+    return await _render(tenant, db, "tickets.html")
 
 
 @router.get("/tickets/{ticket_id}")
@@ -220,7 +220,7 @@ async def points_page(
     tenant: TenantContext = Depends(get_tenant),
 ):
     """积分中心。"""
-    return await _render(tenant, db, "points_new.html")
+    return await _render(tenant, db, "points.html")
 
 
 @router.get("/profile")

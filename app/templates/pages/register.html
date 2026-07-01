@@ -1,63 +1,650 @@
-{% extends "app_shell.html" %}
-{% block title %} - 注册{% endblock %}
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>注册</title>
+    <style id="theme-vars">
+:root{--c-brand:#4b3fe3;--c-brand-hover:#6a6fff;--c-brand-active:#3f31c6;--c-brand-disabled:rgba(75,63,227,0.22);--c-brand-soft:rgba(170,183,255,0.36);--c-bg:#ffffff;--c-bg-secondary:#f5f5f5;--c-bg-tertiary:#e5e5e5;--c-text-primary:#171717;--c-text-default:#262626;--c-text-secondary:#404040;--c-text-tertiary:#737373;--c-border:rgba(115,115,115,0.12);--c-success:#00b983;--c-warning:#f2a90c;--c-error:#ff4757;--c-info:#3f85ff}
+    </style>
+    <script src="/static/vendor/tailwind-browser.min.js"></script>
+    <script src="/static/vendor/lucide.min.js"></script>
+    <style type="text/tailwindcss">
 
-{% block content %}
-<div class="auth-container">
-    <div class="auth-card">
-        <h1 class="auth-title">注册</h1>
-        <form id="register-form" class="auth-form">
-            <div class="form-group">
-                <label for="username">用户名</label>
-                <input type="text" id="username" name="username" required
-                       pattern="[A-Za-z0-9._-]+" minlength="3" autocomplete="username">
-            </div>
-            <div class="form-group">
-                <label for="email">邮箱（可选）</label>
-                <input type="email" id="email" name="email" autocomplete="email">
-            </div>
-            <div class="form-group">
-                <label for="password">密码</label>
-                <input type="password" id="password" required minlength="8" autocomplete="new-password">
-            </div>
-            <button type="submit" class="btn btn-primary">注册</button>
-        </form>
-        <div id="auth-error" class="auth-error"></div>
-    </div>
-</div>
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+      /* 入场动画 */
+      @keyframes auth-fade-up {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .auth-anim { opacity: 0; animation: auth-fade-up 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+      .auth-anim-1 { animation-delay: 0.02s; }
+      .auth-anim-2 { animation-delay: 0.08s; }
+      .auth-anim-3 { animation-delay: 0.14s; }
+      .auth-anim-4 { animation-delay: 0.20s; }
+      .auth-anim-5 { animation-delay: 0.26s; }
+      .auth-anim-6 { animation-delay: 0.32s; }
+      .auth-anim-7 { animation-delay: 0.38s; }
+      .auth-anim-8 { animation-delay: 0.44s; }
+      @media (prefers-reduced-motion: reduce) {
+        .auth-anim { opacity: 1; animation: none; }
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--c-bg-secondary); font-family: 'SF Pro Text', 'PingFang SC', system-ui, sans-serif;">
+    <main class="min-h-screen flex items-end sm:items-center sm:justify-center">
+        <div class="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl px-6 pt-8 pb-8 mx-auto sm:shadow-sm" style="border-top: 1px solid var(--c-border);">
 
-<script>
-document.getElementById('register-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const form = e.target;
-    const btn = form.querySelector('button[type="submit"]');
-    const username = document.getElementById('username').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    // 显示加载动画并禁用按钮
-    btn.classList.add('htmx-request');
-    btn.disabled = true;
-    // 前端 BLAKE2b 预哈希（防 DoS）
-    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
-    const prehash = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
-    try {
-        const resp = await fetch('/auth/register', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, email: email || null, password: prehash})
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            window.__ACCESS_TOKEN__ = data.access_token;
-            location.href = '/';
-        } else {
-            document.getElementById('auth-error').textContent = data.message || '注册失败';
-        }
-    } catch (err) {
-        document.getElementById('auth-error').textContent = '网络错误';
-    } finally {
-        btn.classList.remove('htmx-request');
-        btn.disabled = false;
+            <!-- Back to login -->
+            <a href="/login" class="auth-anim auth-anim-1"
+               style="display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--c-text-tertiary); text-decoration: none; margin-bottom: 16px; transition: color 0.15s;"
+               onmouseenter="this.style.color='var(--c-brand)'"
+               onmouseleave="this.style.color='var(--c-text-tertiary)'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                返回登录
+            </a>
+
+            <!-- Brand -->
+            <div class="text-center mb-2 auth-anim auth-anim-1">
+                <span style="font-size: 28px; font-weight: 600; color: var(--c-brand); font-family: 'SF Pro', 'PingFang SC', system-ui, sans-serif;">2c2a</span>
+            </div>
+            <p class="text-center text-sm mb-6 auth-anim auth-anim-2" style="color: var(--c-text-secondary);">创建新账户</p>
+
+            <!-- Form -->
+            <form id="register-form" autocomplete="off" class="space-y-4">
+                <!-- Username -->
+                <div class="auth-anim auth-anim-3">
+                    <input
+                        type="text"
+                        name="username"
+                        id="input-username"
+                        placeholder="用户名"
+                        required
+                        autocomplete="username"
+                        style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: #fff; outline: none; box-sizing: border-box; transition: border-color 0.15s;"
+                        onfocus="this.style.borderColor='var(--c-brand)'"
+                        onblur="this.style.borderColor='var(--c-border)'"
+                    />
+                    <p style="margin: 6px 2px 0; font-size: 11px; color: var(--c-text-tertiary); line-height: 1.4;">支持字母、数字、下划线、点、连字符，3-150 字符</p>
+                </div>
+
+                <!-- Email (必填) + 发送验证码按钮 -->
+                <div class="auth-anim auth-anim-3">
+                    <div style="display: flex; gap: 8px;">
+                        <input
+                            type="email"
+                            name="email"
+                            id="input-email"
+                            placeholder="邮箱"
+                            required
+                            autocomplete="email"
+                            style="flex: 1; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: #fff; outline: none; box-sizing: border-box; transition: border-color 0.15s;"
+                            onfocus="this.style.borderColor='var(--c-brand)'"
+                            onblur="this.style.borderColor='var(--c-border)'"
+                        />
+                        <button
+                            type="button"
+                            id="btn-send-code"
+                            disabled
+                            style="height: 44px; padding: 0 14px; border: 1px solid var(--c-brand); border-radius: 8px; background: var(--c-brand); color: #fff; font-size: 13px; font-weight: 500; cursor: not-allowed; opacity: 0.5; transition: all 0.15s; white-space: nowrap;"
+                        >发送验证码</button>
+                    </div>
+                    <p id="email-hint" style="margin: 6px 2px 0; font-size: 11px; color: var(--c-text-tertiary); line-height: 1.4;">先填写有效邮箱，点击发送验证码</p>
+                </div>
+
+                <!-- Email Code -->
+                <div class="auth-anim auth-anim-4">
+                    <div style="position: relative;">
+                        <input
+                            type="text"
+                            name="email_code"
+                            id="input-email-code"
+                            placeholder="邮箱验证码"
+                            required
+                            inputmode="numeric"
+                            maxlength="6"
+                            autocomplete="one-time-code"
+                            style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: #fff; outline: none; font-family: inherit; box-sizing: border-box; transition: border-color 0.15s; letter-spacing: 4px;"
+                            onfocus="this.style.borderColor='var(--c-brand)'"
+                            onblur="this.style.borderColor='var(--c-border)'"
+                            oninput="this.value=this.value.replace(/[^0-9]/g,'');updateBtn()"
+                        />
+                    </div>
+                </div>
+
+                <!-- Password (with visibility toggle) -->
+                <div class="auth-anim auth-anim-5">
+                    <div style="position: relative;">
+                        <input
+                            type="password"
+                            name="password"
+                            id="input-password"
+                            placeholder="密码（至少 8 位）"
+                            required
+                            autocomplete="new-password"
+                            style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 40px 0 12px; font-size: 14px; color: var(--c-text-primary); background: #fff; outline: none; font-family: inherit; box-sizing: border-box; transition: border-color 0.15s;"
+                            onfocus="this.style.borderColor='var(--c-brand)'"
+                            onblur="this.style.borderColor='var(--c-border)'"
+                            oninput="checkStrength()"
+                        />
+                        <button type="button" onclick="togglePw('input-password','eye-pw')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 6px; color: var(--c-text-tertiary); display: flex; align-items: center; justify-content: center;" aria-label="显示密码">
+                            <svg id="eye-pw" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <!-- Strength Indicator -->
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                        <div style="flex: 1; height: 3px; background: var(--c-bg-tertiary); border-radius: 2px; overflow: hidden;">
+                            <div id="str-bar" style="width: 0%; height: 100%; border-radius: 2px; transition: all 0.3s;"></div>
+                        </div>
+                        <span id="str-text" style="font-size: 11px; color: var(--c-text-tertiary); white-space: nowrap;">密码强度</span>
+                    </div>
+                </div>
+
+                <!-- Confirm Password (with visibility toggle) -->
+                <div class="auth-anim auth-anim-5">
+                    <div style="position: relative;">
+                        <input
+                            type="password"
+                            name="password_confirm"
+                            id="input-confirm-pw"
+                            placeholder="确认密码"
+                            required
+                            autocomplete="new-password"
+                            style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 40px 0 12px; font-size: 14px; color: var(--c-text-primary); background: #fff; outline: none; font-family: inherit; box-sizing: border-box; transition: border-color 0.15s;"
+                            onfocus="this.style.borderColor='var(--c-brand)'"
+                            onblur="this.style.borderColor='var(--c-border)'"
+                            oninput="checkMatch()"
+                        />
+                        <button type="button" onclick="togglePw('input-confirm-pw','eye-confirm')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 6px; color: var(--c-text-tertiary); display: flex; align-items: center; justify-content: center;" aria-label="显示密码">
+                            <svg id="eye-confirm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div id="match-hint" style="margin-top: 6px; display: none; align-items: center; gap: 4px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span style="font-size: 12px;">密码一致</span>
+                    </div>
+                    <div id="mismatch-hint" style="margin-top: 6px; display: none; align-items: center; gap: 4px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        <span style="font-size: 12px;">两次密码不一致</span>
+                    </div>
+                </div>
+
+                <!-- 密码要求 -->
+                <div class="auth-anim auth-anim-6" style="background: var(--c-bg-secondary); border-radius: 10px; padding: 12px 14px;">
+                    <p style="font-size: 12px; font-weight: 500; color: var(--c-text-secondary); margin: 0 0 8px;">密码要求</p>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div id="rule-len" style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                            <span style="font-size: 12px; color: var(--c-text-tertiary);">至少 8 个字符</span>
+                        </div>
+                        <div id="rule-upper" style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                            <span style="font-size: 12px; color: var(--c-text-tertiary);">包含大写字母</span>
+                        </div>
+                        <div id="rule-num" style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                            <span style="font-size: 12px; color: var(--c-text-tertiary);">包含数字</span>
+                        </div>
+                        <div id="rule-special" style="display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                            <span style="font-size: 12px; color: var(--c-text-tertiary);">包含特殊字符（!@#$%...）</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invite token (collapsible) -->
+                <div class="auth-anim auth-anim-6">
+                    <button
+                        type="button"
+                        id="toggle-invite"
+                        style="display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--c-text-tertiary); cursor: pointer; background: none; border: none; padding: 0; transition: color 0.15s;"
+                        onmouseenter="this.style.color='var(--c-brand)'"
+                        onmouseleave="this.style.color='var(--c-text-tertiary)'"
+                        onclick="toggleInvite()"
+                    >
+                        <svg id="invite-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><path d="m6 9 6 6 6-6"/></svg>
+                        <span id="invite-label">邀请码（选填）</span>
+                    </button>
+                    <div id="invite-section" style="display: none; margin-top: 8px;">
+                        <input
+                            type="text"
+                            name="invite_token"
+                            id="input-invite"
+                            placeholder="邀请码"
+                            autocomplete="off"
+                            style="width: 100%; height: 44px; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--c-text-primary); background: #fff; outline: none; box-sizing: border-box; transition: border-color 0.15s;"
+                            onfocus="this.style.borderColor='var(--c-brand)'"
+                            onblur="this.style.borderColor='var(--c-border)'"
+                        />
+                    </div>
+                </div>
+
+                <!-- 错误提示 -->
+                <p id="auth-error" class="text-xs text-center auth-anim auth-anim-7" style="color: var(--c-error); min-height: 16px; margin: 0;"></p>
+
+                <!-- Register button -->
+                <div class="pt-1 auth-anim auth-anim-8">
+                    <button
+                        type="submit"
+                        id="register-btn"
+                        disabled
+                        style="width: 100%; height: 44px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--c-bg); cursor: not-allowed; font-family: inherit; transition: all 0.2s; background: var(--c-brand-disabled); opacity: 0.6;"
+                    >注册</button>
+                </div>
+            </form>
+
+            <!-- Login link -->
+            <p class="text-center text-sm mt-6 auth-anim auth-anim-8" style="color: var(--c-text-tertiary);">
+                已有账户？<a href="/login" style="color: var(--c-brand); text-decoration: none; font-weight: 500;">立即登录</a>
+            </p>
+
+        </div>
+    </main>
+    <script src="/static/vendor/hash-wasm.js"></script>
+    <script src="/static/js/captcha.min.js?v=20260629d" defer></script>
+    <script>
+    async function blake2bPrehash(password) {
+        return await hashwasm.blake2b(password, 512);
     }
-});
-</script>
-{% endblock %}
+
+    const form = document.getElementById('register-form');
+    const btn = document.getElementById('register-btn');
+    const btnSendCode = document.getElementById('btn-send-code');
+    const errEl = document.getElementById('auth-error');
+    const emailHint = document.getElementById('email-hint');
+
+    const inputUsername = document.getElementById('input-username');
+    const inputEmail = document.getElementById('input-email');
+    const inputEmailCode = document.getElementById('input-email-code');
+    const inputPassword = document.getElementById('input-password');
+    const inputConfirm = document.getElementById('input-confirm-pw');
+    const strBar = document.getElementById('str-bar');
+    const strText = document.getElementById('str-text');
+    const matchHint = document.getElementById('match-hint');
+    const mismatchHint = document.getElementById('mismatch-hint');
+
+    // ────────────── 密码强度 / 一致性 ──────────────
+    const rules = {
+        len: { el: document.getElementById('rule-len'), test: function(p) { return p.length >= 8; } },
+        upper: { el: document.getElementById('rule-upper'), test: function(p) { return /[A-Z]/.test(p); } },
+        num: { el: document.getElementById('rule-num'), test: function(p) { return /[0-9]/.test(p); } },
+        special: { el: document.getElementById('rule-special'), test: function(p) { return /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p); } }
+    };
+    const checkSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+    const emptySvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>';
+
+    function setRule(r, passed) {
+        r.el.querySelector('svg').outerHTML = passed ? checkSvg : emptySvg;
+        var span = r.el.querySelector('span');
+        span.style.color = passed ? 'var(--c-success)' : 'var(--c-text-tertiary)';
+    }
+
+    window.checkStrength = function() {
+        var pw = inputPassword.value;
+        var passed = 0;
+        for (var k in rules) {
+            var ok = rules[k].test(pw);
+            setRule(rules[k], ok);
+            if (ok) passed++;
+        }
+        if (pw.length === 0) {
+            strBar.style.width = '0%';
+            strBar.style.background = 'transparent';
+            strText.textContent = '密码强度';
+            strText.style.color = 'var(--c-text-tertiary)';
+        } else if (passed <= 1) {
+            strBar.style.width = '25%';
+            strBar.style.background = 'var(--c-error)';
+            strText.textContent = '弱';
+            strText.style.color = 'var(--c-error)';
+        } else if (passed === 2) {
+            strBar.style.width = '50%';
+            strBar.style.background = 'var(--c-warning)';
+            strText.textContent = '一般';
+            strText.style.color = 'var(--c-warning)';
+        } else if (passed === 3) {
+            strBar.style.width = '75%';
+            strBar.style.background = 'var(--c-info)';
+            strText.textContent = '较强';
+            strText.style.color = 'var(--c-info)';
+        } else {
+            strBar.style.width = '100%';
+            strBar.style.background = 'var(--c-success)';
+            strText.textContent = '强';
+            strText.style.color = 'var(--c-success)';
+        }
+        checkMatch();
+    };
+
+    window.checkMatch = function() {
+        var pw = inputPassword.value;
+        var cpw = inputConfirm.value;
+        if (cpw.length === 0) {
+            matchHint.style.display = 'none';
+            mismatchHint.style.display = 'none';
+            inputConfirm.style.borderColor = 'var(--c-border)';
+        } else if (pw === cpw) {
+            matchHint.style.display = 'flex';
+            matchHint.style.color = 'var(--c-success)';
+            mismatchHint.style.display = 'none';
+            inputConfirm.style.borderColor = 'var(--c-success)';
+        } else {
+            matchHint.style.display = 'none';
+            mismatchHint.style.display = 'flex';
+            mismatchHint.style.color = 'var(--c-error)';
+            inputConfirm.style.borderColor = 'var(--c-error)';
+        }
+        updateBtn();
+    };
+
+    function allRulesPass() {
+        var pw = inputPassword.value;
+        for (var k in rules) { if (!rules[k].test(pw)) return false; }
+        return true;
+    }
+
+    function isEmailValid(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function updateBtn() {
+        var pw = inputPassword.value;
+        var cpw = inputConfirm.value;
+        var emailOk = isEmailValid(inputEmail.value);
+        var codeOk = inputEmailCode.value.length >= 4;
+        var ok = emailOk && codeOk && allRulesPass() && pw.length > 0 && pw === cpw;
+        btn.disabled = !ok;
+        btn.style.background = ok ? 'var(--c-brand)' : 'var(--c-brand-disabled)';
+        btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+        btn.style.opacity = ok ? '1' : '0.6';
+        // 同时更新发送验证码按钮
+        var sendOk = emailOk && !countdownActive;
+        btnSendCode.disabled = !sendOk;
+        btnSendCode.style.opacity = sendOk ? '1' : '0.5';
+        btnSendCode.style.cursor = sendOk ? 'pointer' : 'not-allowed';
+    }
+
+    inputEmail.addEventListener('input', function() {
+        if (inputEmail.value && !isEmailValid(inputEmail.value)) {
+            emailHint.textContent = '邮箱格式不正确';
+            emailHint.style.color = 'var(--c-error)';
+        } else if (isEmailValid(inputEmail.value)) {
+            emailHint.textContent = '点击右侧按钮发送验证码';
+            emailHint.style.color = 'var(--c-text-tertiary)';
+        } else {
+            emailHint.textContent = '先填写有效邮箱，点击发送验证码';
+            emailHint.style.color = 'var(--c-text-tertiary)';
+        }
+        updateBtn();
+    });
+
+    // 密码显示/隐藏切换
+    window.togglePw = function(inputId, eyeId) {
+        var input = document.getElementById(inputId);
+        var eye = document.getElementById(eyeId);
+        var isPw = input.type === 'password';
+        input.type = isPw ? 'text' : 'password';
+        if (isPw) {
+            eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+        } else {
+            eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+        }
+    };
+
+    // 邀请码展开/收起
+    window.toggleInvite = function() {
+        var sec = document.getElementById('invite-section');
+        var chev = document.getElementById('invite-chevron');
+        var shown = sec.style.display !== 'none';
+        if (shown) {
+            sec.style.display = 'none';
+            chev.style.transform = 'rotate(0deg)';
+        } else {
+            sec.style.display = 'block';
+            chev.style.transform = 'rotate(180deg)';
+            setTimeout(function() { document.getElementById('input-invite').focus(); }, 50);
+        }
+    };
+
+    // ────────────── 倒计时 ──────────────
+    let countdownActive = false;
+    let countdownTimer = null;
+
+    function startCountdown(seconds) {
+        countdownActive = true;
+        let remain = seconds;
+        btnSendCode.disabled = true;
+        btnSendCode.style.opacity = '0.5';
+        btnSendCode.style.cursor = 'not-allowed';
+        btnSendCode.textContent = remain + 's 后重发';
+        countdownTimer = setInterval(function() {
+            remain--;
+            if (remain <= 0) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+                countdownActive = false;
+                btnSendCode.textContent = '发送验证码';
+                updateBtn();
+            } else {
+                btnSendCode.textContent = remain + 's 后重发';
+            }
+        }, 1000);
+    }
+
+    // ────────────── 场景配置加载 ──────────────
+    let emailCaptchaConfig = { enabled: true, type: '' };
+    let registerCaptchaConfig = { enabled: true, type: '' };
+
+    async function loadCaptchaConfigs() {
+        try {
+            const [r1, r2] = await Promise.all([
+                fetch('/captcha/config/email').then(r => r.ok ? r.json() : null).catch(() => null),
+                fetch('/captcha/config/register').then(r => r.ok ? r.json() : null).catch(() => null),
+            ]);
+            if (r1) emailCaptchaConfig = r1;
+            if (r2) registerCaptchaConfig = r2;
+        } catch (e) { /* 默认启用 */ }
+    }
+    loadCaptchaConfigs();
+
+    // ────────────── 发送验证码 ──────────────
+    async function openEmailCaptcha() {
+        if (!emailCaptchaConfig.enabled) {
+            // 验证码场景关闭：直接发送
+            return '';
+        }
+        const opts = { title: '安全验证' };
+        if (emailCaptchaConfig.type) opts.type = emailCaptchaConfig.type;
+        return await window.Captcha.openModal(opts);
+    }
+
+    async function handleSendCode() {
+        if (countdownActive) return;
+        const email = inputEmail.value.trim();
+        if (!isEmailValid(email)) {
+            emailHint.textContent = '请输入有效邮箱';
+            emailHint.style.color = 'var(--c-error)';
+            inputEmail.focus();
+            return;
+        }
+        errEl.textContent = '';
+        btnSendCode.disabled = true;
+        btnSendCode.textContent = '验证中...';
+
+        // 1. 先弹出行为验证码（scene='email'）
+        let captchaId = '';
+        try {
+            captchaId = await openEmailCaptcha();
+        } catch (e) {
+            btnSendCode.textContent = '发送验证码';
+            updateBtn();
+            if (e && e.message && e.message.indexOf('取消') === -1) {
+                errEl.textContent = '验证失败：' + (e.message || '');
+            }
+            return;
+        }
+
+        // 2. 调用后端发送邮箱验证码
+        btnSendCode.textContent = '发送中...';
+        try {
+            const resp = await fetch('/auth/send-email-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email,
+                    captcha_id: captchaId,
+                    captcha: captchaId ? 'verified' : ''
+                })
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (resp.ok && data.sent) {
+                // 邮件发送成功
+                emailHint.textContent = '验证码已发送至邮箱，请查收（10 分钟内有效）';
+                emailHint.style.color = 'var(--c-success)';
+                startCountdown(60);
+                inputEmailCode.focus();
+            } else if (data.dev_code) {
+                // dev 回退：自动填入
+                inputEmailCode.value = data.dev_code;
+                emailHint.textContent = 'SMTP 未配置，验证码已自动填入（仅开发模式）';
+                emailHint.style.color = 'var(--c-warning)';
+                startCountdown(60);
+                updateBtn();
+            } else if (data.resend_in > 0) {
+                // 频率限制
+                emailHint.textContent = '请 ' + data.resend_in + 's 后再试';
+                emailHint.style.color = 'var(--c-warning)';
+                startCountdown(data.resend_in);
+            } else {
+                errEl.textContent = data.message || data.detail || '发送失败，请稍后重试';
+                btnSendCode.textContent = '发送验证码';
+                updateBtn();
+            }
+        } catch (e) {
+            errEl.textContent = '网络错误，请稍后重试';
+            btnSendCode.textContent = '发送验证码';
+            updateBtn();
+        }
+    }
+
+    btnSendCode.addEventListener('click', handleSendCode);
+
+    // ────────────── 注册：先过行为验证码（scene='register'）── ──────────────
+    async function openRegisterCaptcha() {
+        if (!registerCaptchaConfig.enabled) {
+            return '';
+        }
+        const opts = { title: '安全验证' };
+        if (registerCaptchaConfig.type) opts.type = registerCaptchaConfig.type;
+        return await window.Captcha.openModal(opts);
+    }
+
+    let _submitCaptchaId = '';
+
+    form.addEventListener('submit', async function(evt) {
+        evt.preventDefault();
+        const username = inputUsername.value.trim();
+        const email = inputEmail.value.trim();
+        const emailCode = inputEmailCode.value.trim();
+        const password = inputPassword.value;
+        const passwordConfirm = inputConfirm.value;
+        const inviteToken = (document.getElementById('input-invite').value || '').trim() || null;
+
+        if (!username) {
+            errEl.textContent = '请输入用户名';
+            return;
+        }
+        if (!isEmailValid(email)) {
+            errEl.textContent = '请输入有效邮箱';
+            return;
+        }
+        if (!emailCode) {
+            errEl.textContent = '请输入邮箱验证码';
+            return;
+        }
+        if (!allRulesPass()) {
+            errEl.textContent = '请满足所有密码要求';
+            return;
+        }
+        if (password !== passwordConfirm) {
+            errEl.textContent = '两次输入的密码不一致';
+            return;
+        }
+
+        errEl.textContent = '';
+        btn.disabled = true;
+        var origText = btn.textContent;
+        btn.textContent = '安全验证...';
+
+        // 1. 先弹出注册场景的行为验证码
+        try {
+            _submitCaptchaId = await openRegisterCaptcha();
+        } catch (e) {
+            btn.textContent = origText;
+            updateBtn();
+            if (e && e.message && e.message.indexOf('取消') === -1) {
+                errEl.textContent = '验证失败：' + (e.message || '');
+            }
+            return;
+        }
+
+        // 2. 调用注册端点
+        btn.textContent = '注册中...';
+        try {
+            const prehash = await blake2bPrehash(password);
+            const resp = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: username,
+                    password: prehash,
+                    email: email,
+                    email_code: emailCode,
+                    invite_token: inviteToken,
+                    captcha_id: _submitCaptchaId,
+                    captcha: _submitCaptchaId ? 'verified' : ''
+                })
+            });
+            const data = await resp.json().catch(function() { return {}; });
+            if (resp.ok) {
+                window.__ACCESS_TOKEN__ = data.access_token;
+                window.__TOKEN_EXPIRES_IN__ = data.expires_in;
+                location.href = '/';
+            } else {
+                errEl.textContent = data.message || data.detail || '注册失败';
+                _submitCaptchaId = '';
+                btn.textContent = origText;
+                updateBtn();
+            }
+        } catch (e) {
+            errEl.textContent = '网络错误，请稍后重试';
+            btn.textContent = origText;
+            updateBtn();
+        }
+    });
+
+    lucide.createIcons();
+    </script>
+
+</body>
+</html>
