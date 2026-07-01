@@ -170,6 +170,9 @@ async function handleLogout() {
         console.error('logout request failed', e);
     }
     window.__ACCESS_TOKEN__ = null;
+    // 标记刚退出登录，login 页看到此标记会跳过「已登录自动跳转」探测，
+    // 避免 cookie 删除时序问题导致 login 页误判为已登录又弹回 dashboard
+    try { sessionStorage.setItem('just_logged_out', '1'); } catch (e) {}
     location.href = '/login';
 }
 </script>

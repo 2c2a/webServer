@@ -293,7 +293,16 @@
 
     // 已登录用户访问 /login 时自动跳到后台（避免登录态用户重复看到登录表单）
     // 用 /auth/me 探测：优先带内存 access_token，失败回退到 refresh cookie 校验
+    // 跳过条件：sessionStorage 有 just_logged_out 标记（刚从 /profile 退出登录），
+    // 避免 cookie 删除时序问题导致误判为已登录又弹回 dashboard
     (function() {
+        var justLoggedOut = false;
+        try {
+            justLoggedOut = sessionStorage.getItem('just_logged_out') === '1';
+            if (justLoggedOut) sessionStorage.removeItem('just_logged_out');
+        } catch (e) {}
+        if (justLoggedOut) return;
+
         var next = new URLSearchParams(location.search).get('next');
         var headers = {};
         if (window.__ACCESS_TOKEN__) {
