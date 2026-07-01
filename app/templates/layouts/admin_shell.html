@@ -1,6 +1,6 @@
 {# 管理后台布局（Vercel 主题，源自 2c2a-admin-console.design）。
    主题 token 集中在此；页面仅提供 {% block content %}。
-   变量：active_nav（overview/users/hosts/tickets/openings/products/points/audit/sitegroups/settings），
+   变量：active_nav（overview/users/hosts/tickets/openings/products/points/audit/tasks/sitegroups/settings），
          page_title，breadcrumbs（可选 [(label, href), ...]），site_name，
          current_user（CurrentUser，含 username/is_superuser 等）。 #}
 <!DOCTYPE html>
@@ -130,7 +130,9 @@
                 {{ nav_item('products', '产品管理', 'package', '/admin/products', active_nav|default('')) }}
                 {{ nav_item('points', '积分管理', 'coins', '/admin/points', active_nav|default('')) }}
                 {{ nav_item('announcements', '公告管理', 'megaphone', '/admin/announcements', active_nav|default('')) }}
+                {{ nav_item('notifications', '站内信推送', 'bell', '/admin/notifications', active_nav|default('')) }}
                 {{ nav_item('audit', '审计日志', 'file-text', '/admin/audit', active_nav|default('')) }}
+                {{ nav_item('tasks', '任务队列', 'list-todo', '/admin/tasks', active_nav|default('')) }}
                 {{ nav_item('sitegroups', '站点组管理', 'building', '/admin/sitegroups', active_nav|default('')) }}
                 {{ nav_item('settings', '系统配置', 'settings', '/admin/settings', active_nav|default('')) }}
             </nav>

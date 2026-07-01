@@ -856,3 +856,167 @@ async def admin_announcements_delete(
     await db.delete(announcement)
     await db.commit()
     return await admin_announcements_list(request, db, tenant, user)
+
+
+# ──────────────────────────────────────────────
+# 站内信推送
+# ──────────────────────────────────────────────
+
+
+async def _render_notifications_admin_list(
+    db: AsyncSession, tenant: TenantContext
+) -> str:
+    """渲染后台站内信列表片段（写操作后复用，确保返回刷新后的列表）。"""
+    from app.notifications import service as notif_service
+
+    notifications = await notif_service.admin_list_notifications(
+        db, site_group_id=tenant.site_group_id, limit=100
+    )
+    return await render_template(
+        "admin/notifications_list.html", notifications=notifications
+    )
+
+
+@router.get("/notifications/list")
+async def admin_notifications_list(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    _=Depends(require_staff),
+):
+    """后台站内信列表片段（admin 视角，按 site_group_id 过滤，预加载 user）。"""
+    html = await _render_notifications_admin_list(db, tenant)
+    return fragment_response(html, request=request)
+
+
+@router.get("/notifications/form")
+async def admin_notifications_form(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    _=Depends(require_staff),
+):
+    """后台新建推送表单片段。"""
+    html = await render_template("admin/notifications_form.html")
+    return fragment_response(html, request=request)
+
+
+@router.get("/notifications/users/search")
+async def admin_notifications_users_search(
+    request: Request,
+    q: str = "",
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    _=Depends(require_staff),
+):
+    """站内信推送：按用户名搜索用户，返回下拉候选片段。"""
+    from app.notifications import service as notif_service
+
+    q = (q or "").strip()
+    if not q:
+        return fragment_response("", request=request)
+
+    users = await notif_service.search_users_for_push(db, keyword=q, limit=10)
+    html = await render_template(
+        "admin/notifications_users_search.html", users=users
+    )
+    return fragment_response(html, request=request)
+
+
+@router.post("/notifications/create")
+async def admin_notifications_create(
+    request: Request,
+    target_type: str = Form(...),
+    type: str = Form(...),
+    level: str = Form(...),
+    title: str = Form(...),
+    content: str = Form(...),
+    body: str | None = Form(None),
+    action_url: str | None = Form(None),
+    user_ids: list[int] = Form(default=[]),
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    user=Depends(require_staff),
+):
+    """后台创建站内信推送。
+
+    - target_type=all：广播给当前站点组下所有启用用户
+    - target_type=selected：发送给 user_ids 列表中的用户
+
+    提交后采用模式 B：返回列表片段 + OOB toast + 重置脚本（保留表单页继续推送）。
+    """
+    from app.core.exceptions import AppError
+    from app.notifications import service as notif_service
+
+    title = title.strip()
+    content = content.strip()
+    if not title or not content:
+        raise AppError("标题和摘要不能为空", "invalid_input")
+
+    # 解析目标用户 ID 列表
+    if target_type == "all":
+        target_ids = await notif_service.get_site_user_ids(
+            db, site_group_id=tenant.site_group_id
+        )
+    else:
+        # user_ids 来自多个同名 hidden input，FastAPI 解析为 list[int]
+        target_ids = [int(uid) for uid in user_ids if uid]
+        if not target_ids:
+            raise AppError("请至少选择一个用户", "no_target_users")
+
+    if not target_ids:
+        raise AppError("未找到可推送的用户", "no_target_users")
+
+    # 批量创建（广播）
+    count = await notif_service.broadcast_notification(
+        db,
+        type=type,
+        title=title,
+        content=content,
+        level=level,
+        body=body.strip() if body else None,
+        action_url=action_url.strip() if action_url else None,
+        site_group_id=tenant.site_group_id,
+        user_ids=target_ids,
+    )
+    await db.commit()
+
+    # 模式 A：返回列表片段 + OOB toast（表单页被列表替换，相当于"回到列表页"）
+    list_html = await _render_notifications_admin_list(db, tenant)
+    toast = (
+        '<div id="toast" hx-swap-oob="true" '
+        'style="position:fixed;top:16px;right:16px;z-index:9999;'
+        'background:#16a34a;color:#fff;padding:12px 16px;border-radius:8px;'
+        'box-shadow:0 4px 12px rgba(0,0,0,0.15);font-size:14px;">'
+        f'已成功推送给 {count} 个用户</div>'
+    )
+    return fragment_response(list_html + toast, request=request)
+
+
+@router.delete("/notifications/{notification_id}")
+async def admin_notification_delete(
+    notification_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    user=Depends(require_staff),
+):
+    """后台删除单条站内信（admin 视角，按 site_group_id 校验归属）。"""
+    from app.notifications import service as notif_service
+
+    # admin 视角删除：不校验 user_id，但校验 site_group_id 归属
+    from app.models.notification import Notification
+
+    filters = [Notification.id == notification_id]
+    if tenant.site_group_id:
+        filters.append(
+            (Notification.site_group_id == tenant.site_group_id)
+            | (Notification.site_group_id.is_(None))
+        )
+    result = await db.execute(select(Notification).where(*filters))
+    notif = result.scalar_one_or_none()
+    if notif is None:
+        raise NotFoundError("站内信不存在")
+    await db.delete(notif)
+    await db.commit()
+    return await admin_notifications_list(request, db, tenant, user)

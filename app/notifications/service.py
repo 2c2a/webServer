@@ -232,3 +232,85 @@ async def delete_notification(
         raise NotFoundError("站内信不存在")
     await db.delete(notif)
     await db.flush()
+
+
+# ──────────────────────────────────────────────
+# Admin 视角（管理后台用）
+# ──────────────────────────────────────────────
+
+
+async def admin_list_notifications(
+    db: AsyncSession,
+    *,
+    site_group_id: int | None = None,
+    type: str | None = None,
+    user_id: int | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[Notification]:
+    """管理后台列表：按站点组查询所有用户的通知，预加载 user 关系。
+
+    支持按 type / user_id 过滤。返回结果按 created_at 倒序。
+    """
+    from app.models.user import User
+    from sqlalchemy.orm import selectinload
+
+    filters = []
+    if site_group_id:
+        filters.append(
+            (Notification.site_group_id == site_group_id)
+            | (Notification.site_group_id.is_(None))
+        )
+    if type and type != "all":
+        filters.append(Notification.type == type)
+    if user_id:
+        filters.append(Notification.user_id == user_id)
+
+    result = await db.execute(
+        select(Notification)
+        .options(selectinload(Notification.user))
+        .where(*filters)
+        .order_by(Notification.id.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(result.scalars().all())
+
+
+async def search_users_for_push(
+    db: AsyncSession,
+    *,
+    keyword: str,
+    site_group_id: int | None = None,
+    limit: int = 10,
+) -> list:
+    """用户搜索（用于站内信推送目标选择）。
+
+    User 为全局模型（无 site_group_id），不按租户过滤，与积分模块用户搜索一致。
+    返回 User 列表（仅 id / username / email 字段在模板中使用）。
+    """
+    from app.models.user import User
+
+    filters = [User.is_active == True]  # noqa: E712
+    if keyword:
+        filters.append(User.username.ilike(f"%{keyword}%"))
+
+    result = await db.execute(
+        select(User).where(*filters).order_by(User.username).limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_site_user_ids(
+    db: AsyncSession, *, site_group_id: int | None = None
+) -> list[int]:
+    """查询所有启用用户的 ID（用于"全体用户"广播）。
+
+    User 为全局模型，无站点隔离；但站内信记录写入时会带 site_group_id，
+    因此广播后通知仍归属于当前租户。
+    """
+    from app.models.user import User
+
+    filters = [User.is_active == True]  # noqa: E712
+    result = await db.execute(select(User.id).where(*filters))
+    return [int(r) for r in result.scalars().all()]

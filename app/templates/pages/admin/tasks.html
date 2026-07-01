@@ -1,0 +1,41 @@
+{% extends "admin_shell.html" %}
+{% set active_nav = "tasks" %}
+{% set page_title = "任务队列" %}
+
+{% block content %}
+<div class="flex-1 overflow-x-auto">
+  <!-- Page header -->
+  <header class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-background)]">
+    <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:px-6">
+      <div class="min-w-0 flex-1">
+        <h1 class="truncate text-lg font-semibold tracking-tight text-[var(--vercel-text-foreground)]">任务队列</h1>
+        <p class="mt-1 truncate text-sm text-[var(--vercel-text-muted-foreground)]">查看 Huey 异步任务队列（只读）</p>
+      </div>
+      <button type="button"
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--vercel-border)] bg-[var(--vercel-bg-background)] px-3 py-2 text-sm font-medium text-[var(--vercel-text-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)]"
+              hx-get="/fragments/admin/tasks/queue"
+              hx-target="#tasks-fragment"
+              hx-swap="innerHTML"
+              hx-indicator="#tasks-spinner">
+        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+        <span>刷新</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Data table (HTMX) -->
+  <div class="px-4 py-4 lg:px-6">
+    <div id="tasks-fragment"
+         hx-get="/fragments/admin/tasks/queue"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML">
+      <span class="text-xs text-[var(--vercel-text-muted-foreground)]">加载中...</span>
+    </div>
+    <span id="tasks-spinner" class="htmx-indicator inline-flex items-center gap-1 text-xs text-[var(--vercel-text-muted-foreground)]">
+      <i data-lucide="loader-2" class="h-3.5 w-3.5 animate-spin"></i>
+      刷新中...
+    </span>
+  </div>
+</div>
+{% endblock %}

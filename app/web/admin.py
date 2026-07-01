@@ -156,6 +156,17 @@ async def admin_audit(
     return await _render(tenant, db, "admin/audit.html", user=user)
 
 
+@router.get("/admin/tasks")
+async def admin_tasks(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    user: CurrentUser = Depends(require_staff),
+):
+    """Huey 任务队列只读查看。"""
+    return await _render(tenant, db, "admin/tasks.html", user=user)
+
+
 @router.get("/admin/announcements")
 async def admin_announcements(
     request: Request,
@@ -165,6 +176,32 @@ async def admin_announcements(
 ):
     """公告管理列表。"""
     return await _render(tenant, db, "admin/announcements.html", user=user)
+
+
+@router.get("/admin/notifications")
+async def admin_notifications(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    user: CurrentUser = Depends(require_staff),
+):
+    """站内信推送管理列表。"""
+    return await _render(tenant, db, "admin/notifications.html", user=user)
+
+
+@router.get("/admin/notifications/new")
+async def admin_notification_create_form(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    tenant: TenantContext = Depends(get_tenant),
+    user: CurrentUser = Depends(require_staff),
+):
+    """新建站内信推送表单。
+
+    注意：此路由必须注册在 /admin/notifications/{notification_id}/edit 之前，否则
+    'new' 会被当作 notification_id 解析为 int 失败（FastAPI 按注册顺序匹配）。
+    """
+    return await _render(tenant, db, "admin/notification_form.html", user=user)
 
 
 @router.get("/admin/sitegroups")

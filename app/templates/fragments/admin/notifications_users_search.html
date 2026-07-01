@@ -1,0 +1,29 @@
+{# 站内信推送：用户搜索下拉候选片段。
+   上下文：users（User 列表，最多 10 条）。
+   点击候选项调用 selectNotificationUser(id, username) 添加到已选列表。 #}
+{% if users %}
+<div class="rounded-md border bg-white shadow-sm overflow-hidden" style="border-color: var(--vercel-border);">
+    {% for u in users %}
+    <button type="button"
+            onclick="selectNotificationUser({{ u.id }}, {{ u.username | tojson }})"
+            class="w-full text-left px-3 py-2 text-sm hover:bg-[var(--vercel-bg-muted)] transition-colors border-b last:border-b-0"
+            style="border-color: var(--vercel-border); color: var(--vercel-text-foreground);">
+        <div class="flex items-center justify-between gap-2">
+            <span class="font-medium truncate">{{ u.username }}</span>
+            <span class="flex items-center gap-1 text-xs flex-shrink-0">
+                {% if not u.is_active %}
+                <span class="inline-flex h-4 items-center rounded px-1 text-[10px]" style="background: var(--vercel-status-destructive); color: #fff;">禁用</span>
+                {% endif %}
+                {% if u.is_superuser %}
+                <span class="inline-flex h-4 items-center rounded px-1 text-[10px]" style="background: var(--vercel-status-warning); color: #fff;">超管</span>
+                {% elif u.is_staff %}
+                <span class="inline-flex h-4 items-center rounded px-1 text-[10px]" style="background: var(--vercel-bg-muted); color: var(--vercel-text-accent-foreground);">员工</span>
+                {% endif %}
+            </span>
+        </div>
+    </button>
+    {% endfor %}
+</div>
+{% else %}
+<div class="rounded-md border bg-white px-3 py-2 text-xs" style="border-color: var(--vercel-border); color: var(--vercel-text-muted-foreground);">无匹配用户</div>
+{% endif %}

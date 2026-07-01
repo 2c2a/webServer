@@ -1,0 +1,92 @@
+{# 后台站内信列表片段。
+   上下文：notifications（list[Notification]，预加载 user 关系）。
+   admin 视角：显示该站点组下所有用户的通知记录。 #}
+<div class="overflow-x-auto rounded-lg border border-[var(--vercel-border)]">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-[var(--vercel-border)] bg-[var(--vercel-bg-muted)]">
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">标题</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">摘要</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">类型</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">等级</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">收件人</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">已读</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">推送时间</th>
+                <th class="whitespace-nowrap px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-[var(--vercel-text-muted-foreground)]">操作</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--vercel-border)]">
+            {% if notifications %}
+            {% for n in notifications %}
+            <tr class="transition-colors hover:bg-[var(--vercel-bg-muted)]">
+                <td class="whitespace-nowrap px-4 py-3 font-medium text-[var(--vercel-text-foreground)]">
+                    <span class="truncate inline-block align-middle" style="max-width:180px">{{ n.title }}</span>
+                </td>
+                <td class="px-4 py-3 text-[var(--vercel-text-muted-foreground)]">
+                    <span class="truncate inline-block align-middle" style="max-width:240px">{{ n.content[:50] }}{% if n.content|length > 50 %}…{% endif %}</span>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3">
+                    {# 类型徽章 #}
+                    {% set type_map = {
+                        'system': ('系统', 'var(--vercel-text-muted-foreground)', 'rgba(115,115,115,0.1)'),
+                        'ticket': ('工单', 'var(--vercel-status-success)', 'rgba(22,163,74,0.1)'),
+                        'points': ('积分', 'var(--vercel-accent-primary)', 'rgba(59,130,246,0.1)'),
+                        'security': ('安全', 'var(--vercel-status-success)', 'rgba(22,163,74,0.1)'),
+                        'product': ('产品', 'var(--vercel-accent-primary)', 'rgba(59,130,246,0.1)'),
+                        'maintenance': ('维护', 'var(--vercel-status-warning)', 'rgba(245,158,11,0.1)')
+                    } %}
+                    {% set meta = type_map.get(n.type) %}
+                    {% if meta %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="color: {{ meta[1] }}; background: {{ meta[2] }}">{{ meta[0] }}</span>
+                    {% else %}
+                    <span class="text-[var(--vercel-text-muted-foreground)]">{{ n.type }}</span>
+                    {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3">
+                    {# 等级徽章 #}
+                    {% set level_map = {
+                        'info': ('信息', 'var(--vercel-text-muted-foreground)', 'rgba(115,115,115,0.1)'),
+                        'success': ('成功', 'var(--vercel-status-success)', 'rgba(22,163,74,0.1)'),
+                        'warning': ('警告', 'var(--vercel-status-warning)', 'rgba(245,158,11,0.1)'),
+                        'error': ('错误', 'var(--vercel-status-destructive)', 'rgba(239,68,68,0.1)'),
+                        'brand': ('品牌', 'var(--vercel-accent-primary)', 'rgba(59,130,246,0.1)')
+                    } %}
+                    {% set lmeta = level_map.get(n.level) %}
+                    {% if lmeta %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style="color: {{ lmeta[1] }}; background: {{ lmeta[2] }}">{{ lmeta[0] }}</span>
+                    {% else %}
+                    <span class="text-[var(--vercel-text-muted-foreground)]">{{ n.level }}</span>
+                    {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-foreground)]">
+                    {{ n.user.username if n.user else '—' }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3">
+                    {% if n.is_read %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-text-muted-foreground)]" style="background:rgba(115,115,115,0.1)">已读</span>
+                    {% else %}
+                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-[var(--vercel-status-warning)]" style="background:rgba(245,158,11,0.1)">未读</span>
+                    {% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-[var(--vercel-text-muted-foreground)]">
+                    {% if n.created_at %}{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}{% else %}—{% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right">
+                    <div class="inline-flex items-center gap-1">
+                        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--vercel-text-muted-foreground)] transition-colors hover:bg-[var(--vercel-bg-muted)] hover:text-[var(--vercel-status-destructive)]" title="删除"
+                                hx-delete="/fragments/admin/notifications/{{ n.id }}"
+                                hx-confirm="确定删除该站内信？此操作仅移除该用户的这条记录。"
+                                hx-target="#admin-content"
+                                hx-swap="innerHTML"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i></button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="8" class="px-4 py-8 text-center text-sm text-[var(--vercel-text-muted-foreground)]">暂无站内信</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
