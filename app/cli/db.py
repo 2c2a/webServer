@@ -36,9 +36,13 @@ def _run_alembic(*args: str) -> int:
 
 @db_app.command("init")
 def init_db():
-    """初始化数据库（直接 create_all，跳过迁移，开发用）。
+    """初始化数据库（直接 create_all + stamp head，开发用）。
 
     生产环境请使用 ``2c2a db upgrade`` 走 Alembic 迁移。
+
+    注意：``create_all`` 只会创建当前已注册模型对应的表，并标记
+    版本为 head。之后新增模型时需用 ``2c2a db migrate -m "..."``
+    生成迁移脚本，再 ``2c2a db upgrade`` 应用。
     """
     from app.core.db import engine
     from app.models import Base
@@ -50,6 +54,13 @@ def init_db():
 
     run_async(_create())
     success("数据库表已创建（create_all）")
+
+    # 将 alembic_version 标记为 head，避免后续 upgrade 从零开始与已存在表冲突
+    rc = _run_alembic("stamp", "head")
+    if rc == 0:
+        success("已标记当前版本为 head")
+    else:
+        warn("stamp head 失败，请手动执行 `alembic stamp head`")
 
 
 @db_app.command("migrate")
@@ -141,3 +152,10 @@ def reset_db(
 
     run_async(_reset())
     success("数据库已重置")
+
+    # 同步 alembic_version 到 head
+    rc = _run_alembic("stamp", "head")
+    if rc == 0:
+        success("已标记当前版本为 head")
+    else:
+        warn("stamp head 失败，请手动执行 `alembic stamp head`")
