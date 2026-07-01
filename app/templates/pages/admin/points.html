@@ -128,10 +128,10 @@ function clearPointsUser() {
     chip.classList.remove('flex');
 }
 
-// 提交前校验：必须选中用户
+// 提交前校验：必须选中用户（仅拦截表单 POST 提交，放行搜索框 GET 请求）
 document.addEventListener('htmx:configRequest', function(evt) {
     var form = document.getElementById('points-adjust-form');
-    if (!form || !form.contains(evt.detail.elt)) return;
+    if (!form || evt.detail.elt !== form) return;
     var hidden = document.getElementById('selected-user-id');
     if (hidden && !hidden.value) {
         evt.preventDefault();
