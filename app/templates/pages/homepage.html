@@ -71,6 +71,7 @@
     </style>
     <script src="/static/vendor/tailwind-browser.min.js"></script>
     <script src="/static/vendor/lucide.min.js"></script>
+    <script src="/static/js/auth_check.js"></script>
     <style type="text/tailwindcss">
   @theme inline {
     --color-primary: var(--c-primary);
@@ -114,8 +115,8 @@
                     <a href="/about" class="text-sm whitespace-nowrap transition-colors duration-150 hover:opacity-80" style="color: var(--c-text-secondary);">关于</a>
                 </div>
 
-                <!-- Login Button (Right) -->
-                <a href="/login" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 cursor-pointer"
+                <!-- Login Button (Right) - 已登录用户由 auth_check.js 改为「进入控制台」 -->
+                <a id="nav-login-btn" href="/login" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 cursor-pointer"
                    style="padding: 8px 20px; border-radius: var(--radius-md); border: 1px solid var(--c-border); color: var(--c-primary); background: transparent; text-decoration: none;"
                    onmouseover="this.style.background='var(--c-primary-bg)'"
                    onmouseout="this.style.background='transparent'">
@@ -141,12 +142,12 @@
                     高性能异步架构，原生站点隔离与插件系统，为企业云终端提供专业级安全管控方案
                 </p>
                 <div class="flex items-center justify-center gap-4 mt-10">
-                    <a href="/login" class="inline-flex items-center gap-2 whitespace-nowrap font-semibold transition-all duration-150 cursor-pointer"
+                    <a id="hero-login-btn" href="/login" class="inline-flex items-center gap-2 whitespace-nowrap font-semibold transition-all duration-150 cursor-pointer"
                        style="padding: 12px 28px; border-radius: var(--radius-md); font-size: 15px; background: var(--c-text-inverse); color: var(--c-primary); border: none; text-decoration: none;"
                        onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'"
                        onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                        立即登录
+                        <svg id="hero-login-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        <span id="hero-login-text">立即登录</span>
                     </a>
                     <a href="https://github.com/2c2a/webServer" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 whitespace-nowrap font-medium transition-all duration-150"
                        style="padding: 12px 28px; border-radius: var(--radius-md); font-size: 15px; color: var(--c-text-inverse); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); text-decoration: none;"
