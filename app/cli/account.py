@@ -91,7 +91,7 @@ async def seed_demo_accounts() -> dict:
     skipped: list[str] = []
 
     async with db_session() as session:
-        # 1. 确保默认站点组存在（供 siteadmin 绑定）
+        # 1. 确保默认演示站点组存在（供 siteadmin 绑定，标记为 is_demo）
         site_group = (
             await session.execute(select(SiteGroup).where(SiteGroup.slug == "demo"))
         ).scalar_one_or_none()
@@ -101,9 +101,13 @@ async def seed_demo_accounts() -> dict:
                 slug="demo",
                 site_name="2c2a 演示站点",
                 is_active=True,
+                is_demo=True,
             )
             session.add(site_group)
             await session.flush()
+        elif not site_group.is_demo:
+            # 已存在但未标记为演示站点，补标记
+            site_group.is_demo = True
 
         # 2. 创建/更新演示账号
         for spec in DEMO_ACCOUNTS:

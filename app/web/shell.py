@@ -24,8 +24,9 @@ router = APIRouter(tags=["shell"])
 async def _shell_context(tenant: TenantContext, db: AsyncSession) -> dict:
     """构建前台渲染上下文（仅租户级配置，无用户状态）。
 
-    注：is_demo 是全局配置而非用户状态，可安全注入到前台页面，
-    用于控制演示账号快速登录等 UI 元素的显示。
+    注：is_demo 基于请求域名的租户上下文判断（单站点 demo），
+    全局 settings.demo 是总闸，SiteGroup.is_demo 是单站点标记。
+    两者同时为 True 时才视为演示站点，显示演示账号快速登录等 UI。
     """
     cfg = await get_effective_config(db, tenant)
     return {
@@ -34,7 +35,7 @@ async def _shell_context(tenant: TenantContext, db: AsyncSession) -> dict:
         "icp_number": cfg.get("icp_number"),
         "theme": "light",
         "enable_registration": cfg.get("enable_registration", False),
-        "is_demo": settings.is_demo,
+        "is_demo": tenant.is_demo,
     }
 
 

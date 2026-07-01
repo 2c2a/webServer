@@ -186,12 +186,19 @@ async def _auto_reset_demo_business_data() -> None:
     result = await reset_demo_business_data()
     cleaned = result["cleaned"]["deleted"]
     created = result["seeded"]["created"]
+    site_groups = result["seeded"].get("site_groups", [])
 
-    log.info("demo_business_data_reset", cleaned=cleaned, created=created)
+    log.info("demo_business_data_reset", cleaned=cleaned, created=created, site_groups=site_groups)
+
+    if not site_groups:
+        print("\n" + "-" * 60)
+        print("  DEMO: 未找到演示站点（is_demo=True 的站点组），跳过业务数据预置")
+        print("-" * 60 + "\n")
+        return
 
     # 控制台友好输出
     print("\n" + "-" * 60)
-    print("  DEMO 业务数据已重建")
+    print(f"  DEMO 业务数据已重建（站点: {', '.join(site_groups)}）")
     print("-" * 60)
     print("  清理上一次演示数据：")
     for table, count in cleaned.items():

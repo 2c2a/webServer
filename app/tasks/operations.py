@@ -45,12 +45,19 @@ async def process_account_opening(request_id: int) -> dict:
             if product is None:
                 return {"success": False, "error": "产品不存在"}
 
-            host_result = await db.execute(select(Host).where(Host.id == product.host_id))
+            from sqlalchemy.orm import selectinload
+
+            host_result = await db.execute(
+                select(Host)
+                .options(selectinload(Host.site_group))
+                .where(Host.id == product.host_id)
+            )
             host = host_result.scalar_one_or_none()
             if host is None:
                 return {"success": False, "error": "主机不存在"}
 
-            client = await AsyncWinRMClient.from_host_config(host)
+            site_is_demo = host.site_group.is_demo if host.site_group else False
+            client = await AsyncWinRMClient.from_host_config(host, site_is_demo=site_is_demo)
             # 生成强密码
             password = client.generate_strong_password()
             # 创建远程用户

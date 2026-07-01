@@ -210,6 +210,8 @@ async def test_host_connection(
     tenant: TenantContext = Depends(get_tenant),
 ):
     """测试主机连接（异步 WinRM，不阻塞）。"""
+    from sqlalchemy.orm import selectinload
+
     from app.winrm import AsyncWinRMClient
 
     filters = [Host.id == host_id]
@@ -218,12 +220,16 @@ async def test_host_connection(
             (Host.site_group_id == tenant.site_group_id)
             | (Host.site_group_id.is_(None))
         )
-    result = await db.execute(select(Host).where(*filters))
+    result = await db.execute(
+        select(Host).options(selectinload(Host.site_group)).where(*filters)
+    )
     host = result.scalar_one_or_none()
     if host is None:
         return {"success": False, "error": "主机不存在"}
 
-    client = await AsyncWinRMClient.from_host_config(host)
+    # 按主机所属站点判断 demo（单站点 demo）
+    site_is_demo = host.site_group.is_demo if host.site_group else False
+    client = await AsyncWinRMClient.from_host_config(host, site_is_demo=site_is_demo)
     try:
         res = await client.execute_command("whoami")
         return {

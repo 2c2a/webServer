@@ -88,6 +88,7 @@ def create_tenant(
     slug: str = typer.Option(None, "--slug", "-s", help="Slug（默认自动生成）"),
     site_name: str = typer.Option(None, "--site-name", help="站点显示名"),
     description: str = typer.Option("", "--desc", "-d", help="描述"),
+    is_demo: bool = typer.Option(False, "--demo", help="标记为演示站点（单站点 demo）"),
 ):
     """创建站点组。"""
     import re
@@ -115,6 +116,7 @@ def create_tenant(
                 site_name=site_name or name,
                 description=description,
                 is_active=True,
+                is_demo=is_demo,
             )
             session.add(sg)
             await session.flush()
@@ -123,7 +125,8 @@ def create_tenant(
             return sg.id
 
     sg_id = run_async(_do())
-    success(f"站点组已创建: {name} (slug={slug}, id={sg_id})")
+    demo_tag = " [DEMO]" if is_demo else ""
+    success(f"站点组已创建{demo_tag}: {name} (slug={slug}, id={sg_id})")
 
 
 @tenant_app.command("info")

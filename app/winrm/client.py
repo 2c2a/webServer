@@ -151,13 +151,15 @@ class AsyncWinRMClient:
         self.cert_key_path = cert_key_path
         self.timeout = timeout
         self.max_retries = max_retries
-        # demo 模式：显式传入或跟随全局 settings.demo（统一配置源，不再直读环境变量）
-        if demo:
-            self.demo = True
-        else:
+        # demo 模式：
+        # - demo is None：回退到全局 settings.demo（向后兼容）
+        # - demo is True/False：显式指定（单站点 demo，已含总闸判定）
+        if demo is None:
             from app.core.config import settings
 
             self.demo = settings.demo
+        else:
+            self.demo = bool(demo)
 
         # 缓存的密码策略，供同步方法 generate_strong_password 使用
         self._cached_policy: Optional[dict] = None
@@ -209,7 +211,9 @@ class AsyncWinRMClient:
     # 工厂方法
     # ------------------------------------------------------------------
     @classmethod
-    async def from_host_config(cls, host) -> "AsyncWinRMClient":
+    async def from_host_config(
+        cls, host, site_is_demo: Optional[bool] = None
+    ) -> "AsyncWinRMClient":
         """从 Host 模型（鸭子类型）构造客户端。
 
         ``host`` 需含属性: ``hostname`` / ``port`` / ``username`` / ``auth_method``
@@ -221,6 +225,10 @@ class AsyncWinRMClient:
 
         为兼容不同实现，优先用 ``decrypt_field`` 解密原始 ``_password`` 字段，
         失败则回退到模型自身的 ``password`` 属性。
+
+        :param site_is_demo: 主机所属站点是否为演示站点。
+            - 显式传入 True/False：按此值决定 demo 模式（单站点 demo）
+            - 传入 None：回退到全局 ``settings.demo``（向后兼容）
         """
         auth_method = getattr(host, "auth_method", "ntlm")
         use_ssl = getattr(host, "use_ssl", False)
@@ -256,6 +264,16 @@ class AsyncWinRMClient:
         cert_pem_path = getattr(host, "cert_pem_path", None) or None
         cert_key_path = getattr(host, "cert_key_path", None) or None
 
+        # 决定 demo 模式：
+        # - site_is_demo 显式传入：按站点标记（单站点 demo）
+        # - site_is_demo 为 None：回退到全局 settings.demo
+        if site_is_demo is not None:
+            from app.core.config import settings
+
+            demo = settings.demo and site_is_demo
+        else:
+            demo = None  # 让 __init__ 走全局 settings.demo 回退逻辑
+
         return cls(
             host=hostname,
             port=port,
@@ -265,6 +283,7 @@ class AsyncWinRMClient:
             use_ssl=use_ssl,
             cert_pem_path=cert_pem_path,
             cert_key_path=cert_key_path,
+            demo=demo,
         )
 
     # ------------------------------------------------------------------

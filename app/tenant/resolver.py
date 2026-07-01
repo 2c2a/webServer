@@ -31,12 +31,23 @@ class TenantContext:
     site_group: Optional[SiteGroup] = None
     site_group_id: Optional[int] = None
     is_default: bool = True  # 是否回退到默认（全局）租户
+    # 站点组是否标记为演示站点（SiteGroup.is_demo 的快照）
+    site_is_demo: bool = False
 
     @property
     def display_name(self) -> str:
         if self.site_group and self.site_group.site_name:
             return self.site_group.site_name
         return settings.app_name
+
+    @property
+    def is_demo(self) -> bool:
+        """当前请求是否处于演示模式。
+
+        全局 settings.demo 是总闸；SiteGroup.is_demo 是单站点标记。
+        两者同时为 True 时才视为演示站点。
+        """
+        return settings.demo and self.site_is_demo
 
 
 async def resolve_tenant_by_hostname(
@@ -60,9 +71,14 @@ async def resolve_tenant_by_hostname(
             if cached is not None:
                 if cached == "0":
                     return TenantContext(hostname=hostname, is_default=True)
-                sg_id = int(cached)
+                # 缓存格式 "id:is_demo"，兼容旧格式纯数字 "id"
+                sg_id, _, is_demo_str = cached.partition(":")
+                site_is_demo = is_demo_str == "1" if is_demo_str else False
                 return TenantContext(
-                    hostname=hostname, site_group_id=sg_id, is_default=False
+                    hostname=hostname,
+                    site_group_id=int(sg_id),
+                    is_default=False,
+                    site_is_demo=site_is_demo,
                 )
         except Exception as e:  # noqa: BLE001
             log.warning("tenant_cache_read_failed", error=str(e))
@@ -82,9 +98,14 @@ async def resolve_tenant_by_hostname(
         return TenantContext(hostname=hostname, is_default=True)
 
     _sg_hostname, sg = row
-    await _cache_tenant(cache_key, str(sg.id))
+    # 缓存格式 "id:is_demo"
+    await _cache_tenant(cache_key, f"{sg.id}:{1 if sg.is_demo else 0}")
     return TenantContext(
-        hostname=hostname, site_group=sg, site_group_id=sg.id, is_default=False
+        hostname=hostname,
+        site_group=sg,
+        site_group_id=sg.id,
+        is_default=False,
+        site_is_demo=sg.is_demo,
     )
 
 

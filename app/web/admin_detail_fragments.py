@@ -33,7 +33,7 @@ from app.models.user import User, UserProfile
 from app.points.registry import point_detector_registry
 from app.security.password import hash_password
 from app.templates import render_template
-from app.tenant.dependencies import get_tenant
+from app.tenant.dependencies import get_tenant, reject_demo
 from app.tenant.resolver import TenantContext
 
 router = APIRouter(prefix="/fragments/admin", tags=["admin-detail-fragments"])
@@ -696,8 +696,9 @@ async def admin_sitegroups_form(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant),
     _=Depends(require_superuser),
+    __=Depends(reject_demo),
 ):
-    """后台站点组创建/编辑表单片段（仅超管）。"""
+    """后台站点组创建/编辑表单片段（仅超管，演示站点禁用）。"""
     sid = _parse_int_or_none(site_group_id)
     item = None
     if sid:
@@ -721,8 +722,9 @@ async def admin_sitegroups_create(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant),
     _=Depends(require_superuser),
+    __=Depends(reject_demo),
 ):
-    """后台创建站点组并返回列表片段（仅超管）。"""
+    """后台创建站点组并返回列表片段（仅超管，演示站点禁用）。"""
     final_slug = (slug or "").strip() or _generate_slug(name)
     # slug 唯一性校验
     existing = await db.execute(select(SiteGroup).where(SiteGroup.slug == final_slug))
@@ -754,8 +756,9 @@ async def admin_sitegroups_update(
     db: AsyncSession = Depends(get_db),
     tenant: TenantContext = Depends(get_tenant),
     _=Depends(require_superuser),
+    __=Depends(reject_demo),
 ):
-    """后台更新站点组并返回列表片段（仅超管）。"""
+    """后台更新站点组并返回列表片段（仅超管，演示站点禁用）。"""
     result = await db.execute(select(SiteGroup).where(SiteGroup.id == site_group_id))
     sg = result.scalar_one_or_none()
     if sg is None:

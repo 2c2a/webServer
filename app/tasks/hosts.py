@@ -16,16 +16,20 @@ async def configure_winrm_on_host(host_id: int, cert_data: dict | None = None) -
     from app.security.field_cipher import decrypt_field
     from app.winrm import AsyncWinRMClient
     from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
 
     log = get_logger(__name__)
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(Host).where(Host.id == host_id))
+        result = await db.execute(
+            select(Host).options(selectinload(Host.site_group)).where(Host.id == host_id)
+        )
         host = result.scalar_one_or_none()
         if host is None:
             return {"success": False, "error": "主机不存在"}
 
         try:
-            client = await AsyncWinRMClient.from_host_config(host)
+            site_is_demo = host.site_group.is_demo if host.site_group else False
+            client = await AsyncWinRMClient.from_host_config(host, site_is_demo=site_is_demo)
             # 示例：测试连接
             res = await client.execute_command("whoami")
             await client.close()
@@ -44,15 +48,19 @@ async def install_certificates_on_host(host_id: int, cert_pem: str, key_pem: str
     from app.models.host import Host
     from app.winrm import AsyncWinRMClient
     from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
 
     log = get_logger(__name__)
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(Host).where(Host.id == host_id))
+        result = await db.execute(
+            select(Host).options(selectinload(Host.site_group)).where(Host.id == host_id)
+        )
         host = result.scalar_one_or_none()
         if host is None:
             return {"success": False, "error": "主机不存在"}
         try:
-            client = await AsyncWinRMClient.from_host_config(host)
+            site_is_demo = host.site_group.is_demo if host.site_group else False
+            client = await AsyncWinRMClient.from_host_config(host, site_is_demo=site_is_demo)
             # 通过 PowerShell here-string 写入证书文件并导入
             script = f"""
 $certPem = @'

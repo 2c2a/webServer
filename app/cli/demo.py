@@ -60,7 +60,7 @@ def seed():
 
 @demo_app.command("clean")
 def clean():
-    """清理所有演示业务数据（按 [DEMO] 前缀精准删除）。"""
+    """清理所有演示站点的业务数据（含用户演示期间手动创建的）。"""
     from app.core.config import settings
 
     if settings.is_prod:
@@ -71,9 +71,13 @@ def clean():
 
     result = run_async(clean_demo_business_data())
     deleted = result["deleted"]
+    site_groups = result.get("site_groups", [])
 
     console.print()
-    success("演示业务数据已清理")
+    if not site_groups:
+        warn("未找到任何演示站点（is_demo=True 的站点组）")
+        return
+    success(f"演示业务数据已清理（站点: {', '.join(site_groups)}）")
     total = 0
     for table, count in deleted.items():
         if count > 0:
@@ -96,9 +100,13 @@ def reset():
     result = run_async(reset_demo_business_data())
     cleaned = result["cleaned"]["deleted"]
     created = result["seeded"]["created"]
+    site_groups = result["seeded"].get("site_groups", [])
 
     console.print()
-    success("演示业务数据已重置")
+    if not site_groups:
+        warn("未找到任何演示站点（is_demo=True 的站点组）")
+        return
+    success(f"演示业务数据已重置（站点: {', '.join(site_groups)}）")
     console.print()
     console.print("[bold]清理：[/bold]")
     for table, count in cleaned.items():

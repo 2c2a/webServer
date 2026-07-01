@@ -81,6 +81,10 @@ class SiteGroup(Base, TimestampMixin):
     site_name: Mapped[str] = mapped_column(String(100), default="")
     site_icon: Mapped[str] = mapped_column(String(500), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 是否为演示站点：全局 settings.demo 开启时，is_demo=True 的站点
+    # 走演示模式（演示数据自动重置、登录页显示快速登录、WinRM 模拟等）。
+    # settings.demo=False 时此字段不生效（总闸关闭）。
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # ── 关系 ──
     # 管理员（M2M → user_site_group_admins）
