@@ -1,6 +1,8 @@
 """全局异常与错误处理。"""
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -81,13 +83,32 @@ def _toast_html(message: str, kind: str = "error") -> str:
     )
 
 
+def _login_redirect_url(request: Request) -> str:
+    """构造带 next 参数的登录跳转 URL，保留当前路径以便登录后回跳。"""
+    path = request.url.path
+    query = request.url.query
+    next_ = path + (f"?{query}" if query else "")
+    return f"/login?next={quote(next_, safe='')}"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error_handler(_: Request, exc: AppError):
-        # HTMX 请求返回 OOB toast 片段，错误信息会显示在页面右上角
+        # HTMX 请求：401 加 HX-Redirect 兜底（即使前端未注册 beforeOnLoad 监听也能跳转），
+        # 其他错误返回 OOB toast 片段显示在页面右上角
         if _.headers.get("hx-request"):
+            headers = {}
+            if exc.status == 401:
+                headers["HX-Redirect"] = _login_redirect_url(_)
+                # 带 Retarget 避免某些场景下 toast 残留
+                headers["HX-Reswap"] = "none"
             kind = "warning" if exc.status == 400 else "error"
-            return HTMLResponse(_toast_html(exc.message, kind), status_code=exc.status)
+            return HTMLResponse(
+                _toast_html(exc.message, kind), status_code=exc.status, headers=headers
+            )
+        # 非 HTMX：401 跳登录页（保留 next），其他 HTML 请求返回内嵌错误
+        if exc.status == 401:
+            return RedirectResponse(url=_login_redirect_url(_), status_code=303)
         accept = _.headers.get("accept", "")
         if "text/html" in accept:
             return HTMLResponse(
@@ -99,14 +120,21 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_exc_handler(_: Request, exc: StarletteHTTPException):
-        # HTMX 请求返回 toast 片段，普通请求返回 JSON 或重定向到错误页
+        # HTMX 请求：401 加 HX-Redirect 兜底，其他返回 toast 片段
         if _.headers.get("hx-request"):
+            headers = {}
+            if exc.status_code == 401:
+                headers["HX-Redirect"] = _login_redirect_url(_)
+                headers["HX-Reswap"] = "none"
             kind = "warning" if exc.status_code < 500 else "error"
             return HTMLResponse(
-                _toast_html(str(exc.detail), kind), status_code=exc.status_code
+                _toast_html(str(exc.detail), kind),
+                status_code=exc.status_code,
+                headers=headers,
             )
-        if exc.status_code in (401,):
-            return RedirectResponse(url="/login", status_code=303)
+        # 非 HTMX：401 跳登录页（保留 next）
+        if exc.status_code == 401:
+            return RedirectResponse(url=_login_redirect_url(_), status_code=303)
         return JSONResponse(
             {"error": "http_error", "message": str(exc.detail)},
             status_code=exc.status_code,

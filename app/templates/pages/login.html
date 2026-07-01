@@ -266,7 +266,9 @@
             if (resp.ok) {
                 window.__ACCESS_TOKEN__ = data.access_token;
                 window.__TOKEN_EXPIRES_IN__ = data.expires_in;
-                location.href = '/';
+                // 登录成功跳到用户后台；支持 next 参数回跳
+                var next = new URLSearchParams(location.search).get('next');
+                location.href = next || '/dashboard';
             } else {
                 errEl.textContent = data.message || data.detail || '登录失败';
                 // 失败后重置验证码状态，需重新验证
@@ -288,6 +290,21 @@
         }
     });
     lucide.createIcons();
+
+    // 已登录用户访问 /login 时自动跳到后台（避免登录态用户重复看到登录表单）
+    // 用 /auth/me 探测：优先带内存 access_token，失败回退到 refresh cookie 校验
+    (function() {
+        var next = new URLSearchParams(location.search).get('next');
+        var headers = {};
+        if (window.__ACCESS_TOKEN__) {
+            headers['Authorization'] = 'Bearer ' + window.__ACCESS_TOKEN__;
+        }
+        fetch('/auth/me', { credentials: 'include', headers: headers }).then(function(r) {
+            if (r.ok) {
+                location.href = next || '/dashboard';
+            }
+        }).catch(function() {});
+    })();
     </script>
 
 </body>
