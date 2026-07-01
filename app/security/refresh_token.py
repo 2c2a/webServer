@@ -72,11 +72,23 @@ def set_refresh_cookie(response, token: str) -> None:
 
 
 def clear_refresh_cookie(response) -> None:
-    """清除 Refresh Token Cookie（同时清除新旧路径）。"""
-    response.delete_cookie(
+    """清除 Refresh Token Cookie（同时清除新旧路径）。
+
+    注意：delete_cookie 必须带上与 set_cookie 一致的 secure/samesite/httponly 属性，
+    否则浏览器会因属性不匹配而拒绝删除（Starlette delete_cookie 默认 samesite=lax、secure=False）。
+    """
+    # path=/ 的 cookie（当前主路径）
+    response.set_cookie(
         key=settings.refresh_token_cookie_name,
+        value="",
+        max_age=0,
+        expires=0,
         path="/",
+        httponly=True,
+        secure=settings.is_prod,
+        samesite="strict",
     )
+    # path=/auth 的旧 cookie（兼容历史路径，属性不要求精确）
     response.delete_cookie(
         key=settings.refresh_token_cookie_name,
         path="/auth",
