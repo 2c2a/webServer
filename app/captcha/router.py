@@ -137,8 +137,9 @@ async def verify(request: Request):
     ts_header = request.headers.get("X-Captcha-Ts", "")
     sign_header = request.headers.get("X-Captcha-Sign", "")
 
-    # 开发 / 演示模式：签名缺失时跳过校验（便于 curl 调试）
-    skip_sign = (settings.debug or settings.demo) and not ts_header and not sign_header
+    # 开发模式：签名缺失时跳过校验（便于 curl 调试）
+    # 注意：demo 模式不跳过签名校验，演示应展示完整安全链路
+    skip_sign = settings.debug and not ts_header and not sign_header
 
     if skip_sign:
         sign_ok, sign_err = True, ""

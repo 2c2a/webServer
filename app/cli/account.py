@@ -3,6 +3,7 @@
 用法：
     2c2a account createsuperuser              # 创建超级管理员
     2c2a account create                       # 创建普通用户
+    2c2a account demo-seed                    # 预置演示账号（超管/站点管理员/普通用户）
     2c2a account list                         # 列出用户
     2c2a account changepassword <username>    # 修改密码
     2c2a account activate <username>          # 启用账号
@@ -15,10 +16,11 @@
 """
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timezone
 
 import typer
-from sqlalchemy import select
+from sqlalchemy import insert, select
 
 from app.cli.utils import (
     blake2b_prehash_interactive,
@@ -30,15 +32,161 @@ from app.cli.utils import (
     success,
     warn,
 )
-from app.models.user import User, UserBan, UserProfile
+from app.models.tenant import SiteGroup
+from app.models.user import User, UserBan, UserProfile, user_site_group_admins, user_site_groups
 from app.security.password import hash_password
 
 account_app = typer.Typer(help="账户管理", no_args_is_help=True)
+
+# ── 演示账号配置 ──
+# 统一密码：demo123456（满足 ≥8 位要求）
+DEMO_PASSWORD = "demo123456"
+DEMO_ACCOUNTS = [
+    {
+        "username": "superadmin",
+        "email": "demo-superadmin@2c2a.local",
+        "is_superuser": True,
+        "is_staff": True,
+        "is_verified": True,
+        "label": "超级管理员",
+        "bind_tenant_admin": False,
+    },
+    {
+        "username": "siteadmin",
+        "email": "demo-siteadmin@2c2a.local",
+        "is_superuser": False,
+        "is_staff": True,
+        "is_verified": True,
+        "label": "站点管理员",
+        "bind_tenant_admin": True,
+    },
+    {
+        "username": "user",
+        "email": "demo-user@2c2a.local",
+        "is_superuser": False,
+        "is_staff": False,
+        "is_verified": True,
+        "label": "普通用户",
+        "bind_tenant_admin": False,
+    },
+]
 
 
 async def _get_user_by_username(session, username: str) -> User | None:
     result = await session.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
+
+
+async def seed_demo_accounts() -> dict:
+    """预置演示账号与默认站点组。
+
+    幂等：已存在的账号跳过，未存在的创建。
+    供 CLI（``2c2a account demo-seed``）与 lifespan 启动钩子复用。
+
+    :returns: {"created": [用户名...], "skipped": [用户名...], "site_group": 站点名}
+    """
+    prehash = hashlib.blake2b(DEMO_PASSWORD.encode(), digest_size=64).hexdigest()
+    password_hash = hash_password(prehash)
+    created: list[str] = []
+    skipped: list[str] = []
+
+    async with db_session() as session:
+        # 1. 确保默认站点组存在（供 siteadmin 绑定）
+        site_group = (
+            await session.execute(select(SiteGroup).where(SiteGroup.slug == "demo"))
+        ).scalar_one_or_none()
+        if site_group is None:
+            site_group = SiteGroup(
+                name="演示站点",
+                slug="demo",
+                site_name="2c2a 演示站点",
+                is_active=True,
+            )
+            session.add(site_group)
+            await session.flush()
+
+        # 2. 创建/更新演示账号
+        for spec in DEMO_ACCOUNTS:
+            existing = await _get_user_by_username(session, spec["username"])
+            if existing is not None:
+                # 已存在则跳过（不覆盖密码/权限，避免破坏用户后续修改）
+                skipped.append(spec["username"])
+                continue
+            user = User(
+                username=spec["username"],
+                email=spec["email"],
+                password_hash=password_hash,
+                is_active=True,
+                is_staff=spec["is_staff"],
+                is_superuser=spec["is_superuser"],
+                is_verified=spec["is_verified"],
+            )
+            session.add(user)
+            await session.flush()
+            session.add(UserProfile(user_id=user.id))
+
+            # 直接操作关联表，避免 ORM 关系懒加载触发 MissingGreenlet
+            await session.execute(
+                insert(user_site_groups).values(
+                    user_id=user.id, site_group_id=site_group.id
+                )
+            )
+            if spec["bind_tenant_admin"]:
+                await session.execute(
+                    insert(user_site_group_admins).values(
+                        user_id=user.id, site_group_id=site_group.id
+                    )
+                )
+
+            created.append(spec["username"])
+
+    return {"created": created, "skipped": skipped, "site_group": "demo"}
+
+
+@account_app.command("demo-seed")
+def demo_seed(
+    force: bool = typer.Option(False, "--force", "-f", help="覆盖已存在的演示账号密码与权限"),
+):
+    """预置演示账号：superadmin / siteadmin / user（密码统一 demo123456）。
+
+    仅用于 demo/开发环境，生产环境禁止使用。
+    """
+    from app.core.config import settings
+
+    # 安全护栏：生产环境拒绝执行
+    if settings.is_prod:
+        error("生产环境禁止预置演示账号")
+        raise typer.Exit(1)
+
+    if force:
+        # --force 模式：先删除已存在的演示账号再重建
+        async def _wipe():
+            async with db_session() as session:
+                for spec in DEMO_ACCOUNTS:
+                    existing = await _get_user_by_username(session, spec["username"])
+                    if existing is not None:
+                        await session.delete(existing)
+
+        run_async(_wipe())
+
+    result = run_async(seed_demo_accounts())
+
+    from app.cli.utils import console
+
+    console.print()
+    console.print("[bold cyan]演示账号已预置[/bold cyan]")
+    console.print(f"  站点组: [green]演示站点 (slug=demo)[/green]")
+    console.print()
+    console.print(f"  {'用户名':<16} {'密码':<14} {'身份':<10} {'状态'}")
+    console.print(f"  {'-'*16} {'-'*14} {'-'*10} {'-'*8}")
+    for spec in DEMO_ACCOUNTS:
+        status = "新建" if spec["username"] in result["created"] else "已存在跳过"
+        console.print(
+            f"  [bold]{spec['username']:<16}[/bold] "
+            f"{DEMO_PASSWORD:<14} {spec['label']:<10} {status}"
+        )
+    console.print()
+    warn("演示密码为 demo123456，仅用于 demo/开发环境，禁止用于生产")
 
 
 @account_app.command("createsuperuser")
@@ -92,8 +240,6 @@ def _create_user(
         if len(password) < 8:
             error("密码至少 8 位")
             raise typer.Exit(1)
-        import hashlib
-
         prehash = hashlib.blake2b(password.encode(), digest_size=64).hexdigest()
     else:
         prehash = blake2b_prehash_interactive("密码")
@@ -176,8 +322,6 @@ def change_password(
         if len(password) < 8:
             error("密码至少 8 位")
             raise typer.Exit(1)
-        import hashlib
-
         prehash = hashlib.blake2b(password.encode(), digest_size=64).hexdigest()
     else:
         prehash = blake2b_prehash_interactive("新密码")

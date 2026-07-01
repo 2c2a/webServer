@@ -139,6 +139,48 @@
                 没有账户？<a href="/register" class="transition-colors" style="color: var(--c-brand);">立即注册</a>
             </p>
 
+            {% if is_demo %}
+            <!-- 演示模式：快速登录区域 -->
+            <div class="mt-6 auth-anim auth-anim-6" style="border: 1px dashed var(--c-brand); border-radius: 10px; padding: 14px; background: color-mix(in srgb, var(--c-brand) 5%, transparent);">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--c-brand);">演示模式 · 快速登录</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" data-demo-user="superadmin" data-demo-label="超级管理员"
+                        class="demo-quick-login"
+                        style="width: 100%; padding: 10px 12px; font-size: 13px; text-align: left; border: 1px solid var(--c-border); border-radius: 8px; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s;">
+                        <span>
+                            <span style="font-weight: 600; color: var(--c-text-primary);">超级管理员</span>
+                            <span style="color: var(--c-text-tertiary); margin-left: 6px;">superadmin</span>
+                        </span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                    <button type="button" data-demo-user="siteadmin" data-demo-label="站点管理员"
+                        class="demo-quick-login"
+                        style="width: 100%; padding: 10px 12px; font-size: 13px; text-align: left; border: 1px solid var(--c-border); border-radius: 8px; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s;">
+                        <span>
+                            <span style="font-weight: 600; color: var(--c-text-primary);">站点管理员</span>
+                            <span style="color: var(--c-text-tertiary); margin-left: 6px;">siteadmin</span>
+                        </span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                    <button type="button" data-demo-user="user" data-demo-label="普通用户"
+                        class="demo-quick-login"
+                        style="width: 100%; padding: 10px 12px; font-size: 13px; text-align: left; border: 1px solid var(--c-border); border-radius: 8px; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s;">
+                        <span>
+                            <span style="font-weight: 600; color: var(--c-text-primary);">普通用户</span>
+                            <span style="color: var(--c-text-tertiary); margin-left: 6px;">user</span>
+                        </span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--c-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                </div>
+                <p style="font-size: 11px; color: var(--c-text-tertiary); margin: 8px 0 0; text-align: center;">
+                    统一密码 <code style="background: color-mix(in srgb, var(--c-brand) 10%, transparent); padding: 1px 5px; border-radius: 3px; color: var(--c-brand);">demo123456</code> · 点击后需完成验证码
+                </p>
+            </div>
+            {% endif %}
+
         </div>
     </main>
     <script src="/static/vendor/hash-wasm.js"></script>
@@ -289,6 +331,46 @@
             btn.style.background = ORIG_BTN_BG;
         }
     });
+
+    // ── 演示模式：快速登录 ──
+    // 点击演示账号按钮 → 自动填充用户名+密码 → 触发验证码弹窗
+    // 验证码完成后用户手动点击"登录"提交，展示完整安全链路
+    document.querySelectorAll('.demo-quick-login').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var username = this.getAttribute('data-demo-user');
+            var label = this.getAttribute('data-demo-label');
+            // 填充表单
+            form.username.value = username;
+            form.password.value = 'demo123456';
+            // 视觉反馈
+            errEl.textContent = '';
+            errEl.style.color = 'var(--c-brand)';
+            errEl.textContent = '已填充「' + label + '」账号，请完成安全验证后点击登录';
+            // 高亮被选中的按钮
+            document.querySelectorAll('.demo-quick-login').forEach(function(b) {
+                b.style.borderColor = 'var(--c-border)';
+                b.style.background = '#fff';
+            });
+            this.style.borderColor = 'var(--c-brand)';
+            this.style.background = 'color-mix(in srgb, var(--c-brand) 8%, transparent)';
+            // 自动弹出验证码（若启用），引导用户完成最后一步
+            if (typeof openCaptchaModal === 'function') {
+                openCaptchaModal();
+            }
+        });
+        // hover 效果
+        btn.addEventListener('mouseenter', function() {
+            if (this.style.borderColor !== 'var(--c-brand)') {
+                this.style.borderColor = 'var(--c-text-tertiary)';
+            }
+        });
+        btn.addEventListener('mouseleave', function() {
+            if (this.style.borderColor !== 'var(--c-brand)') {
+                this.style.borderColor = 'var(--c-border)';
+            }
+        });
+    });
+
     lucide.createIcons();
 
     // 已登录用户访问 /login 时自动跳到后台（避免登录态用户重复看到登录表单）

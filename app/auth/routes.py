@@ -271,6 +271,14 @@ async def send_email_code(
             error=send_result.error,
         )
         if settings.debug or settings.demo:
+            # demo/debug 模式：返回验证码以便演示流程继续，同时日志 warning 输出
+            log.warning(
+                "demo_email_code_revealed",
+                email=body.email,
+                code=result.code,
+                ttl=result.ttl,
+                mode="demo" if settings.demo else "debug",
+            )
             return SendEmailCodeResponse(
                 sent=False, expires_in=result.ttl, dev_code=result.code
             )

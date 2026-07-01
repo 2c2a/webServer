@@ -226,6 +226,11 @@ async def test_host_connection(
     client = await AsyncWinRMClient.from_host_config(host)
     try:
         res = await client.execute_command("whoami")
-        return {"success": res.success, "output": res.std_out.strip(), "error": res.std_err}
+        return {
+            "success": res.success,
+            "output": res.std_out.strip(),
+            "error": res.std_err,
+            "demo_mode": res.demo_mode,
+        }
     finally:
         await client.close()

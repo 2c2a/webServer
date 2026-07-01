@@ -18,6 +18,7 @@ from rich.console import Console
 
 from app.cli.account import account_app
 from app.cli.db import db_app
+from app.cli.demo import demo_app
 from app.cli.mail import mail_app
 from app.cli.plugins import plugin_app
 from app.cli.server import server_app
@@ -57,6 +58,7 @@ app.add_typer(plugin_app, name="plugin", help="插件管理")
 app.add_typer(keys_app, name="keys", help="密钥生成")
 app.add_typer(tenant_app, name="tenant", help="租户（站点组）管理")
 app.add_typer(mail_app, name="mail", help="邮件 / SMTP 配置与测试")
+app.add_typer(demo_app, name="demo", help="演示数据管理（账号/业务数据）")
 
 # 顶层直接命令
 app.command(name="collectstatic", help="收集静态文件到指定目录")(collectstatic)

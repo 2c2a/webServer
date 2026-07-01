@@ -15,7 +15,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
-import os
 import secrets
 import string
 from dataclasses import dataclass
@@ -74,15 +73,25 @@ class CommandInjectionError(Exception):
 
 @dataclass
 class WinRMResult:
-    """WinRM 命令执行结果。"""
+    """WinRM 命令执行结果。
+
+    ``demo_mode=True`` 表示本次结果为 demo 模式模拟返回，未实际执行远程命令。
+    调用方应将其透传给前端，以便用户感知"演示成功"与"真实成功"的区别。
+    """
 
     status_code: int
     std_out: str
     std_err: str
+    # demo 模式标记：True 表示本次结果为模拟返回，未实际执行远程命令
+    demo_mode: bool = False
 
     @property
     def success(self) -> bool:
-        """状态码为 0 视为成功。"""
+        """状态码为 0 视为成功（含 demo 模式模拟成功）。
+
+        注意：demo 模式下 success=True 仅表示"模拟操作完成"，不代表真实执行。
+        如需区分真实成功，请检查 ``demo_mode`` 字段。
+        """
         return self.status_code == 0
 
 
@@ -142,8 +151,13 @@ class AsyncWinRMClient:
         self.cert_key_path = cert_key_path
         self.timeout = timeout
         self.max_retries = max_retries
-        # demo 模式：显式传入或环境变量 2C2A_DEMO=1 均生效
-        self.demo = bool(demo) or os.environ.get("2C2A_DEMO", "").lower() == "1"
+        # demo 模式：显式传入或跟随全局 settings.demo（统一配置源，不再直读环境变量）
+        if demo:
+            self.demo = True
+        else:
+            from app.core.config import settings
+
+            self.demo = settings.demo
 
         # 缓存的密码策略，供同步方法 generate_strong_password 使用
         self._cached_policy: Optional[dict] = None
@@ -289,9 +303,18 @@ class AsyncWinRMClient:
     # ------------------------------------------------------------------
     # demo 模式短路
     # ------------------------------------------------------------------
-    def _demo_result(self) -> WinRMResult:
-        """demo 模式统一返回的模拟成功结果。"""
-        return WinRMResult(status_code=0, std_out="DEMO MODE", std_err="")
+    def _demo_result(self, *, action: str = "") -> WinRMResult:
+        """demo 模式统一返回的模拟成功结果。
+
+        :param action: 本次模拟的操作名（用于日志/前端展示，如 "create_user"）
+        """
+        std_out = f"DEMO MODE: {action}" if action else "DEMO MODE"
+        return WinRMResult(
+            status_code=0,
+            std_out=std_out,
+            std_err="",
+            demo_mode=True,
+        )
 
     # ------------------------------------------------------------------
     # 命令执行（WS-Management 协议编排）
@@ -306,7 +329,7 @@ class AsyncWinRMClient:
         """
         if self.demo:
             logger.info("DEMO 模式: 模拟执行命令: %s %s", command, arguments)
-            return self._demo_result()
+            return self._demo_result(action=f"execute_command({command})")
         return await self._run_shell_command(RSRC_CMD, command, arguments or [])
 
     async def execute_powershell(self, script: str) -> WinRMResult:
@@ -318,7 +341,7 @@ class AsyncWinRMClient:
         """
         if self.demo:
             logger.info("DEMO 模式: 模拟执行 PowerShell 脚本")
-            return self._demo_result()
+            return self._demo_result(action="execute_powershell")
         encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
         return await self._run_shell_command(
             RSRC_CMD,

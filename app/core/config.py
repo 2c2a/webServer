@@ -134,7 +134,33 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[misc]
     @property
     def is_prod(self) -> bool:
-        return self.env == "production" and not self.debug
+        """是否为生产环境。
+
+        demo 模式无论 env 字段如何，均不视为生产环境：
+        demo 模式下密钥派生、WinRM 模拟等安全降级全部生效，
+        若视为生产会导致 Refresh Cookie secure 属性等关键安全
+        开关与实际安全等级不一致。
+        """
+        return self.env == "production" and not self.debug and not self.demo
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def is_demo(self) -> bool:
+        """是否为演示模式。"""
+        return self.demo
+
+    def assert_safe_to_run(self) -> None:
+        """启动前安全断言：防止 demo 模式在生产环境误启用。
+
+        - ENV=production + demo=1：直接拒绝启动
+        - ENV=production + debug=1：拒绝启动（debug 同样会派生弱密钥）
+        """
+        if self.env == "production" and (self.demo or self.debug):
+            mode = "DEMO" if self.demo else "DEBUG"
+            raise RuntimeError(
+                f"安全断言失败：{mode} 模式不能与 ENV=production 同时启用。"
+                f"请在 .env 中设置 ENV=development 或关闭 {mode} 模式。"
+            )
 
     @property
     def database_url(self) -> str:

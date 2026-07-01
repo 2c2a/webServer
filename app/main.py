@@ -42,7 +42,29 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """应用生命周期：启动时初始化，关闭时清理。"""
     setup_logging()
+
+    # 启动前安全断言：禁止 demo/debug 模式在生产环境误启用
+    settings.assert_safe_to_run()
+
+    # demo 模式醒目警告横幅
+    if settings.demo:
+        _print_demo_banner()
+
     log.info("app_starting", env=settings.env, debug=settings.debug, demo=settings.demo)
+
+    # demo 模式：自动预置演示账号（若库中无超管）
+    if settings.demo:
+        try:
+            await _auto_seed_demo_accounts()
+        except Exception as e:  # noqa: BLE001
+            log.warning("demo_auto_seed_failed", error=str(e))
+
+    # demo 模式：每次启动清理并重建演示业务数据（保证演示环境干净）
+    if settings.demo:
+        try:
+            await _auto_reset_demo_business_data()
+        except Exception as e:  # noqa: BLE001
+            log.warning("demo_business_data_reset_failed", error=str(e))
 
     # 注册内置积分检测器
     try:
@@ -93,6 +115,92 @@ async def lifespan(app: FastAPI):
     await close_redis()
     await dispose_engine()
     log.info("app_stopped")
+
+
+def _print_demo_banner() -> None:
+    """输出醒目的 DEMO 模式警告横幅到日志。"""
+    banner = (
+        "\n"
+        "╔══════════════════════════════════════════════════════════════╗\n"
+        "║                    ⚠  DEMO 模式已启用  ⚠                    ║\n"
+        "║                                                              ║\n"
+        "║  · 密钥从 SECRET_KEY 派生（弱密钥，仅用于演示）             ║\n"
+        "║  · WinRM 操作返回模拟结果（不实际执行任何远程命令）         ║\n"
+        "║  · 演示账号已预置（见控制台输出）                           ║\n"
+        "║  · 禁止用于生产环境，所有数据可被任意访问                   ║\n"
+        "║                                                              ║\n"
+        "║  关闭方式：在 .env 中设置 2C2A_DEMO=0                        ║\n"
+        "╚══════════════════════════════════════════════════════════════╝"
+    )
+    # 用 warning 级别确保在日志中显眼
+    log.warning(banner)
+
+
+async def _auto_seed_demo_accounts() -> None:
+    """demo 模式启动时自动预置演示账号（若库中无任何超管）。
+
+    幂等：库中已有超管则跳过，避免覆盖用户修改。
+    """
+    from sqlalchemy import select
+
+    from app.cli.account import DEMO_ACCOUNTS, DEMO_PASSWORD, seed_demo_accounts
+    from app.core.db import AsyncSessionLocal
+    from app.models.user import User
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User).where(User.is_superuser == True).limit(1)  # noqa: E712
+        )
+        has_superuser = result.scalar_one_or_none() is not None
+
+    if has_superuser:
+        log.info("demo_seed_skipped", reason="superuser_exists")
+        return
+
+    result = await seed_demo_accounts()
+    created = result["created"]
+    skipped = result["skipped"]
+    log.warning(
+        "demo_accounts_seeded",
+        created=created,
+        skipped=skipped,
+        password=DEMO_PASSWORD,
+    )
+    # 控制台友好输出（便于演示时查看账号）
+    print("\n" + "=" * 60)
+    print("  DEMO 演示账号已预置（密码统一: demo123456）")
+    print("=" * 60)
+    for spec in DEMO_ACCOUNTS:
+        status = "✓ 新建" if spec["username"] in created else "· 已存在"
+        print(f"  {spec['username']:<16} | {spec['label']:<8} | {status}")
+    print("=" * 60 + "\n")
+
+
+async def _auto_reset_demo_business_data() -> None:
+    """demo 模式启动时清理并重建演示业务数据。
+
+    每次启动都重建，保证演示环境是干净的。
+    """
+    from app.cli.demo_data import reset_demo_business_data
+
+    result = await reset_demo_business_data()
+    cleaned = result["cleaned"]["deleted"]
+    created = result["seeded"]["created"]
+
+    log.info("demo_business_data_reset", cleaned=cleaned, created=created)
+
+    # 控制台友好输出
+    print("\n" + "-" * 60)
+    print("  DEMO 业务数据已重建")
+    print("-" * 60)
+    print("  清理上一次演示数据：")
+    for table, count in cleaned.items():
+        if count > 0:
+            print(f"    · {table:<20} 删除 {count} 条")
+    print("  创建新演示数据：")
+    for table, count in created.items():
+        print(f"    · {table:<20} 新建 {count} 条")
+    print("-" * 60 + "\n")
 
 
 def create_app() -> FastAPI:

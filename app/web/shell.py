@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Request
 from starlette.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.db import get_db
 from app.templates import render_template
 from app.tenant.dependencies import get_tenant
@@ -21,7 +22,11 @@ router = APIRouter(tags=["shell"])
 
 
 async def _shell_context(tenant: TenantContext, db: AsyncSession) -> dict:
-    """构建前台渲染上下文（仅租户级配置，无用户状态）。"""
+    """构建前台渲染上下文（仅租户级配置，无用户状态）。
+
+    注：is_demo 是全局配置而非用户状态，可安全注入到前台页面，
+    用于控制演示账号快速登录等 UI 元素的显示。
+    """
     cfg = await get_effective_config(db, tenant)
     return {
         "site_name": cfg.get("site_name") or "2c2a",
@@ -29,6 +34,7 @@ async def _shell_context(tenant: TenantContext, db: AsyncSession) -> dict:
         "icp_number": cfg.get("icp_number"),
         "theme": "light",
         "enable_registration": cfg.get("enable_registration", False),
+        "is_demo": settings.is_demo,
     }
 
 
