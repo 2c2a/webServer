@@ -194,10 +194,10 @@ function renderSelectedUsers() {
     });
 }
 
-// 表单提交前校验：若选"指定用户"但未选任何用户，阻止提交
+// 表单提交前校验：若选"指定用户"但未选任何用户，阻止提交（仅拦截表单 POST，放行搜索框 GET）
 document.addEventListener('htmx:configRequest', function(evt) {
     var form = document.getElementById('notification-push-form');
-    if (!form || !form.contains(evt.detail.elt)) return;
+    if (!form || evt.detail.elt !== form) return;
     var targetType = form.querySelector('input[name="target_type"]:checked');
     if (targetType && targetType.value === 'selected' && selectedNotifUsers.length === 0) {
         evt.preventDefault();
