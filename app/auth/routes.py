@@ -69,9 +69,7 @@ async def login(
     # TODO: 速率限制（基于 Redis）
 
     # 行为验证码校验（按场景配置：login）
-    # 演示站点跳过验证码，便于一键登录体验
-    if not tenant.is_demo:
-        await assert_captcha_solved(body.captcha_id, body.captcha, scene="login")
+    await assert_captcha_solved(body.captcha_id, body.captcha, scene="login")
 
     result = await db.execute(
         select(User).options(selectinload(User.active_ban)).where(User.username == body.username)
