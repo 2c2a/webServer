@@ -176,7 +176,7 @@
                     </button>
                 </div>
                 <p style="font-size: 11px; color: var(--c-text-tertiary); margin: 8px 0 0; text-align: center;">
-                    统一密码 <code style="background: color-mix(in srgb, var(--c-brand) 10%, transparent); padding: 1px 5px; border-radius: 3px; color: var(--c-brand);">demo123456</code> · 点击后需完成验证码
+                    点击账号一键登录 · 统一密码 <code style="background: color-mix(in srgb, var(--c-brand) 10%, transparent); padding: 1px 5px; border-radius: 3px; color: var(--c-brand);">demo123456</code>
                 </p>
             </div>
             {% endif %}
@@ -332,20 +332,16 @@
         }
     });
 
-    // ── 演示模式：快速登录 ──
-    // 点击演示账号按钮 → 自动填充用户名+密码 → 触发验证码弹窗
-    // 验证码完成后用户手动点击"登录"提交，展示完整安全链路
+    // ── 演示模式：一键登录 ──
+    // 点击演示账号按钮 → 自动填充用户名+密码 → 跳过验证码 → 自动提交登录
+    // demo 站点后端 /auth/login 已跳过验证码校验，前端直接提交
     document.querySelectorAll('.demo-quick-login').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
             var username = this.getAttribute('data-demo-user');
             var label = this.getAttribute('data-demo-label');
             // 填充表单
             form.username.value = username;
             form.password.value = 'demo123456';
-            // 视觉反馈
-            errEl.textContent = '';
-            errEl.style.color = 'var(--c-brand)';
-            errEl.textContent = '已填充「' + label + '」账号，请完成安全验证后点击登录';
             // 高亮被选中的按钮
             document.querySelectorAll('.demo-quick-login').forEach(function(b) {
                 b.style.borderColor = 'var(--c-border)';
@@ -353,10 +349,16 @@
             });
             this.style.borderColor = 'var(--c-brand)';
             this.style.background = 'color-mix(in srgb, var(--c-brand) 8%, transparent)';
-            // 自动弹出验证码（若启用），引导用户完成最后一步
-            if (typeof openCaptchaModal === 'function') {
-                openCaptchaModal();
-            }
+            // 视觉反馈
+            errEl.textContent = '';
+            errEl.style.color = 'var(--c-brand)';
+            errEl.textContent = '正在登录「' + label + '」...';
+            // demo 站点跳过验证码，直接提交
+            captchaVerified = true;
+            captchaIdInput.value = '';
+            captchaAnswerInput.value = 'verified';
+            // 触发表单提交（复用主登录逻辑）
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
         });
         // hover 效果
         btn.addEventListener('mouseenter', function() {
